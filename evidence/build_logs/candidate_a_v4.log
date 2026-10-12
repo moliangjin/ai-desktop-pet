@@ -1,0 +1,24 @@
+2026-10-12 20:46:15.430 PetCandidateA[33030:1742319] NSWindow does not support nonactivating panel styleMask 0x80
+2026-10-12 20:46:15.443 PetCandidateA[33030:1742319] [FrameStore] action=idle loaded=6/6
+2026-10-12 20:46:15.444 PetCandidateA[33030:1742319] [FrameStore] action=walk loaded=8/8
+2026-10-12 20:46:15.446 PetCandidateA[33030:1742319] [FrameStore] action=jump loaded=8/8
+2026-10-12 20:46:15.447 PetCandidateA[33030:1742319] [FrameStore] action=drag loaded=4/4
+2026-10-12 20:46:15.447 PetCandidateA[33030:1742319] [PetWindow] total frames loaded=26
+2026-10-12 20:46:15.448 PetCandidateA[33030:1742319] [AppDelegate] pet window up:  frame={{800, 400}, {256, 256}}
+2026-10-12 20:46:15.949 PetCandidateA[33030:1742319] [PetView] _advance total=30 n=6 frame=3
+2026-10-12 20:46:16.449 PetCandidateA[33030:1742319] [PetView] _advance total=60 n=6 frame=1
+2026-10-12 20:46:16.949 PetCandidateA[33030:1742319] [PetView] _advance total=90 n=6 frame=5
+2026-10-12 20:46:17.448 PetCandidateA[33030:1742319] [PetView] _advance total=120 n=6 frame=2
+2026-10-12 20:46:17.949 PetCandidateA[33030:1742319] [PetView] _advance total=150 n=6 frame=0
+2026-10-12 20:46:18.449 PetCandidateA[33030:1742319] [PetView] _advance total=180 n=6 frame=4
+2026-10-12 20:46:18.949 PetCandidateA[33030:1742319] [PetView] _advance total=210 n=6 frame=2
+2026-10-12 20:46:19.449 PetCandidateA[33030:1742319] [PetView] _advance total=240 n=6 frame=5
+2026-10-12 20:46:19.947 PetCandidateA[33030:1742319] [PetView] _advance total=270 n=6 frame=3
+2026-10-12 20:46:20.449 PetCandidateA[33030:1742319] [PetView] _advance total=300 n=6 frame=1
+2026-10-12 20:46:20.948 PetCandidateA[33030:1742319] [PetView] _advance total=330 n=6 frame=5
+2026-10-12 20:46:21.449 PetCandidateA[33030:1742319] [PetView] _advance total=360 n=6 frame=2
+2026-10-12 20:46:21.949 PetCandidateA[33030:1742319] [PetView] _advance total=390 n=6 frame=0
+2026-10-12 20:46:22.448 PetCandidateA[33030:1742319] [PetView] _advance total=420 n=6 frame=4
+2026-10-12 20:46:22.949 PetCandidateA[33030:1742319] [PetView] _advance total=450 n=6 frame=2
+2026-10-12 20:46:23.432 PetCandidateA[33030:1742319] [PetView] diag action=idle frame=5 hits=0 miss=0 hover=0
+2026-10-12 20:46:23.432 PetCandidateA[33030:1742319] [AppDelegate] terminating cleanly

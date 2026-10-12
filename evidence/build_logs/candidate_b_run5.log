@@ -1,0 +1,18 @@
+[36456:1012/211000.973566:WARNING:viz_main_impl.cc(85)] VizNullHypothesis is disabled (not a warning)
+[36455:1012/211001.307938:INFO:CONSOLE(9)] "[renderer] PIXI version: 7.4.3", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (9)
+[36455:1012/211001.310220:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/renderer_init (2)
+[36455:1012/211002.315791:INFO:CONSOLE(35)] "[renderer] fps window: 78", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[36455:1012/211003.317126:INFO:CONSOLE(35)] "[renderer] fps window: 100", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[36455:1012/211004.327132:INFO:CONSOLE(35)] "[renderer] fps window: 101", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[36455:1012/211005.327981:INFO:CONSOLE(35)] "[renderer] fps window: 100", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[36455:1012/211006.335539:INFO:CONSOLE(35)] "[renderer] fps window: 101", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[36455:1012/211007.335676:INFO:CONSOLE(35)] "[renderer] fps window: 100", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[36455:1012/211008.337847:INFO:CONSOLE(35)] "[renderer] fps window: 100", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[main] quit-after elapsed, terminating

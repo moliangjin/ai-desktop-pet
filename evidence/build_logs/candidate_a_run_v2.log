@@ -1,0 +1,25 @@
+2026-10-12 20:39:40.958 PetCandidateA[32242:1737242] [FrameStore] action=idle loaded=6/6
+2026-10-12 20:39:40.959 PetCandidateA[32242:1737242] [FrameStore] action=walk loaded=8/8
+2026-10-12 20:39:40.961 PetCandidateA[32242:1737242] [FrameStore] action=jump loaded=8/8
+2026-10-12 20:39:40.962 PetCandidateA[32242:1737242] [FrameStore] action=drag loaded=4/4
+2026-10-12 20:39:40.962 PetCandidateA[32242:1737242] [PetWindow] total frames loaded=26
+2026-10-12 20:39:40.964 PetCandidateA[32242:1737242] [AppDelegate] pet window up:  frame={{700, 700}, {256, 256}}
+2026-10-12 20:39:41.464 PetCandidateA[32242:1737242] [PetView] _advance total=30 n=6 frame=3
+2026-10-12 20:39:41.964 PetCandidateA[32242:1737242] [PetView] _advance total=60 n=6 frame=1
+2026-10-12 20:39:42.464 PetCandidateA[32242:1737242] [PetView] _advance total=90 n=6 frame=5
+2026-10-12 20:39:42.963 PetCandidateA[32242:1737242] [PetView] _advance total=120 n=6 frame=2
+2026-10-12 20:39:43.464 PetCandidateA[32242:1737242] [PetView] _advance total=150 n=6 frame=0
+2026-10-12 20:39:43.964 PetCandidateA[32242:1737242] [PetView] _advance total=180 n=6 frame=4
+2026-10-12 20:39:44.464 PetCandidateA[32242:1737242] [PetView] _advance total=210 n=6 frame=2
+2026-10-12 20:39:44.831 PetCandidateA[32242:1737242] [PetView] drawRect #30 action=idle frame=5 img=0x11663b8a0
+2026-10-12 20:39:44.964 PetCandidateA[32242:1737242] [PetView] _advance total=240 n=6 frame=5
+2026-10-12 20:39:45.464 PetCandidateA[32242:1737242] [PetView] _advance total=270 n=6 frame=3
+2026-10-12 20:39:45.964 PetCandidateA[32242:1737242] [PetView] _advance total=300 n=6 frame=1
+2026-10-12 20:39:46.462 PetCandidateA[32242:1737242] [PetView] _advance total=330 n=6 frame=5
+2026-10-12 20:39:46.964 PetCandidateA[32242:1737242] [PetView] _advance total=360 n=6 frame=2
+2026-10-12 20:39:47.464 PetCandidateA[32242:1737242] [PetView] _advance total=390 n=6 frame=0
+2026-10-12 20:39:47.964 PetCandidateA[32242:1737242] [PetView] _advance total=420 n=6 frame=4
+2026-10-12 20:39:48.464 PetCandidateA[32242:1737242] [PetView] _advance total=450 n=6 frame=2
+2026-10-12 20:39:48.829 PetCandidateA[32242:1737242] [PetView] drawRect #60 action=idle frame=5 img=0x11663b8a0
+2026-10-12 20:39:48.947 PetCandidateA[32242:1737242] [PetView] diag action=idle frame=5 hits=0 miss=0 hover=0
+2026-10-12 20:39:48.947 PetCandidateA[32242:1737242] [AppDelegate] terminating cleanly

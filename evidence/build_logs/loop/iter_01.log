@@ -1,0 +1,9 @@
+2026-10-12 20:53:05.317 PetCandidateA[33881:1747302] NSWindow does not support nonactivating panel styleMask 0x80
+2026-10-12 20:53:05.327 PetCandidateA[33881:1747302] [FrameStore] action=idle loaded=6/6
+2026-10-12 20:53:05.329 PetCandidateA[33881:1747302] [FrameStore] action=walk loaded=8/8
+2026-10-12 20:53:05.331 PetCandidateA[33881:1747302] [FrameStore] action=jump loaded=8/8
+2026-10-12 20:53:05.332 PetCandidateA[33881:1747302] [FrameStore] action=drag loaded=4/4
+2026-10-12 20:53:05.332 PetCandidateA[33881:1747302] [PetWindow] total frames loaded=26
+2026-10-12 20:53:05.333 PetCandidateA[33881:1747302] [AppDelegate] pet window up:  frame={{600, 600}, {256, 256}}
+2026-10-12 20:53:06.317 PetCandidateA[33881:1747302] [PetView] diag action=idle frame=1 hits=0 miss=0 hover=0
+2026-10-12 20:53:06.317 PetCandidateA[33881:1747302] [AppDelegate] terminating cleanly

@@ -1,0 +1,22 @@
+[main] asset-report: idle loaded=4 failed=0
+[main] asset-report: walk loaded=6 failed=0
+[main] asset-report: jump loaded=8 failed=0
+[main] asset-report: drag loaded=4 failed=0
+[main] quit-after elapsed, terminating
+ads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (9)
+[37439:1012/211733.411854:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/renderer_init (2)
+[37439:1012/211733.462352:INFO:CONSOLE(113)] "[renderer] action idle: 4 loaded, 0 failed", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (113)
+[37439:1012/211733.470949:INFO:CONSOLE(113)] "[renderer] action walk: 6 loaded, 0 failed", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (113)
+[37439:1012/211733.479530:INFO:CONSOLE(113)] "[renderer] action jump: 8 loaded, 0 failed", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (113)
+[37439:1012/211733.484669:INFO:CONSOLE(113)] "[renderer] action drag: 4 loaded, 0 failed", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (113)
+[37439:1012/211734.419065:INFO:CONSOLE(35)] "[renderer] fps window: 92", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[37439:1012/211735.428829:INFO:CONSOLE(35)] "[renderer] fps window: 101", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[37439:1012/211736.428806:INFO:CONSOLE(35)] "[renderer] fps window: 100", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)
+[37439:1012/211737.429189:INFO:CONSOLE(35)] "[renderer] fps window: 100", source: file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/src/renderer.js (35)

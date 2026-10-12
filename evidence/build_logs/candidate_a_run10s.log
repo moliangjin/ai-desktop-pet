@@ -1,0 +1,8 @@
+2026-10-12 20:24:33.302 PetCandidateA[30420:1725318] [FrameStore] action=idle loaded=6/6
+2026-10-12 20:24:33.303 PetCandidateA[30420:1725318] [FrameStore] action=walk loaded=8/8
+2026-10-12 20:24:33.305 PetCandidateA[30420:1725318] [FrameStore] action=jump loaded=8/8
+2026-10-12 20:24:33.306 PetCandidateA[30420:1725318] [FrameStore] action=drag loaded=4/4
+2026-10-12 20:24:33.306 PetCandidateA[30420:1725318] [PetWindow] total frames loaded=26
+2026-10-12 20:24:33.307 PetCandidateA[30420:1725318] [AppDelegate] pet window up:  frame={{600, 400}, {256, 256}}
+2026-10-12 20:24:43.290 PetCandidateA[30420:1725318] [PetView] diag action=idle frame=0 hits=0 miss=0 hover=0
+2026-10-12 20:24:43.290 PetCandidateA[30420:1725318] [AppDelegate] terminating cleanly

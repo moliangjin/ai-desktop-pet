@@ -1,0 +1,21 @@
+2026-10-12 20:44:57.934 PetCandidateA[32721:1740816] [FrameStore] action=idle loaded=6/6
+2026-10-12 20:44:57.935 PetCandidateA[32721:1740816] [FrameStore] action=walk loaded=8/8
+2026-10-12 20:44:57.937 PetCandidateA[32721:1740816] [FrameStore] action=jump loaded=8/8
+2026-10-12 20:44:57.938 PetCandidateA[32721:1740816] [FrameStore] action=drag loaded=4/4
+2026-10-12 20:44:57.938 PetCandidateA[32721:1740816] [PetWindow] total frames loaded=26
+2026-10-12 20:44:57.939 PetCandidateA[32721:1740816] [AppDelegate] pet window up:  frame={{800, 400}, {256, 256}}
+2026-10-12 20:44:58.440 PetCandidateA[32721:1740816] [PetView] _advance total=30 n=6 frame=3
+2026-10-12 20:44:58.940 PetCandidateA[32721:1740816] [PetView] _advance total=60 n=6 frame=1
+2026-10-12 20:44:59.440 PetCandidateA[32721:1740816] [PetView] _advance total=90 n=6 frame=5
+2026-10-12 20:44:59.940 PetCandidateA[32721:1740816] [PetView] _advance total=120 n=6 frame=3
+2026-10-12 20:45:00.440 PetCandidateA[32721:1740816] [PetView] _advance total=150 n=6 frame=0
+2026-10-12 20:45:00.939 PetCandidateA[32721:1740816] [PetView] _advance total=180 n=6 frame=4
+2026-10-12 20:45:01.440 PetCandidateA[32721:1740816] [PetView] _advance total=210 n=6 frame=2
+2026-10-12 20:45:01.940 PetCandidateA[32721:1740816] [PetView] _advance total=240 n=6 frame=0
+2026-10-12 20:45:02.440 PetCandidateA[32721:1740816] [PetView] _advance total=270 n=6 frame=3
+2026-10-12 20:45:02.939 PetCandidateA[32721:1740816] [PetView] _advance total=300 n=6 frame=1
+2026-10-12 20:45:03.440 PetCandidateA[32721:1740816] [PetView] _advance total=330 n=6 frame=5
+2026-10-12 20:45:03.940 PetCandidateA[32721:1740816] [PetView] _advance total=360 n=6 frame=3
+2026-10-12 20:45:04.440 PetCandidateA[32721:1740816] [PetView] _advance total=390 n=6 frame=0
+2026-10-12 20:45:04.923 PetCandidateA[32721:1740816] [PetView] diag action=idle frame=4 hits=0 miss=0 hover=0
+2026-10-12 20:45:04.923 PetCandidateA[32721:1740816] [AppDelegate] terminating cleanly

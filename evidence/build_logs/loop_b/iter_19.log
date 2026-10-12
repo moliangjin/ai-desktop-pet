@@ -1,0 +1,5 @@
+[main] asset-report: idle loaded=6 failed=0
+[main] asset-report: walk loaded=8 failed=0
+[main] asset-report: jump loaded=8 failed=0
+[main] asset-report: drag loaded=4 failed=0
+[main] quit-after elapsed, terminating

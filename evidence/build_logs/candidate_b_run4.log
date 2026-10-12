@@ -1,0 +1,12 @@
+[36151:1012/210654.825694:WARNING:viz_main_impl.cc(85)] VizNullHypothesis is disabled (not a warning)
+[36150:1012/210655.059814:INFO:CONSOLE(1560)] "Uncaught Error: require() of ES Module /Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/node_modules/earcut/src/earcut.js from /Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/node_modules/pixi.js/lib/utils/utils.js not supported.
+Instead change the require of earcut.js in /Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/node_modules/pixi.js/lib/utils/utils.js to a dynamic import() which is available in all CommonJS modules.", source: node:internal/modules/cjs/loader (1560)
+[36150:1012/210655.060951:INFO:CONSOLE(2)] "%cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.", source: node:electron/js2c/renderer_init (2)
+[main] quit-after elapsed, terminating

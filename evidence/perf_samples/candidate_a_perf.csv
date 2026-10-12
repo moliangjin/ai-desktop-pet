@@ -1,0 +1,3 @@
+timestamp,action,fps,frame_ms_p50,frame_ms_p95,rss_mb,cpu_percent
+2026-10-12 20:24:11,idle,0.00,0.00,0.00,28.48,8.84
+2026-10-12 20:24:12,idle,0.00,0.00,0.00,28.78,4.63

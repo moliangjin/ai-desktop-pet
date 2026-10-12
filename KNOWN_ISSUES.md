@@ -1,6 +1,38 @@
 # 已知问题｜AI 智能陪伴桌宠 V0.0
 
-> 状态：第 38 轮更新（用户真实 Mac 报告 + 关键根因修复）｜2026-10-13 00:08
+> 状态：第 41 轮更新（候选 A 启动崩溃 Taskgated SIGKILL 已修复）｜2026-10-13 01:30
+
+## ISSUE-R41-01｜候选 A 启动崩溃 — 已修复 ✅
+
+**根因**：`~/Library/Logs/DiagnosticReports/PetCandidateA-*.ips` 崩溃报告
+显示：
+```
+"signal":"SIGKILL (Code Signature Invalid)"
+"termination":{"namespace":"CODESIGNING","indicator":"Taskgated Invalid Signature"}
+"codeSigningID":""
+```
+R38 / R39 阶段 agent 在 `build/` 编译产物后手工 `cp` 二进制到
+`_app_bundle/PetCandidateA.app/Contents/MacOS/PetCandidateA` 但**未重新做
+adhoc codesign**，原签名 hash 链与新二进制脱节，macOS 14 `taskgated`
+在 launchd 启动该 .app 时直接 SIGKILL。
+
+**修复**：
+1. `candidates/candidate_a_appkit/build.sh` 编译后自动 `codesign --force
+   --deep --sign -` 签整个 `_app_bundle/PetCandidateA.app` + 自验。
+2. `one_click_test/run_candidate_a.sh` 启动前主动 `codesign --verify`，
+   失败自动重新签名。
+3. `one_click_test/双击运行.command` 加入 `detect_launch_failure` 检测，
+   3 秒内进程未存活即打印 `signal`+`indicator`+崩溃报告路径，CSV 写
+   `LAUNCH_FAIL`，后续 5 项 GUI 记 `BLOCKED`。
+
+**验证**：open 启动 5/5 成功，直接执行 5/5 成功，0 新崩溃报告。
+
+## ISSUE-A1｜候选 A 完全不可见（用户真实 Mac 实测）
+
+**用户报告**（2026-10-12 23:45 真实 Mac mini M2 前台实测）：
+- 候选 A 桌宠可见：**n**（肉眼看不到）
+- 候选 A 鼠标响应：**n**
+- 候选 A 拖拽：**n**（受不可见问题阻断）
 
 ## ISSUE-A1｜候选 A 完全不可见（用户真实 Mac 实测）
 

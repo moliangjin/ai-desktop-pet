@@ -65,7 +65,30 @@ function createWindow() {
     });
     // T01 workaround: force the window into a translucent backing.
     mainWindow.setOpacity(0.999);
+    // V0.0 R38 fix: default the window to accepting events. R39 wires up
+    // a renderer-driven hit-test that flips this on/off per cursor position
+    // through the IPC channel `set-passthrough` below. We never toggle it
+    // 30/60 Hz from a timer in main — the renderer is the only place that
+    // knows whether the cursor is over the sprite hitbox.
     mainWindow.setIgnoreMouseEvents(false);
+
+    // Diagnostic: log window lifecycle.
+    mainWindow.on('ready-to-show', () => {
+        console.log('[main] window ready-to-show');
+    });
+    mainWindow.on('show', () => {
+        console.log('[main] window show');
+    });
+    mainWindow.on('blur', () => {
+        console.log('[main] window blur');
+    });
+    mainWindow.on('focus', () => {
+        console.log('[main] window focus');
+    });
+    mainWindow.on('closed', () => {
+        console.log('[main] window closed');
+    });
+
     mainWindow.loadFile(path.join(__dirname, 'renderer.html'));
     mainWindow.webContents.on('did-finish-load', () => {
         // Inject manifest content into the renderer rather than letting it
@@ -88,6 +111,10 @@ app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
     app.quit();
+});
+
+ipcMain.on('renderer-ready', (_evt, info) => {
+    console.log(`[main] renderer-ready: pixi=${info && info.version}`);
 });
 
 ipcMain.on('perf-sample', (_evt, sample) => {
@@ -115,4 +142,18 @@ ipcMain.on('action-switch', (_evt, action) => {
     if (mainWindow) {
         mainWindow.webContents.send('set-action', action);
     }
+});
+
+// V0.0 R39: renderer-driven transparent-area passthrough.
+//   - ignore=true  → window stops receiving events; with {forward:true}
+//     the underlying window still receives them (mouse click propagates).
+//   - ignore=false → window is interactive (sprite hitbox receives them).
+// Throttled to 5 Hz in the renderer so we do not spam this bridge.
+let lastPassthrough = null;
+ipcMain.on('set-passthrough', (_evt, ignore) => {
+    if (!mainWindow) return;
+    if (lastPassthrough === ignore) return;
+    lastPassthrough = ignore;
+    mainWindow.setIgnoreMouseEvents(!!ignore, { forward: true });
+    console.log(`[main] setIgnoreMouseEvents(${!!ignore}, forward=true) (R39 passthrough)`);
 });

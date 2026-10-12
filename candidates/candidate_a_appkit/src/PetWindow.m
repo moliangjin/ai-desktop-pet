@@ -3,13 +3,11 @@
 
 @interface PetWindow ()
 @property (nonatomic, strong) PetView *petView;
-@property (nonatomic, strong) NSTimer *trackingTimer;
 @end
 
 @implementation PetWindow
 
 + (NSWindow *)createWithFrame:(NSRect)frame manifestPath:(NSString *)manifestPath {
-    // Use NSWindow (not NSPanel) so we can opt into FullScreenAuxiliary behavior.
     NSUInteger style = NSWindowStyleMaskBorderless | NSWindowStyleMaskNonactivatingPanel;
     NSWindow *w = [[NSWindow alloc] initWithContentRect:frame
                                               styleMask:style
@@ -24,8 +22,8 @@
                               backing:NSBackingStoreBuffered
                                 defer:NO];
     if (self) {
-        // Aggressive transparency chain. Set in this order; several are
-        // required on macOS 14 to defeat the default opaque backing store.
+        // Aggressive transparency chain — required on macOS 14 to defeat the
+        // default opaque backing store on a borderless window.
         self.styleMask = NSWindowStyleMaskBorderless;
         self.opaque = NO;
         self.backgroundColor = [NSColor colorWithCalibratedRed:0 green:0 blue:0 alpha:0.0];
@@ -40,7 +38,6 @@
             self.titlebarAppearsTransparent = YES;
         }
         self.titleVisibility = NSWindowTitleHidden;
-        // Some macOS 14 sessions cache the backing store; force a re-issue.
         [self setOpaque:NO];
         [self setBackgroundColor:[NSColor clearColor]];
 
@@ -48,41 +45,34 @@
         _petView.store = [FrameStore new];
         _petView.sampler = [PerfSampler new];
         self.contentView = _petView;
-        // Force content view to layer-backed with explicit clear background.
-        self.contentView.wantsLayer = YES;
-        self.contentView.layer = [CALayer layer];
-        self.contentView.layer.opaque = NO;
-        self.contentView.layer.backgroundColor = CGColorGetConstantColor(kCGColorClear);
-        self.contentView.layerContentsRedrawPolicy = NSViewLayerContentsRedrawOnSetNeedsDisplay;
-        // Some macOS 14 sessions require setAlphaValue < 1 to opt into
-        // per-pixel compositing for borderless borderless windows.
+        // R38 fix: keep standard NSView drawRect path; do NOT force a CALayer
+        // (that would route rendering through empty updateLayer and the sprite
+        // would never draw).
         self.alphaValue = 0.999;
+        NSLog(@"[PetWindow] init frame=%@ size=%@ level=%ld",
+              NSStringFromRect(self.frame), NSStringFromSize(self.frame.size), (long)self.level);
 
         _manifestPath = [manifestPath copy];
         [self loadManifest];
 
-        // Tracking timer updates per-pixel passthrough decision.
-        __weak typeof(self) weakSelf = self;
-        _trackingTimer = [NSTimer scheduledTimerWithTimeInterval:1.0/30.0
-                                                         repeats:YES
-                                                           block:^(NSTimer *t) {
-            __strong typeof(weakSelf) self = weakSelf;
-            if (!self || self.passthrough) return;
-            NSPoint mp = [NSEvent mouseLocation];
-            NSRect wf = self.frame;
-            CGFloat localX = mp.x - wf.origin.x;
-            CGFloat localY = mp.y - wf.origin.y;
-            NSPoint local = NSMakePoint(localX, localY);
-            [self updateMouseRegionAt:local];
-        }];
+        // V0.0 R39: transparent-area passthrough is driven from PetView's
+        // 5 Hz hit-test loop (see PetView._advance). We intentionally do NOT
+        // install a 30 Hz / 60 Hz tracking timer here — those competed with
+        // mouseDown delivery in R37 and made clicks impossible. 5 Hz is slow
+        // enough to never fight a mouseDown (which can take 50–150 ms before
+        // AppKit recognizes it as a click) and fast enough that a cursor
+        // resting on transparent pixels starts passing clicks through to the
+        // underlying window within ~200 ms.
 
-        // Re-assert transparency after the window is on-screen.
+        // Re-assert transparency after the window is on-screen, in case the
+        // WindowServer cached a pre-update backing store.
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
             [self setOpaque:NO];
             [self setBackgroundColor:[NSColor clearColor]];
-            [self.contentView setWantsLayer:YES];
-            self.contentView.layer.backgroundColor = CGColorGetConstantColor(kCGColorClear);
+            [self.contentView setNeedsDisplay:YES];
+            NSLog(@"[PetWindow] post-show re-assert: opaque=%d alpha=%.3f",
+                  (int)self.isOpaque, self.alphaValue);
         });
     }
     return self;
@@ -98,17 +88,23 @@
     [self.petView setAction:@"idle"];
 }
 
+#pragma mark - Public passthrough API
+
+/// Whole-window passthrough is the PARTIAL mode used for T02 demonstrations
+/// where the user explicitly disables all role interaction. The normal
+/// path (per-hitbox passthrough) is implemented inside PetView and does not
+/// use this method.
 - (void)setWholeWindowPassthrough:(BOOL)p {
     self.passthrough = p;
     [self setIgnoresMouseEvents:p];
     NSLog(@"[PetWindow] whole-window passthrough=%@", @(p));
 }
 
+// Kept for backwards compatibility — the per-hitbox logic was migrated into
+// PetView._advance on the 5 Hz cadence. Manually invoking this is harmless.
 - (void)updateMouseRegionAt:(NSPoint)windowPoint {
     NSPoint local = [self.petView convertPoint:windowPoint fromView:nil];
     BOOL hit = [self.petView localPointHits:local];
-    BOOL current = self.ignoresMouseEvents;
-    if (current == !hit) return;
     [self setIgnoresMouseEvents:!hit];
 }
 

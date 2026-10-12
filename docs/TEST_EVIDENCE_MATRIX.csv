@@ -1,0 +1,21 @@
+﻿candidate,test_id,status,device_os,tested_at,steps_or_command,actual_result,evidence_path,issue_id,notes
+Candidate_A,T01,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T02,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T03,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T04,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T05,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T06,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T07,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T08,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T09,NOT_TESTED,,,,,,,unverified template
+Candidate_A,T10,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T01,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T02,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T03,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T04,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T05,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T06,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T07,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T08,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T09,NOT_TESTED,,,,,,,unverified template
+Candidate_B,T10,NOT_TESTED,,,,,,,unverified template

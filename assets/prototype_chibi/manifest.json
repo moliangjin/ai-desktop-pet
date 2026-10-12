@@ -1,0 +1,70 @@
+{
+  "schema_version": "0.0.1-prototype",
+  "character_id": "prototype_scientist_geometric",
+  "appearance_id": "prototype_default",
+  "display_name": "几何占位研究员（非正式角色立绘）",
+  "canvas_px": [256, 256],
+  "anchor_normalized": [0.5, 0.9],
+  "hitbox_normalized": [0.29, 0.24, 0.72, 0.87],
+  "atlas": {
+    "file": "atlas.png",
+    "columns": 8,
+    "rows": 4,
+    "frame_count": 26,
+    "frame_size_px": [256, 256]
+  },
+  "animation_order": ["idle", "walk", "jump", "drag"],
+  "actions": {
+    "idle": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "animations/idle/000.png",
+        "animations/idle/001.png",
+        "animations/idle/002.png",
+        "animations/idle/003.png",
+        "animations/idle/004.png",
+        "animations/idle/005.png"
+      ]
+    },
+    "walk": {
+      "fps": 12,
+      "loop": true,
+      "frames": [
+        "animations/walk/000.png",
+        "animations/walk/001.png",
+        "animations/walk/002.png",
+        "animations/walk/003.png",
+        "animations/walk/004.png",
+        "animations/walk/005.png",
+        "animations/walk/006.png",
+        "animations/walk/007.png"
+      ]
+    },
+    "jump": {
+      "fps": 12,
+      "loop": false,
+      "frames": [
+        "animations/jump/000.png",
+        "animations/jump/001.png",
+        "animations/jump/002.png",
+        "animations/jump/003.png",
+        "animations/jump/004.png",
+        "animations/jump/005.png",
+        "animations/jump/006.png",
+        "animations/jump/007.png"
+      ]
+    },
+    "drag": {
+      "fps": 8,
+      "loop": true,
+      "frames": [
+        "animations/drag/000.png",
+        "animations/drag/001.png",
+        "animations/drag/002.png",
+        "animations/drag/003.png"
+      ]
+    }
+  },
+  "license": "Generated locally for this technical prototype; use within this project; not a final brand asset."
+}

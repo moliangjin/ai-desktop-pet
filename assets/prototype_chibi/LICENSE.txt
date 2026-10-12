@@ -1,0 +1,1 @@
+Original deterministic test sprite graphics generated locally by Python/Pillow for this V0.0 proof of concept. No third-party artwork. For software prototype and testing only. NOT a final product character or replacement for commissioned artwork.

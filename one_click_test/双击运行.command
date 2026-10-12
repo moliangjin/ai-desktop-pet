@@ -1,266 +1,166 @@
 #!/bin/bash
-# 候选 A 与 B 一键双击启动（V0.0 第 41 轮 — 启动失败检测 + LAUNCH_FAIL 标记）
+# 双击运行.command — V0.0 R45 验收主控
 #
-# 关键改动：
-# 1. 启动后主动 ps -p $PID 或 pgrep 检测进程是否仍存在
-# 2. 候选 A 启动后如 3 秒内未见进程存活，查找 DiagnosticReports/PetCandidateA*.ips，
-#    把 LAUNCH_FAIL 写入 evidence/build_logs/user_visual_report.{csv,txt}，
-#    并打印中文错误提示 + 崩溃报告路径
-# 3. 不伪造 PASS：GUI 项若候选未启动全部记为 BLOCKED 或 NOT_TESTED
-# 4. 启动 ClickThroughProbe 探针窗口：同样检测存活
-# 5. 启动顺序：探针 → 候选 A → 候选 B；任一启动失败询问是否继续
+# 不再使用 terminal read y/n/skip（任务书 §二/§三）。
+# 改为：启动候选 → 启动 PetAcceptor 图形验收窗口 → 用户鼠标点击 7 项
+# 测试结果 → 用户关闭 PetAcceptor 后自动收集 JSON → 写统一 CSV
 set +e
-
 DST="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$DST" || { echo "FAIL: cannot cd to $DST"; exit 1; }
 
-PROBE="$DST/test_window/ClickThroughProbe/build/ClickThroughProbe.app/Contents/MacOS/ClickThroughProbe"
-if [ ! -x "$PROBE" ]; then
-    echo "[R41 构建] ClickThroughProbe 探针窗口不存在，先编译..."
-    bash "$DST/test_window/ClickThroughProbe/build.sh"
-fi
+# 验证 PetAcceptor 已构建
+ACCEPTOR="$DST/test_window/PetAcceptor/build/PetAcceptor.app/Contents/MacOS/PetAcceptor"
+[ -x "$ACCEPTOR" ] || bash "$DST/test_window/PetAcceptor/build.sh" || {
+    echo "FAIL: PetAcceptor build failed"
+    exit 2
+}
 
-TXT="$DST/evidence/build_logs/user_visual_report.txt"
+LOG_DIR="$DST/evidence/acceptor_runs"
 CSV="$DST/evidence/build_logs/user_visual_report.csv"
-LAUNCH_LOG_DIR="$DST/evidence/build_logs"
-mkdir -p "$LAUNCH_LOG_DIR"
+TXT="$DST/evidence/build_logs/user_visual_report.txt"
+mkdir -p "$LOG_DIR" "$(dirname "$CSV")"
+mkdir -p "$DST/evidence/build_logs"
+
 GIT_COMMIT=$(cd "$DST" && git log --oneline -1 2>/dev/null | head -1 | cut -d' ' -f1)
 GIT_TAG=$(cd "$DST" && git describe --tags --abbrev=0 2>/dev/null)
 GIT_BRANCH=$(cd "$DST" && git branch --show-current 2>/dev/null)
-if [ -z "$GIT_COMMIT" ]; then GIT_COMMIT="uncommitted"; fi
+[ -z "$GIT_COMMIT" ] && GIT_COMMIT="uncommitted"
+
+# 初始化 CSV（保证 header 正确）
+python3 "$DST/one_click_test/csv_builder.py" /dev/null "$CSV" 2>/dev/null || true
+if ! head -1 "$CSV" 2>/dev/null | grep -q "tested_at,candidate"; then
+    head -1 "$CSV" 2>/dev/null
+    # 修复：Python csv_builder 我们让它 idempotent 写 header
+    python3 -c "
+import csv, sys
+sys.path.insert(0, '$DST/one_click_test')
+from csv_builder import STABLE_FIELDS
+with open('$CSV', 'w', newline='', encoding='utf-8') as f:
+    csv.DictWriter(f, fieldnames=STABLE_FIELDS).writeheader()
+"
+fi
 
 cat > "$TXT" <<HEAD
 ==========================================
-  AI 桌宠 V0.0 — 用户肉眼验证报告（R41 修订）
+  AI 桌宠 V0.0 — R45 图形化验收报告
 ==========================================
   仓库: $DST
   分支: $GIT_BRANCH  Commit: $GIT_COMMIT  Tag: $GIT_TAG
   时间: $(date)
+  工具: PetAcceptor（AppKit GUI）+ 自动 launch 检测
+  本次测试: 候选 A 启动 + 候选 B 启动 → 自动收集 result JSON → CSV/TXT
 
-  提示：T06 多显示器本机未配置双屏 → 自动 NOT_TESTED
 HEAD
 
-cat > "$CSV" <<HEAD
-test_id,candidate,launch_status,visible,click,drag,transparent_passthrough,t05_focus_top_spaces,t06_multidisplay,commit,tested_at
-HEAD
-
-# --- 启动失败诊断 ---
-detect_launch_failure() {
-    local label="$1"   # candidate_a / candidate_b / probe
-    local pid="$2"
-    local app_bundle="$3"      # e.g. $DST/_app_bundle/PetCandidateA.app
-    sleep 3
-    if pgrep -f "$app_bundle/Contents/MacOS" > /dev/null; then
-        echo "OK"
-        return 0
-    fi
-    echo ""
-    echo "✗ $label 启动失败 — 进程在 3 秒内退出"
-    local latest_ips=$(ls -t ~/Library/Logs/DiagnosticReports/${label}*.ips 2>/dev/null | head -1)
-    local latest_log=$(ls -t "$LAUNCH_LOG_DIR/${label}_r41_launch.log" 2>/dev/null | head -1)
-    if [ -n "$latest_ips" ]; then
-        echo "  崩溃报告: $latest_ips"
-        # 提取关键错误
-        grep -o '"indicator":"[^"]*"' "$latest_ips" 2>/dev/null | head -1
-        grep -o '"signal":"[^"]*"' "$latest_ips" 2>/dev/null | head -1
-    fi
-    if [ -n "$latest_log" ]; then
-        echo "  启动日志: $latest_log"
-        tail -10 "$latest_log" 2>/dev/null
-    fi
-    echo ""
-    echo "  常见原因："
-    echo "  - macOS Taskgated 拒绝运行未签名 / 签名失效的二进制（SIGKILL + 'Code Signature Invalid'）"
-    echo "  - 候选 A 修复方法：codesign --force --deep --sign - '$app_bundle'"
-    return 1
-}
-
-wait_user() {
-    local prompt="$1"
-    local timeout="${2:-180}"
-    echo ""
-    echo ">>> $prompt"
-    echo "  输入 next/yes/no/skip (大小写皆可)；按回车 = 30s 后 timeout=skip"
-    local ans=""
-    local deadline=$((SECONDS + timeout))
-    # R43: 显式从 /dev/tty 读而不是 bash inherit 的 stdin。
-    # 之前版本 background-job 的 stdout/stderr 在某些 macOS bash 4 上
-    # 会污染 stdin，导致这里的 read 卡住。
-    while [ $SECONDS -lt $deadline ]; do
-        if read -t 5 -n 1 -r ans </dev/tty 2>/dev/null; then
-            echo
-            break
-        fi
-        # 旧版 30 秒 echo 改成 5 秒更频繁提醒
-        echo "[$(($deadline - $SECONDS))s 后自动 skip]"
-    done
-    case "$ans" in
-        y|Y|yes|YES) echo "yes" ;;
-        n|N|no|NO) echo "no" ;;
-        next|NEXT) echo "next" ;;
-        *) echo "skip" ;;
-    esac
-}
-
-kill_processes() {
-    osascript -e 'tell application "Pet A Test" to quit' 2>/dev/null
-    osascript -e 'tell application "Pet B Test" to quit' 2>/dev/null
-    osascript -e 'tell application "ClickThroughProbe" to quit' 2>/dev/null
-    pkill -f "PetCandidateA" 2>/dev/null
-    pkill -f "Electron.*src/main.js" 2>/dev/null
-    pkill -f "ClickThroughProbe" 2>/dev/null
-    sleep 1
-}
-
-# =========================================================================
-# 阶段 0: 启动 ClickThroughProbe 探针
-# =========================================================================
-echo "=========================================="
-echo " 阶段 0: 启动 ClickThroughProbe 探针"
-echo "=========================================="
-"$PROBE" > /tmp/click_through_probe.log 2>&1 &
-PROBE_PID=$!
-sleep 2
-PROBE_STATUS=$(detect_launch_failure "ClickThroughProbe" "$PROBE_PID" "$DST/test_window/ClickThroughProbe/build/ClickThroughProbe.app")
-if [ "$PROBE_STATUS" != "OK" ]; then
-    echo "探针启动失败，跳过所有后续透明区验证"
-fi
-echo ""
-
-# =========================================================================
+# ===========================================================================
 # 阶段 1: 候选 A
-# =========================================================================
-echo "=========================================="
-echo "=== 阶段 1/2: 候选 A (AppKit) ==="
-echo "=========================================="
-echo "提示：候选 A 启动后 256x256 桌宠应出现在 (600, 600) 附近"
-echo ""
-bash "$DST/one_click_test/run_candidate_a.sh" &
-A_RUN_PID=$!
+# ===========================================================================
+echo "==========================================" | tee -a "$TXT"
+echo " 阶段 1/2: 候选 A（AppKit + Objective-C）" | tee -a "$TXT"
+echo "==========================================" | tee -a "$TXT"
+echo "操作说明：" | tee -a "$TXT"
+echo " 1. PetCandidateA.app 应该自动启动在桌面 (600, 600) 位置" | tee -a "$TXT"
+echo " 2. 会出现 PetAcceptor 图形验收窗口（7 项 + 1 项单屏固定 disabled）" | tee -a "$TXT"
+echo " 3. 鼠标点击 Pass/Fail/无法测试 → 下一项；点 ■ 结束测试" | tee -a "$TXT"
+echo "" | tee -a "$TXT"
 
-A_LAUNCH=$(detect_launch_failure "PetCandidateA" "$A_RUN_PID" "$DST/_app_bundle/PetCandidateA.app")
-if [ "$A_LAUNCH" != "OK" ]; then
-    cat >> "$TXT" <<EOT
+A_RESULT=$(bash "$DST/one_click_test/run_pet_acceptor_a.sh" 2>&1 | tail -1)
+echo "候选 A result JSON: $A_RESULT" | tee -a "$TXT"
 
-【候选 A (AppKit) — 启动失败（LAUNCH_FAIL）】
-  launch_status: FAIL
-  后续 5 项 GUI 验证全部记为 BLOCKED
-EOT
-    echo "candidate_a,FAIL,BLOCKED,BLOCKED,BLOCKED,BLOCKED,BLOCKED,BLOCKED,${GIT_COMMIT},$(date -u +%FT%TZ)" >> "$CSV"
-    kill_processes
-    sleep 2
+# 写 CSV (1 行)
+if [ -n "$A_RESULT" ] && [ -f "$A_RESULT" ]; then
+    python3 "$DST/one_click_test/csv_builder.py" "$A_RESULT" "$CSV"
+    echo "候选 A 数据写入 CSV" | tee -a "$TXT"
 else
-    echo "候选 A 已启动 4 秒。开始 7 项分项验证"
-    echo ""
-
-    V_A=$(wait_user "1/7 候选 A 是否在桌面上肉眼可见？")
-    C_A=$(wait_user "2/7 鼠标点击角色是否有响应（拖拽姿势/动作切换）？")
-    D_A=$(wait_user "3/7 鼠标按住角色拖动到屏幕不同位置，是否跟随？")
-    T_A=$(wait_user "4/7 点击角色周围的透明区域（或点击探针按钮），能否让下层应用响应？")
-    S_A=$(wait_user "5/7 T05 焦点/置顶/Spaces：(a) 点击桌宠头部，候选 A 应抢到焦点 (b) ⌃←→ 切换 Spaces，桌宠是否跟随？")
-    MULTI_A=skip
-
-    case "$V_A" in yes|no|skip) ;; *) V_A=skip ;; esac
-    case "$C_A" in yes|no|skip) ;; *) C_A=skip ;; esac
-    case "$D_A" in yes|no|skip) ;; *) D_A=skip ;; esac
-    case "$T_A" in yes|no|skip) ;; *) T_A=skip ;; esac
-    case "$S_A" in yes|no|skip) ;; *) S_A=skip ;; esac
-
-    echo ""
-    echo "已记录候选 A 验证: launch=PASS visible=$V_A click=$C_A drag=$D_A transparent=$T_A t05=$S_A"
-    echo "candidate_a,PASS,${V_A},${C_A},${D_A},${T_A},${S_A},${MULTI_A},${GIT_COMMIT},$(date -u +%FT%TZ)" >> "$CSV"
-    cat >> "$TXT" <<EOT
-
-【候选 A (AppKit)】
-  launch_status: PASS
-  visible: $V_A
-  click: $C_A
-  drag: $D_A
-  transparent_passthrough: $T_A
-  t05_focus_top_spaces: $S_A
-  t06_multidisplay: $MULTI_A  # 单屏环境固定 NOT_TESTED
-EOT
-
-    kill_processes
-    sleep 2
+    echo "候选 A result 缺失，写入 NOT_TESTED 占位" | tee -a "$TXT"
+    cat > "$DST/evidence/acceptor_runs/missing_a_$(date +%H%M%S).json" <<JSON
+{"candidate":"candidate_a","version":"V0.0","commit":"$GIT_COMMIT","bundle_id":"com.test.petA","tested_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","overall":"NOT_TESTED","counts_pass":0,"counts_fail":0,"counts_not_tested":8,"counts_disabled":0,"launch_ok":false,"items":[]}
+JSON
+    MISSING_A=$(ls "$DST/evidence/acceptor_runs"/missing_a_*.json | tail -1)
+    python3 "$DST/one_click_test/csv_builder.py" "$MISSING_A" "$CSV"
 fi
 
-# =========================================================================
+# 收集当前结果做 A/B 对比汇总
+A_OVERALL=$(python3 -c "
+import json
+d = json.load(open('$A_RESULT'))
+print(d.get('overall', 'NOT_TESTED'))
+" 2>/dev/null || echo "NOT_TESTED")
+echo "" | tee -a "$TXT"
+echo "候选 A overall = $A_OVERALL" | tee -a "$TXT"
+
+# 清理探针
+pkill -f "ClickThroughProbe" 2>/dev/null
+sleep 1
+osascript -e 'tell application "Pet A Test" to quit' 2>/dev/null
+
+# ===========================================================================
 # 阶段 2: 候选 B
-# =========================================================================
-echo ""
-echo "=========================================="
-echo "=== 阶段 2/2: 候选 B (Electron) ==="
-echo "=========================================="
-echo "提示：候选 B 启动后 256x256 桌宠应出现在 (600, 600) 附近"
-echo ""
-bash "$DST/one_click_test/run_candidate_b.sh" &
-B_RUN_PID=$!
-sleep 6
+# ===========================================================================
+echo "" | tee -a "$TXT"
+echo "==========================================" | tee -a "$TXT"
+echo " 阶段 2/2: 候选 B（Electron + PixiJS）" | tee -a "$TXT"
+echo "==========================================" | tee -a "$TXT"
 
-B_LAUNCH="OK"   # 候选 B 用 node spawn，launch 阶段 fail 概率低
-if ! pgrep -f "Electron.*candidates/candidate_b" > /dev/null; then
-    B_LAUNCH="FAIL"
-    cat >> "$TXT" <<EOT
+B_RESULT=$(bash "$DST/one_click_test/run_pet_acceptor_b.sh" 2>&1 | tail -1)
+echo "候选 B result JSON: $B_RESULT" | tee -a "$TXT"
 
-【候选 B (Electron) — 启动失败（LAUNCH_FAIL）】
-  launch_status: FAIL
-  后续 5 项 GUI 验证全部记为 BLOCKED
-EOT
-    echo "candidate_b,FAIL,BLOCKED,BLOCKED,BLOCKED,BLOCKED,BLOCKED,BLOCKED,${GIT_COMMIT},$(date -u +%FT%TZ)" >> "$CSV"
-    kill_processes
-    sleep 2
+if [ -n "$B_RESULT" ] && [ -f "$B_RESULT" ]; then
+    python3 "$DST/one_click_test/csv_builder.py" "$B_RESULT" "$CSV"
 else
-    echo "候选 B 已启动 6 秒。开始 7 项分项验证"
-    echo ""
-
-    V_B=$(wait_user "1/7 候选 B 是否在桌面上肉眼可见？")
-    C_B=$(wait_user "2/7 鼠标点击角色是否有响应？")
-    D_B=$(wait_user "3/7 鼠标按住角色拖动，是否跟随？")
-    T_B=$(wait_user "4/7 点击透明区域（或点击探针按钮）能否让下层应用响应？")
-    S_B=$(wait_user "5/7 T05 焦点/置顶/Spaces：(a) 点击桌宠头部 (b) 切换 Spaces 桌宠是否跟随？")
-    MULTI_B=skip
-
-    case "$V_B" in yes|no|skip) ;; *) V_B=skip ;; esac
-    case "$C_B" in yes|no|skip) ;; *) C_B=skip ;; esac
-    case "$D_B" in yes|no|skip) ;; *) D_B=skip ;; esac
-    case "$T_B" in yes|no|skip) ;; *) T_B=skip ;; esac
-    case "$S_B" in yes|no|skip) ;; *) S_B=skip ;; esac
-
-    echo ""
-    echo "已记录候选 B 验证: launch=PASS visible=$V_B click=$C_B drag=$D_B transparent=$T_B t05=$S_B"
-    echo "candidate_b,PASS,${V_B},${C_B},${D_B},${T_B},${S_B},${MULTI_B},${GIT_COMMIT},$(date -u +%FT%TZ)" >> "$CSV"
-    cat >> "$TXT" <<EOT
-
-【候选 B (Electron)】
-  launch_status: PASS
-  visible: $V_B
-  click: $C_B
-  drag: $D_B
-  transparent_passthrough: $T_B
-  t05_focus_top_spaces: $S_B
-  t06_multidisplay: $MULTI_B  # 单屏环境固定 NOT_TESTED
-EOT
-
-    kill_processes
-    sleep 2
+    MISSING_B="$DST/evidence/acceptor_runs/missing_b_$(date +%H%M%S).json"
+    cat > "$MISSING_B" <<JSON
+{"candidate":"candidate_b","version":"V0.0","commit":"$GIT_COMMIT","bundle_id":"com.test.petB","tested_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","overall":"NOT_TESTED","counts_pass":0,"counts_fail":0,"counts_not_tested":8,"counts_disabled":0,"launch_ok":false,"items":[]}
+JSON
+    python3 "$DST/one_click_test/csv_builder.py" "$MISSING_B" "$CSV"
 fi
 
-# ===== 最终汇总 =====
-cat >> "$TXT" <<EOT
+B_OVERALL=$(python3 -c "
+import json
+d = json.load(open('$B_RESULT'))
+print(d.get('overall', 'NOT_TESTED'))
+" 2>/dev/null || echo "NOT_TESTED")
 
-==========================================
-  汇总（机器可读 CSV: $CSV）
-==========================================
-EOT
-cat "$CSV" >> "$TXT"
-cat "$CSV"
+pkill -f "ClickThroughProbe" 2>/dev/null
+sleep 1
+pkill -f "Electron.*candidates/candidate_b" 2>/dev/null
+sleep 1
+
+# ===========================================================================
+# 阶段 3: 校验 + 汇总
+# ===========================================================================
+echo "" | tee -a "$TXT"
+echo "==========================================" | tee -a "$TXT"
+echo " CSV 字段数 + 状态枚举校验" | tee -a "$TXT"
+echo "==========================================" | tee -a "$TXT"
+
+VALIDATE=$(python3 "$DST/one_click_test/csv_builder.py" "$A_RESULT" "$CSV" --validate 2>&1)
+if [ -z "$VALIDATE" ]; then
+    echo "✓ CSV schema 严格 19 字段" | tee -a "$TXT"
+else
+    echo "✗ CSV schema 错误: $VALIDATE" | tee -a "$TXT"
+fi
+
+# 中间汇总
+{
+    echo ""
+    echo "=========================================="
+    echo " 最终汇总（机器可读 CSV: $CSV）"
+    echo "=========================================="
+    cat "$CSV"
+    echo ""
+    echo "=========================================="
+    echo " A/B 对比"
+    echo "=========================================="
+    printf "%-15s %-12s\n" "CANDIDATE" "OVERALL"
+    printf "%-15s %-12s\n" "candidate_a" "$A_OVERALL"
+    printf "%-15s %-12s\n" "candidate_b" "$B_OVERALL"
+} | tee -a "$TXT"
 
 echo ""
 echo "=========================================="
-echo " 验证完成。请把以下文件回传 MiniMax："
-echo "   $TXT"
-echo "   $CSV"
+echo " 验证完成。证据文件："
+echo "   CSV: $CSV"
+echo "   TXT: $TXT"
+echo "   原始 result JSON: $DST/evidence/acceptor_runs/"
 echo "=========================================="
-echo "$TXT"
-echo "$CSV"

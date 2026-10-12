@@ -1,3 +1,36 @@
+## ISSUE-R45-01｜terminal y/n/skip 验收失效 — 已修复 ✅
+
+**用户报告**（R43 终轮）：双击 `双击运行.command` 后两个候选脚本都报告
+PASS，但终端没有正常展示七项问题；最终所有 7 项都被记为 skip。
+此前的 CSV 表头 11 列、数据行 10 列错位。
+
+**根因**：
+1. R43 .command 依赖 terminal `read y/n/skip` 命令行交互，macOS bash 4 上
+   `read -t 30` 在 background job 占用了 stdin 时会卡住。
+2. R43 CSV 表头与数据列数不一致（11 vs 10 字段错位）。
+
+**修复**：V0.0 R45
+- 新建 `test_window/PetAcceptor/main.m` 独立 AppKit 验收 GUI：
+  - 7 项 + 1 项单屏固定 DISABLED，
+  - **通过 / 失败 / 无法测试** 三按钮，
+  - **上一步 / 下一项 / 结束测试** 导航，
+  - 备注 NSTextView（卡顿/倒立/闪烁随手记），
+  - 进度 / 汇总实时显示。
+  - 用户关闭窗口或点 ■结束测试 → 自动写 result JSON。
+- 新建 `one_click_test/csv_builder.py`：严格 19 列 STABLE_FIELDS，
+  状态枚举 {PASS, FAIL, NOT_TESTED, DISABLED_SINGLE_DISPLAY}，自动校验。
+- 重写 `双击运行.command`：不再使用 terminal read；改为启动候选 →
+  启动 PetAcceptor GUI → 收集 JSON → csv_builder → CSV/TXT。
+- 新建 `run_pet_acceptor_a.sh` / `_b.sh`：4 秒 launch 检测 → launch_fail
+  自动合成 FAIL 占位 JSON。
+- 新建 `test_window/PetAcceptor/build_self_tests.sh` 跑 9 个 headless 自测
+  case (all_pass/all_fail/mixed/abort_midway/prev_edit/launch_fail_a/b/
+  csv_schema/switch_a_to_b) 验证 PetAcceptor 自身。
+- 新建 `e2e_runner.sh` 跑 3 个端到端模拟 (e2e_normal / e2e_a_fail /
+  e2e_csv_audit) 验证 .command 全链路 (含 CSV schema 严格校验)。
+
+**自测结果**：9/9 case + 3/3 scenario 全 PASS；CSV 严格 19 列对齐。
+
 ## ISSUE-R43-01｜候选 A 桌宠倒立 — 已修复 ✅
 
 **用户报告**（R43 实测）：候选 A 桌宠在屏幕底部脚踩空、人物呈倒立状，

@@ -1,0 +1,12 @@
+# Build artifacts
+build/
+node_modules/
+*.o
+*.dSYM/
+
+# Test artifacts that should be regenerated
+evidence/test_t*/
+*.log.tmp
+
+# OS
+.DS_Store

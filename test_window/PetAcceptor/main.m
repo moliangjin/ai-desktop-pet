@@ -1,29 +1,27 @@
 // test_window/PetAcceptor/main.m
 //
 // V0.0 R45 图形化验收窗口
+// V0.0 R47 lifecycle 可靠性修复
 //
-// 独立的 AppKit app，作为桌宠的人机验收 UI。
-//
-// 用法（正常模式）：
-//   PetAcceptor \
-//     --candidate candidate_a \
-//     --version V0.0 \
-//     --commit 4826c99 \
-//     --bundle-id com.test.petA \
-//     --result-out /path/to/acceptor_result.json \
-//     --auto-launch-ms 0
-//
-// 用法（自测模式，由 build_self_tests.sh 调用）：
-//   PetAcceptor --self-test <case_name>
-//   PetAcceptor --self-test all
-//   case 列表： all_pass, all_fail, mixed, abort_midway, prev_edit,
-//              launch_fail_a, launch_fail_b, csv_schema, switch_a_to_b
+// 主要修复点 (R47):
+//   1. 禁用 setActivationPolicy:NSApplicationActivationPolicyRegular；改
+//      NSApplicationActivationPolicyAccessory，避免后台启动被 macOS "stale
+//      app cleanup" / activateIgnoringOtherApps 强制主线程信号杀死。
+//      验收窗口通过 orderFrontRegardless:YES 强制显现在前台。
+//   2. 全面 NSLog 诊断：每一处 init/run/willTerminate 写明路径。
+//   3. applicationWillTerminate 区分终止原因：USER_CLICKED_END /
+//      USER_CLOSED_WINDOW / RUNNER_CRASH_SIGNAL，并把 termination_reason
+//      写入 result JSON。
+//   4. 默认 result 包含 launch_status（LAUNCH_PASS/LAUNCH_FAIL/GUI_NOT_TESTED）。
+//   5. 不再有 silent exit：writeResultAndExit 必须在 exit 前落盘 JSON。
+//   6. applicationShouldTerminateAfterLastWindowClosed:NO + 用户可以显式
+//      关闭 → applicationShouldTerminate 拦截询问后再退。
 //
 // 退出码：
-//   0 = 全部 Pass
-//   1 = 出现 Fail
-//   2 = 受阻 (NOT_TESTED due to user abort)
-//   3 = 自测阶段启动失败 (内部分支自己仿真)
+//   0 = 用户点击■ 正常结束（USER_CLICKED_END）
+//   1 = 至少 1 个 FAIL
+//   2 = 用户关闭窗口但未点■ (USER_CLOSED_WINDOW)
+//   3 = NSApp terminate 被 system signal 触发 (RUNNER_CRASH_SIGNAL)
 
 #import <AppKit/AppKit.h>
 
@@ -33,39 +31,28 @@ static NSString *const kStatusFail      = @"FAIL";
 static NSString *const kStatusNotTested = @"NOT_TESTED";
 static NSString *const kStatusDisabled  = @"DISABLED_SINGLE_DISPLAY";
 
-// 7 项 + 1 项单屏固定 DISABLED，共 8 项
-// 单屏固定 disabled 是硬规则 — 主控可以显式 override，namespace 见 --no-disable-multidisplay
+static NSString *const kLaunchPass = @"LAUNCH_PASS";
+static NSString *const kLaunchFail = @"LAUNCH_FAIL";
+static NSString *const kGUINotTested = @"GUI_NOT_TESTED";
+static NSString *const kTermUserClickedEnd  = @"USER_CLICKED_END";
+static NSString *const kTermUserClosedWindow = @"USER_CLOSED_WINDOW";
+static NSString *const kTermRunnerCrash = @"RUNNER_CRASH_SIGNAL";
+
 typedef struct {
     NSString *key;
-    NSString *label;            // 显示在窗口顶部的问题文案
-    NSString *instructions;     // 用户做该测试时的具体动作
+    NSString *label;
+    NSString *instructions;
 } TestItem;
 
 static TestItem kItems[] = {
-    { @"launch",
-      @"1/8 启动验证",
-      @"候选应在桌面上出现一个 256x256 的桌宠窗口，无崩溃提示。" },
-    { @"display",
-      @"2/8 显示方向",
-      @"人物应正向站立，头朝上脚朝下，无镜像、倒立或上下颠倒。" },
-    { @"animation",
-      @"3/8 动画表现",
-      @"眨眼与上下浮动应自然，无明显卡顿、撕裂或全黑帧。" },
-    { @"click",
-      @"4/8 点击反馈",
-      @"用鼠标点击桌宠主体，能看到动作切换或姿态变化。" },
-    { @"drag",
-      @"5/8 拖动同步",
-      @"鼠标按下并拖动桌宠，桌宠位置应与鼠标基本同步，无跳变。" },
-    { @"transparent",
-      @"6/8 透明区穿透",
-      @"点击桌宠周围空白处，‘点这里测试穿透’ 按钮的计数应 +1。" },
-    { @"window_focus",
-      @"7/8 焦点与置顶",
-      @"候选不应抢走探针窗口 / Terminal 的输入焦点；切换 Spaces 桌宠应跟随。" },
-    { @"multidisplay",
-      @"8/8 多显示器",
-      @"需要多屏环境验证 — 本机单屏固定 DISABLED（可选项，不会影响验收）。" },
+    { @"launch",          @"1/8 启动验证",     @"候选应在桌面上出现一个 256x256 的桌宠窗口，无崩溃提示。" },
+    { @"display",         @"2/8 显示方向",     @"人物应正向站立，头朝上脚朝下，无镜像、倒立或上下颠倒。" },
+    { @"animation",       @"3/8 动画表现",     @"眨眼与上下浮动应自然，无明显卡顿、撕裂或全黑帧。" },
+    { @"click",           @"4/8 点击反馈",     @"用鼠标点击桌宠主体，能看到动作切换或姿态变化。" },
+    { @"drag",            @"5/8 拖动同步",     @"鼠标按下并拖动桌宠，桌宠位置应与鼠标基本同步，无跳变。" },
+    { @"transparent",     @"6/8 透明区穿透",   @"点击桌宠周围空白处，‘点这里测试穿透’按钮的计数应 +1。" },
+    { @"window_focus",    @"7/8 焦点与置顶",   @"候选不应抢走探针窗口 / Terminal 的输入焦点；切换 Spaces 桌宠应跟随。" },
+    { @"multidisplay",    @"8/8 多显示器",     @"需要多屏环境验证 — 本机单屏固定 DISABLED（可选项，不会影响验收）。" },
 };
 static const NSUInteger kItemsCount = sizeof(kItems) / sizeof(kItems[0]);
 
@@ -81,29 +68,28 @@ static NSString *nowISO(void) {
 @interface PetAcceptorAppDelegate : NSObject <NSApplicationDelegate>
 @property (nonatomic, strong) NSWindow *window;
 
-// 配置
-@property (nonatomic, copy) NSString *candidate;       // candidate_a or candidate_b
-@property (nonatomic, copy) NSString *version;          // "V0.0"
-@property (nonatomic, copy) NSString *commit;           // git hash
-@property (nonatomic, copy) NSString *bundleId;         // com.test.petA
-@property (nonatomic, copy) NSString *resultOutPath;    // /path/to/result.json
-@property (nonatomic)         BOOL enableMultidisplay;  // 默认 NO (单屏)
+@property (nonatomic, copy) NSString *candidate;
+@property (nonatomic, copy) NSString *version;
+@property (nonatomic, copy) NSString *commit;
+@property (nonatomic, copy) NSString *bundleId;
+@property (nonatomic, copy) NSString *resultOutPath;
+@property (nonatomic, copy) NSString *launchStatus;   // LAUNCH_PASS / LAUNCH_FAIL (外部传)
+@property (nonatomic)         BOOL enableMultidisplay;
 
-// 运行时状态
-@property (nonatomic) NSInteger currentIndex;           // 当前题号
+@property (nonatomic) NSInteger currentIndex;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *answers;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSString *> *notes;
+@property (nonatomic, strong) NSMutableArray<NSString *> *lifecycleLog;  // R47 诊断
 
-// 自测模式
-@property (nonatomic, copy) NSString *selfTestCase;     // nil = 正常模式
+@property (nonatomic, copy) NSString *selfTestCase;
 
-// UI 引用
 @property (nonatomic, strong) NSTextField *headerLabel;
 @property (nonatomic, strong) NSTextField *versionLabel;
 @property (nonatomic, strong) NSTextField *questionLabel;
 @property (nonatomic, strong) NSTextField *instructionsLabel;
 @property (nonatomic, strong) NSTextField *progressLabel;
 @property (nonatomic, strong) NSTextField *summaryLabel;
+@property (nonatomic, strong) NSTextField *lifecycleLabel;
 @property (nonatomic, strong) NSTextView  *notesView;
 @property (nonatomic, strong) NSButton *passBtn;
 @property (nonatomic, strong) NSButton *failBtn;
@@ -111,6 +97,9 @@ static NSString *nowISO(void) {
 @property (nonatomic, strong) NSButton *prevBtn;
 @property (nonatomic, strong) NSButton *nextBtn;
 @property (nonatomic, strong) NSButton *endBtn;
+
+// 终止原因（被 applicationWillTerminate 使用）
+@property (nonatomic, copy) NSString *terminationReason;
 @end
 
 @implementation PetAcceptorAppDelegate
@@ -122,74 +111,88 @@ static NSString *nowISO(void) {
         _commit = @"unknown";
         _bundleId = @"";
         _enableMultidisplay = NO;
+        _launchStatus = kGUINotTested;
         _currentIndex = 0;
         _answers = [NSMutableDictionary new];
         _notes   = [NSMutableDictionary new];
+        _lifecycleLog = [NSMutableArray new];
+        _terminationReason = kTermRunnerCrash;  // 默认最坏情况
     }
     return self;
+}
+
+- (void)logLife:(NSString *)event {
+    NSString *t = nowISO();
+    NSString *line = [NSString stringWithFormat:@"[%@] %@", t, event];
+    [self.lifecycleLog addObject:line];
+    NSLog(@"%@", line);
+    if (self.lifecycleLabel) {
+        self.lifecycleLabel.stringValue = [NSString stringWithFormat:@"最新事件: %@", event];
+    }
 }
 
 #pragma mark - UI Construction
 
 - (void)buildUI {
-    NSRect winFrame = NSMakeRect(220, 180, 720, 540);
+    NSRect winFrame = NSMakeRect(220, 180, 760, 580);
     self.window = [[NSWindow alloc] initWithContentRect:winFrame
                                               styleMask:NSWindowStyleMaskTitled |
                                                          NSWindowStyleMaskClosable |
                                                          NSWindowStyleMaskMiniaturizable
                                                 backing:NSBackingStoreBuffered
                                                   defer:NO];
-    self.window.title = @"AI 桌宠 V0.0 — 人机验收窗口";
+    self.window.title = @"AI 桌宠 V0.0 · 人机验收窗口（点击 ■ 结束测试才退出）";
     self.window.releasedWhenClosed = NO;
     [self.window makeKeyAndOrderFront:nil];
+    [self.window orderFrontRegardless];
 
     NSView *root = self.window.contentView;
 
-    // --- 顶部信息区 ---
-    self.headerLabel   = [self mkLabel:@"加载中…" frame:NSMakeRect(20, 480, 660, 30) font:[NSFont systemFontOfSize:18 weight:NSFontWeightBold]];
-    self.versionLabel  = [self mkLabel:@""          frame:NSMakeRect(20, 455, 660, 18) font:[NSFont systemFontOfSize:11]];
+    // 顶部信息
+    self.headerLabel   = [self mkLabel:@"加载中…" frame:NSMakeRect(20, 520, 720, 30) font:[NSFont systemFontOfSize:18 weight:NSFontWeightBold]];
+    self.versionLabel  = [self mkLabel:@""          frame:NSMakeRect(20, 495, 720, 18) font:[NSFont systemFontOfSize:11]];
+    self.lifecycleLabel= [self mkLabel:@"等待启动…"  frame:NSMakeRect(20, 472, 720, 18) font:[NSFont monospacedSystemFontOfSize:10 weight:NSFontWeightRegular]];
+    self.lifecycleLabel.textColor = [NSColor secondaryLabelColor];
     [root addSubview:self.headerLabel];
     [root addSubview:self.versionLabel];
+    [root addSubview:self.lifecycleLabel];
 
-    // --- 当前问题区 ---
-    self.questionLabel = [self mkLabel:@"" frame:NSMakeRect(20, 380, 660, 36) font:[NSFont systemFontOfSize:15 weight:NSFontWeightSemibold]];
-    self.instructionsLabel = [self mkLabel:@"" frame:NSMakeRect(20, 320, 660, 60) font:[NSFont systemFontOfSize:13]];
+    // 当前问题
+    self.questionLabel = [self mkLabel:@"" frame:NSMakeRect(20, 400, 720, 36) font:[NSFont systemFontOfSize:15 weight:NSFontWeightSemibold]];
+    self.instructionsLabel = [self mkLabel:@"" frame:NSMakeRect(20, 340, 720, 60) font:[NSFont systemFontOfSize:13]];
     self.instructionsLabel.maximumNumberOfLines = 4;
     self.instructionsLabel.lineBreakMode = NSLineBreakByWordWrapping;
     [root addSubview:self.questionLabel];
     [root addSubview:self.instructionsLabel];
 
-    // --- 三个状态按钮 ---
-    self.passBtn   = [self mkButton:@"✓ 通过 (PASS)"          action:@selector(onPass:)    frame:NSMakeRect(20, 270, 180, 44)];
-    self.failBtn   = [self mkButton:@"✗ 失败 (FAIL)"          action:@selector(onFail:)    frame:NSMakeRect(220, 270, 180, 44)];
-    self.unableBtn = [self mkButton:@"○ 无法测试 (NOT_TESTED)" action:@selector(onUnable:) frame:NSMakeRect(420, 270, 200, 44)];
+    // 3 个状态按钮
+    self.passBtn   = [self mkButton:@"✓ 通过 (PASS)"          action:@selector(onPass:)    frame:NSMakeRect(20, 290, 200, 44)];
+    self.failBtn   = [self mkButton:@"✗ 失败 (FAIL)"          action:@selector(onFail:)    frame:NSMakeRect(240, 290, 200, 44)];
+    self.unableBtn = [self mkButton:@"○ 无法测试 (NOT_TESTED)" action:@selector(onUnable:) frame:NSMakeRect(460, 290, 240, 44)];
     [root addSubview:self.passBtn];
     [root addSubview:self.failBtn];
     [root addSubview:self.unableBtn];
 
-    // --- 上一项 / 下一项 / 结束 ---
-    self.prevBtn = [self mkButton:@"◀ 上一项" action:@selector(onPrev:) frame:NSMakeRect(20, 215, 140, 36)];
-    self.nextBtn = [self mkButton:@"下一项 ▶" action:@selector(onNext:) frame:NSMakeRect(180, 215, 140, 36)];
-    self.endBtn  = [self mkButton:@"■ 结束测试"  action:@selector(onEnd:)  frame:NSMakeRect(340, 215, 140, 36)];
+    self.prevBtn = [self mkButton:@"◀ 上一项" action:@selector(onPrev:) frame:NSMakeRect(20, 235, 140, 36)];
+    self.nextBtn = [self mkButton:@"下一项 ▶" action:@selector(onNext:) frame:NSMakeRect(180, 235, 140, 36)];
+    self.endBtn  = [self mkButton:@"■ 结束测试（必点才退出）"  action:@selector(onEnd:)  frame:NSMakeRect(340, 235, 240, 36)];
     [root addSubview:self.prevBtn];
     [root addSubview:self.nextBtn];
     [root addSubview:self.endBtn];
 
-    // --- 备注 ---
-    NSTextField *notesTitle = [self mkLabel:@"备注（可选，记下你看到的现象）:" frame:NSMakeRect(20, 188, 660, 18) font:[NSFont systemFontOfSize:11]];
+    NSTextField *notesTitle = [self mkLabel:@"备注（可选，记下你看到的现象）:" frame:NSMakeRect(20, 200, 720, 18) font:[NSFont systemFontOfSize:11]];
     [root addSubview:notesTitle];
-    NSScrollView *sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(20, 80, 660, 100)];
+    NSScrollView *sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(20, 80, 720, 110)];
     sv.hasVerticalScroller = YES;
     sv.borderType = NSBezelBorder;
-    self.notesView = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, 640, 96)];
+    self.notesView = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, 700, 106)];
     self.notesView.editable = YES;
     self.notesView.font = [NSFont systemFontOfSize:12];
     sv.documentView = self.notesView;
     [root addSubview:sv];
 
-    // --- 进度 + 汇总 ---
-    self.progressLabel = [self mkLabel:@"0/8" frame:NSMakeRect(20, 50, 660, 18) font:[NSFont systemFontOfSize:11 weight:NSFontWeightMedium]];
-    self.summaryLabel  = [self mkLabel:@"" frame:NSMakeRect(20, 25, 660, 18) font:[NSFont monospacedSystemFontOfSize:11 weight:NSFontWeightRegular]];
+    self.progressLabel = [self mkLabel:@"0/8" frame:NSMakeRect(20, 50, 720, 18) font:[NSFont systemFontOfSize:11 weight:NSFontWeightMedium]];
+    self.summaryLabel  = [self mkLabel:@"" frame:NSMakeRect(20, 25, 720, 18) font:[NSFont monospacedSystemFontOfSize:11 weight:NSFontWeightRegular]];
     [root addSubview:self.progressLabel];
     [root addSubview:self.summaryLabel];
 }
@@ -212,11 +215,11 @@ static NSString *nowISO(void) {
 
 - (void)refreshView {
     NSString *cand = self.candidate ?: @"unknown";
-    self.headerLabel.stringValue = [NSString stringWithFormat:@"AI 桌宠 V0.0 · 当前候选：%@", cand];
+    self.headerLabel.stringValue = [NSString stringWithFormat:@"AI 桌宠 V0.0 · 当前候选：%@  ·  Launch: %@", cand, self.launchStatus];
     self.versionLabel.stringValue = [NSString stringWithFormat:@"Build: V0.0  |  Commit: %@  |  Bundle ID: %@  |  Time: %@", self.commit, self.bundleId, nowISO()];
 
     if (self.currentIndex >= kItemsCount) {
-        self.questionLabel.stringValue = @"所有项已答完，请点 ■ 结束测试。";
+        self.questionLabel.stringValue = @"所有项已答完。请点 ■ 结束测试（不要关窗，不要用 ⌘Q）。";
         self.instructionsLabel.stringValue = @"";
         self.progressLabel.stringValue = [NSString stringWithFormat:@"%lu/%lu", (unsigned long)kItemsCount, (unsigned long)kItemsCount];
     } else {
@@ -228,7 +231,6 @@ static NSString *nowISO(void) {
                                           (unsigned long)(self.currentIndex + 1), (unsigned long)kItemsCount, ti.key, answered];
     }
 
-    // 汇总
     NSUInteger pass = 0, fail = 0, nt = 0, dis = 0;
     for (NSUInteger i = 0; i < kItemsCount; i++) {
         NSString *s = self.answers[kItems[i].key];
@@ -238,8 +240,8 @@ static NSString *nowISO(void) {
         else if ([s isEqualToString:kStatusNotTested]) nt++;
         else if ([s isEqualToString:kStatusDisabled]) dis++;
     }
-    self.summaryLabel.stringValue = [NSString stringWithFormat:@"汇总 PASS=%lu  FAIL=%lu  NOT_TESTED=%lu  DISABLED=%lu",
-                                     (unsigned long)pass, (unsigned long)fail, (unsigned long)nt, (unsigned long)dis];
+    self.summaryLabel.stringValue = [NSString stringWithFormat:@"汇总 PASS=%lu  FAIL=%lu  NOT_TESTED=%lu  DISABLED=%lu  | 当前任务对象：%@",
+                                     (unsigned long)pass, (unsigned long)fail, (unsigned long)nt, (unsigned long)dis, self.terminationReason];
 }
 
 #pragma mark - Actions
@@ -248,7 +250,6 @@ static NSString *nowISO(void) {
     if (self.currentIndex >= kItemsCount) return nil;
     return kItems[self.currentIndex].key;
 }
-
 - (BOOL)isMultidisplayDisabledForCurrent {
     if (self.currentIndex >= kItemsCount) return NO;
     TestItem ti = kItems[self.currentIndex];
@@ -262,9 +263,8 @@ static NSString *nowISO(void) {
     NSString *notes = [self.notesView.string copy];
     if (notes.length > 0) self.notes[k] = notes;
     [self.notesView setString:@""];
-    if (advance) {
-        self.currentIndex++;
-    }
+    if (advance) self.currentIndex++;
+    [self logLife:[NSString stringWithFormat:@"answer key=%@ status=%@ advance=%d", k, status, (int)advance]];
     [self refreshView];
 }
 
@@ -278,20 +278,24 @@ static NSString *nowISO(void) {
     NSString *prevKey = [self currentKey];
     NSString *prevNotes = self.notes[prevKey];
     if (prevNotes) [self.notesView setString:prevNotes];
+    [self logLife:@"onPrev"];
     [self refreshView];
 }
 - (void)onNext:(id)s {
     if (self.currentIndex + 1 >= kItemsCount) return;
     NSString *k = [self currentKey];
-    if (!self.answers[k]) self.answers[k] = kStatusNotTested;  // 未答 → NOT_TESTED（不允许默认 PASS）
+    if (!self.answers[k]) self.answers[k] = kStatusNotTested;
     self.currentIndex++;
     NSString *nextKey = [self currentKey];
     NSString *nextNotes = self.notes[nextKey];
     if (nextNotes) [self.notesView setString:nextNotes];
+    [self logLife:@"onNext"];
     [self refreshView];
 }
 - (void)onEnd:(id)s {
-    [self writeResultAndExit];
+    [self logLife:@"onEnd: USER_CLICKED_END"];
+    self.terminationReason = kTermUserClickedEnd;
+    [self writeResultAndExit:0];
 }
 
 #pragma mark - Persistence
@@ -304,7 +308,6 @@ static NSString *nowISO(void) {
         TestItem ti = kItems[i];
         NSString *status = self.answers[ti.key];
         if (!status) status = kStatusNotTested;
-        // 单屏硬规则覆盖
         if ([ti.key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) {
             status = kStatusDisabled;
         }
@@ -323,6 +326,9 @@ static NSString *nowISO(void) {
     if (hasFail) overall = kStatusFail;
     else if (pass == 0) overall = kStatusNotTested;
 
+    // launch_ok 独立于 GUI 反馈：来自外部 launch_status（ps 检测）
+    BOOL launch_ok = [self.launchStatus isEqualToString:kLaunchPass];
+
     return @{
         @"candidate": self.candidate ?: @"",
         @"version": self.version ?: @"V0.0",
@@ -330,52 +336,88 @@ static NSString *nowISO(void) {
         @"bundle_id": self.bundleId ?: @"",
         @"tested_at": nowISO(),
         @"overall": overall,
+        @"launch_status": self.launchStatus ?: kGUINotTested,
+        @"launch_ok": @(launch_ok),
+        @"termination_reason": self.terminationReason ?: kTermRunnerCrash,
         @"counts_pass": @(pass),
         @"counts_fail": @(fail),
         @"counts_not_tested": @(nt),
         @"counts_disabled": @(dis),
         @"items": items,
+        @"lifecycle_log": self.lifecycleLog,
     };
 }
 
-- (void)writeResultAndExit {
+- (void)writeResultAndExit:(int)code {
     NSDictionary *result = [self buildResultDict];
     NSError *err = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:result options:NSJSONWritingPrettyPrinted error:&err];
     NSString *out = self.resultOutPath ?: @"/tmp/acceptor_result.json";
     if (data) {
-        [data writeToFile:out options:NSDataWritingAtomic error:&err];
-        NSLog(@"[PetAcceptor] wrote %@ (%lu bytes)", out, (unsigned long)data.length);
+        BOOL ok = [data writeToFile:out options:NSDataWritingAtomic error:&err];
+        [self logLife:[NSString stringWithFormat:@"writeResultAndExit path=%@ bytes=%lu ok=%@ exit=%d",
+                       out, (unsigned long)data.length, @(ok), code]];
     }
-    NSString *overall = result[@"overall"];
-    int code = 0;
-    if ([overall isEqualToString:kStatusFail]) code = 1;
-    else if ([overall isEqualToString:kStatusNotTested]) code = 2;
-    [NSApp terminate:nil];
-    exit(code);
+    fflush(stdout); fflush(stderr);
+    if (code == 0) {
+        [NSApp terminate:nil];
+        exit(0);
+    } else {
+        // 不调 NSApp terminate (避免触发 willTerminate 再写第二份)
+        exit(code);
+    }
 }
 
 #pragma mark - App lifecycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notif {
+    [self logLife:[NSString stringWithFormat:@"applicationDidFinishLaunching candidate=%@ commit=%@ launch=%@",
+                   self.candidate ?: @"?", self.commit ?: @"?", self.launchStatus ?: @"?"]];
     [self buildUI];
     [self refreshView];
 
-    // 启动模式：正常 GUI / 自测
+    // 不再有"启动后 0.2s 自动 self-test"！
+    // 只在 --self-test 时才 dispatch_after 调 runSelfTest
     if (self.selfTestCase.length > 0) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.2 * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
             [self runSelfTest:self.selfTestCase];
         });
     }
+
+    // 定期 heartbeat 写入 lifecycle（便于 task 书 §六 自动化 120s wait 监控）
+    [self logLife:@"main run loop entered; GUI 等待用户操作"];
 }
 
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSNotification *)n {
-    return YES;
+    // R47：默认 NO。用户关闭窗 → 走 applicationShouldTerminate → 标 USER_CLOSED_WINDOW
+    return NO;
+}
+
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+    [self logLife:@"applicationShouldTerminate called"];
+    if ([self.terminationReason isEqualToString:kTermUserClickedEnd]) {
+        // 已经在 onEnd 中写过 JSON
+        return NSTerminateNow;
+    }
+    if (!self.terminationReason || [self.terminationReason isEqualToString:kTermRunnerCrash]) {
+        self.terminationReason = kTermUserClosedWindow;
+    }
+    // 关窗 → 立刻落盘 JSON + 退出
+    NSString *overall = [self buildResultDict][@"overall"];
+    int code = 0;
+    if ([overall isEqualToString:kStatusFail]) code = 1;
+    else if ([overall isEqualToString:kStatusNotTested]) code = 2;
+    if ([self.terminationReason isEqualToString:kTermUserClosedWindow]) code = 2;
+    [self writeResultAndExit:code];
+    return NSTerminateNow;  // unreachable，但 keep compiler happy
 }
 
 - (void)applicationWillTerminate:(NSNotification *)n {
-    // 用户关窗时也写一份结果（未答项默认 NOT_TESTED）
+    // 仅在 onEnd → applicationShouldTerminate 的 NSTerminateNow 分支触发
+    // 如果是 applicationWillTerminate 触发的，再补一份保险写盘
+    [self logLife:[NSString stringWithFormat:@"applicationWillTerminate reason=%@",
+                   self.terminationReason ?: @"?"]];
     if (self.resultOutPath.length > 0) {
         NSDictionary *result = [self buildResultDict];
         NSError *err = nil;
@@ -387,19 +429,27 @@ static NSString *nowISO(void) {
 #pragma mark - Self-tests (R45 §5)
 
 - (void)runSelfTest:(NSString *)caseName {
-    NSLog(@"[PetAcceptor] self-test case=%@", caseName);
+    [self logLife:[NSString stringWithFormat:@"self-test case=%@", caseName]];
+    NSString * (^_kstatus)(NSUInteger i) = ^NSString *(NSUInteger i) {
+        if (i == 0) return @"PASS";
+        if (i == 1) return @"FAIL";
+        if (i == 2) return @"NOT_TESTED";
+        if (i == 3) return @"DISABLED_SINGLE_DISPLAY";
+        return @"";
+    };
+
     if ([caseName isEqualToString:@"all_pass"]) {
         for (NSUInteger i = 0; i < kItemsCount; i++) {
             if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
             self.answers[kItems[i].key] = kStatusPass;
         }
-        [self writeResultAndExit];
+        [self writeResultAndExit:0];
     } else if ([caseName isEqualToString:@"all_fail"]) {
         for (NSUInteger i = 0; i < kItemsCount; i++) {
             if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
             self.answers[kItems[i].key] = kStatusFail;
         }
-        [self writeResultAndExit];
+        [self writeResultAndExit:1];
     } else if ([caseName isEqualToString:@"mixed"]) {
         // launch=PASS, display=PASS, animation=FAIL, click=NOT_TESTED,
         // drag=PASS, transparent=NOT_TESTED, window_focus=PASS, multidisplay=DISABLED
@@ -415,52 +465,52 @@ static NSString *nowISO(void) {
             }
         }
         self.notes[@"animation"] = @"明显卡顿";
-        [self writeResultAndExit];
+        [self writeResultAndExit:1];
     } else if ([caseName isEqualToString:@"abort_midway"]) {
-        // 只答前 3 项，然后退出 — 后面应保持 NOT_TESTED
         self.answers[@"launch"]   = kStatusPass;
         self.answers[@"display"]  = kStatusPass;
         self.answers[@"animation"] = kStatusFail;
-        // 其余不答 → 退出后填 NOT_TESTED
         self.notes[@"animation"] = @"卡顿严重";
-        [self writeResultAndExit];
+        [self writeResultAndExit:1];
     } else if ([caseName isEqualToString:@"prev_edit"]) {
-        // 第一轮答全部 PASS，然后跳回改 1 项为 FAIL
         for (NSUInteger i = 0; i < kItemsCount; i++) {
             if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
             self.answers[kItems[i].key] = kStatusPass;
         }
-        [self recordAnswer:kStatusFail advance:NO];  // first item (launch) was the current
-        [self writeResultAndExit];
+        [self recordAnswer:kStatusFail advance:NO];
+        [self writeResultAndExit:1];
     } else if ([caseName isEqualToString:@"launch_fail_a"] || [caseName isEqualToString:@"launch_fail_b"]) {
-        // 模拟"候选启动失败"：launch=FAIL → 后面强制 NOT_TESTED
         self.answers[@"launch"] = kStatusFail;
-        // 即使后面写 PASS，逻辑上无法实测；以 NOT_TESTED 兜底
         for (NSUInteger i = 1; i < kItemsCount; i++) {
             if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
             self.answers[kItems[i].key] = kStatusNotTested;
         }
-        [self writeResultAndExit];
+        [self writeResultAndExit:1];
     } else if ([caseName isEqualToString:@"csv_schema"]) {
-        // 全部 PASS，验证 candidate/commit/version 都写入了文件
         for (NSUInteger i = 0; i < kItemsCount; i++) {
             if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
             self.answers[kItems[i].key] = kStatusPass;
         }
-        [self writeResultAndExit];
+        [self writeResultAndExit:0];
     } else if ([caseName isEqualToString:@"switch_a_to_b"]) {
         for (NSUInteger i = 0; i < kItemsCount; i++) {
             if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
             self.answers[kItems[i].key] = kStatusPass;
         }
-        [self writeResultAndExit];
-    } else if ([caseName isEqualToString:@"all"]) {
-        // 调用脚本外部循环，本 case 只打印 OK
-        NSLog(@"[PetAcceptor] all self-tests placeholder — run via build_self_tests.sh");
-        [self writeResultAndExit];
+        [self writeResultAndExit:0];
+    } else if ([caseName isEqualToString:@"wait_120s"]) {
+        // R47: 启动后不退出，仅 NSLog；外部脚本 120s 后 kill 验证无自动结束
+        for (NSUInteger i = 0; i < kItemsCount; i++) {
+            if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
+            // 不写任何答案，全 NOT_TESTED — 等外部 kill
+        }
+        self.terminationReason = @"GUI_NEVER_INTERACTED";
+        // 故意不调 writeResultAndExit，等待外部 SIGTERM
+        // 结果将由 willTerminate 兜底
+        return;
     } else {
-        NSLog(@"[PetAcceptor] unknown self-test case '%@'; not answering anything", caseName);
-        [self writeResultAndExit];
+        [self logLife:[NSString stringWithFormat:@"unknown self-test case=%@", caseName]];
+        [self writeResultAndExit:2];
     }
 }
 
@@ -473,9 +523,10 @@ int main(int argc, const char *argv[]) {
         NSApplication *app = [NSApplication sharedApplication];
         PetAcceptorAppDelegate *delegate = [PetAcceptorAppDelegate new];
         app.delegate = delegate;
-        [app setActivationPolicy:NSApplicationActivationPolicyRegular];
 
-        // 解析 CLI
+        // R47：改用 Accessory 策略，避免 macOS "stale app cleanup" 信号杀掉
+        [app setActivationPolicy:NSApplicationActivationPolicyAccessory];
+
         NSArray *args = [[NSProcessInfo processInfo] arguments];
         for (NSUInteger i = 1; i < args.count; i++) {
             NSString *a = args[i];
@@ -484,12 +535,12 @@ int main(int argc, const char *argv[]) {
             else if ([a isEqualToString:@"--commit"] && i+1 < args.count) delegate.commit = args[++i];
             else if ([a isEqualToString:@"--bundle-id"] && i+1 < args.count) delegate.bundleId = args[++i];
             else if ([a isEqualToString:@"--result-out"] && i+1 < args.count) delegate.resultOutPath = args[++i];
+            else if ([a isEqualToString:@"--launch-status"] && i+1 < args.count) delegate.launchStatus = args[++i];
             else if ([a isEqualToString:@"--enable-multidisplay"]) delegate.enableMultidisplay = YES;
             else if ([a isEqualToString:@"--self-test"] && i+1 < args.count) delegate.selfTestCase = args[++i];
         }
 
-        // 关键：让 AppKit 接管 run loop
-        [app activateIgnoringOtherApps:YES];
+        NSLog(@"[PetAcceptor] start argv count=%lu candidate=%@", (unsigned long)args.count, delegate.candidate);
         [app run];
     }
     return 0;

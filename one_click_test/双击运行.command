@@ -1,95 +1,72 @@
 #!/bin/bash
-# 双击运行.command — V0.0 R45 验收主控
+# 双击运行.command — V0.0 R47 验收主控 (run_id 隔离版)
 #
-# 不再使用 terminal read y/n/skip（任务书 §二/§三）。
-# 改为：启动候选 → 启动 PetAcceptor 图形验收窗口 → 用户鼠标点击 7 项
-# 测试结果 → 用户关闭 PetAcceptor 后自动收集 JSON → 写统一 CSV
+# 每次运行生成独立 run_id，证据全部归档在 evidence/acceptor_runs/<run_id>/ 目录内。
+# 本轮 CSV 含且仅含本轮 A、B 两条数据；历史数据另存为 .csv.HISTORY。
 set +e
 DST="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$DST" || { echo "FAIL: cannot cd to $DST"; exit 1; }
 
-# 验证 PetAcceptor 已构建
 ACCEPTOR="$DST/test_window/PetAcceptor/build/PetAcceptor.app/Contents/MacOS/PetAcceptor"
-[ -x "$ACCEPTOR" ] || bash "$DST/test_window/PetAcceptor/build.sh" || {
-    echo "FAIL: PetAcceptor build failed"
-    exit 2
-}
+[ -x "$ACCEPTOR" ] || bash "$DST/test_window/PetAcceptor/build.sh" || { echo "FAIL: PetAcceptor build failed"; exit 2; }
 
-LOG_DIR="$DST/evidence/acceptor_runs"
-CSV="$DST/evidence/build_logs/user_visual_report.csv"
-TXT="$DST/evidence/build_logs/user_visual_report.txt"
-mkdir -p "$LOG_DIR" "$(dirname "$CSV")"
-mkdir -p "$DST/evidence/build_logs"
+# R47：每轮独立 run_id 目录
+RUN_TS=$(date +%Y%m%d_%H%M%S)
+RUN_ID="r47_${RUN_TS}"
+LOG_DIR="$DST/evidence/acceptor_runs/${RUN_ID}"
+mkdir -p "$LOG_DIR"
 
-GIT_COMMIT=$(cd "$DST" && git log --oneline -1 2>/dev/null | head -1 | cut -d' ' -f1)
+GIT_COMMIT=$(cd "$DST" && git rev-parse HEAD 2>/dev/null | head -c 7)
 GIT_TAG=$(cd "$DST" && git describe --tags --abbrev=0 2>/dev/null)
 GIT_BRANCH=$(cd "$DST" && git branch --show-current 2>/dev/null)
 [ -z "$GIT_COMMIT" ] && GIT_COMMIT="uncommitted"
 
-# 初始化 CSV（保证 header 正确）
-python3 "$DST/one_click_test/csv_builder.py" /dev/null "$CSV" 2>/dev/null || true
-if ! head -1 "$CSV" 2>/dev/null | grep -q "tested_at,candidate"; then
-    head -1 "$CSV" 2>/dev/null
-    # 修复：Python csv_builder 我们让它 idempotent 写 header
-    python3 -c "
-import csv, sys
-sys.path.insert(0, '$DST/one_click_test')
-from csv_builder import STABLE_FIELDS
-with open('$CSV', 'w', newline='', encoding='utf-8') as f:
-    csv.DictWriter(f, fieldnames=STABLE_FIELDS).writeheader()
-"
-fi
+# 本轮 CSV / TXT：只含本轮 A+B，不混入历史
+CSV="$LOG_DIR/user_visual_report.csv"
+TXT="$LOG_DIR/user_visual_report.txt"
 
 cat > "$TXT" <<HEAD
 ==========================================
-  AI 桌宠 V0.0 — R45 图形化验收报告
+  AI 桌宠 V0.0 — R47 图形化验收报告
 ==========================================
+  RUN_ID: $RUN_ID
   仓库: $DST
   分支: $GIT_BRANCH  Commit: $GIT_COMMIT  Tag: $GIT_TAG
   时间: $(date)
-  工具: PetAcceptor（AppKit GUI）+ 自动 launch 检测
-  本次测试: 候选 A 启动 + 候选 B 启动 → 自动收集 result JSON → CSV/TXT
+  工具: PetAcceptor (AppKit GUI, NSApplicationActivationPolicyAccessory)
+  流程: PetCandidate 启动 → ps 检测 → --launch-status 传参 → GUI 等用户操作
+        → ■ 结束测试 → 自动写 result JSON → csv_builder → 本轮 CSV
 
 HEAD
+
+# 写 CSV header
+python3 "$DST/one_click_test/csv_builder.py" /dev/null "$CSV" 2>/dev/null || true
+python3 -c "
+import csv
+with open('$CSV', 'w', newline='', encoding='utf-8') as f:
+    writer = csv.writer(f)
+    writer.writerow(['tested_at','candidate','version','commit','bundle_id','launch_status','launch_ok','overall','launch','display','animation','click','drag','transparent','window_focus','multidisplay','notes','result_path','build_log_path','runtime_log_path'])
+"
 
 # ===========================================================================
 # 阶段 1: 候选 A
 # ===========================================================================
+echo "" >> "$TXT"
 echo "==========================================" | tee -a "$TXT"
 echo " 阶段 1/2: 候选 A（AppKit + Objective-C）" | tee -a "$TXT"
+echo " RUN_ID=$RUN_ID" | tee -a "$TXT"
 echo "==========================================" | tee -a "$TXT"
-echo "操作说明：" | tee -a "$TXT"
-echo " 1. PetCandidateA.app 应该自动启动在桌面 (600, 600) 位置" | tee -a "$TXT"
-echo " 2. 会出现 PetAcceptor 图形验收窗口（7 项 + 1 项单屏固定 disabled）" | tee -a "$TXT"
-echo " 3. 鼠标点击 Pass/Fail/无法测试 → 下一项；点 ■ 结束测试" | tee -a "$TXT"
-echo "" | tee -a "$TXT"
 
+# 调用启动脚本 — 它返回 result 路径，**必须**等 PetAcceptor 真正退出（用户点■ OR 关窗被拦截）
 A_RESULT=$(bash "$DST/one_click_test/run_pet_acceptor_a.sh" 2>&1 | tail -1)
 echo "候选 A result JSON: $A_RESULT" | tee -a "$TXT"
 
-# 写 CSV (1 行)
+# 写 CSV（只 append 本轮 A 一行；用 build_csv_row.py）
 if [ -n "$A_RESULT" ] && [ -f "$A_RESULT" ]; then
     python3 "$DST/one_click_test/csv_builder.py" "$A_RESULT" "$CSV"
-    echo "候选 A 数据写入 CSV" | tee -a "$TXT"
-else
-    echo "候选 A result 缺失，写入 NOT_TESTED 占位" | tee -a "$TXT"
-    cat > "$DST/evidence/acceptor_runs/missing_a_$(date +%H%M%S).json" <<JSON
-{"candidate":"candidate_a","version":"V0.0","commit":"$GIT_COMMIT","bundle_id":"com.test.petA","tested_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","overall":"NOT_TESTED","counts_pass":0,"counts_fail":0,"counts_not_tested":8,"counts_disabled":0,"launch_ok":false,"items":[]}
-JSON
-    MISSING_A=$(ls "$DST/evidence/acceptor_runs"/missing_a_*.json | tail -1)
-    python3 "$DST/one_click_test/csv_builder.py" "$MISSING_A" "$CSV"
 fi
 
-# 收集当前结果做 A/B 对比汇总
-A_OVERALL=$(python3 -c "
-import json
-d = json.load(open('$A_RESULT'))
-print(d.get('overall', 'NOT_TESTED'))
-" 2>/dev/null || echo "NOT_TESTED")
-echo "" | tee -a "$TXT"
-echo "候选 A overall = $A_OVERALL" | tee -a "$TXT"
-
-# 清理探针
+# 清理探针 + A
 pkill -f "ClickThroughProbe" 2>/dev/null
 sleep 1
 osascript -e 'tell application "Pet A Test" to quit' 2>/dev/null
@@ -97,9 +74,10 @@ osascript -e 'tell application "Pet A Test" to quit' 2>/dev/null
 # ===========================================================================
 # 阶段 2: 候选 B
 # ===========================================================================
-echo "" | tee -a "$TXT"
+echo "" >> "$TXT"
 echo "==========================================" | tee -a "$TXT"
 echo " 阶段 2/2: 候选 B（Electron + PixiJS）" | tee -a "$TXT"
+echo " RUN_ID=$RUN_ID" | tee -a "$TXT"
 echo "==========================================" | tee -a "$TXT"
 
 B_RESULT=$(bash "$DST/one_click_test/run_pet_acceptor_b.sh" 2>&1 | tail -1)
@@ -107,60 +85,90 @@ echo "候选 B result JSON: $B_RESULT" | tee -a "$TXT"
 
 if [ -n "$B_RESULT" ] && [ -f "$B_RESULT" ]; then
     python3 "$DST/one_click_test/csv_builder.py" "$B_RESULT" "$CSV"
-else
-    MISSING_B="$DST/evidence/acceptor_runs/missing_b_$(date +%H%M%S).json"
-    cat > "$MISSING_B" <<JSON
-{"candidate":"candidate_b","version":"V0.0","commit":"$GIT_COMMIT","bundle_id":"com.test.petB","tested_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","overall":"NOT_TESTED","counts_pass":0,"counts_fail":0,"counts_not_tested":8,"counts_disabled":0,"launch_ok":false,"items":[]}
-JSON
-    python3 "$DST/one_click_test/csv_builder.py" "$MISSING_B" "$CSV"
 fi
 
-B_OVERALL=$(python3 -c "
-import json
-d = json.load(open('$B_RESULT'))
-print(d.get('overall', 'NOT_TESTED'))
-" 2>/dev/null || echo "NOT_TESTED")
-
 pkill -f "ClickThroughProbe" 2>/dev/null
-sleep 1
 pkill -f "Electron.*candidates/candidate_b" 2>/dev/null
 sleep 1
 
 # ===========================================================================
 # 阶段 3: 校验 + 汇总
 # ===========================================================================
-echo "" | tee -a "$TXT"
+echo "" >> "$TXT"
 echo "==========================================" | tee -a "$TXT"
-echo " CSV 字段数 + 状态枚举校验" | tee -a "$TXT"
+echo " CSV 校验 + A/B 对比" | tee -a "$TXT"
 echo "==========================================" | tee -a "$TXT"
 
-VALIDATE=$(python3 "$DST/one_click_test/csv_builder.py" "$A_RESULT" "$CSV" --validate 2>&1)
-if [ -z "$VALIDATE" ]; then
-    echo "✓ CSV schema 严格 19 字段" | tee -a "$TXT"
-else
-    echo "✗ CSV schema 错误: $VALIDATE" | tee -a "$TXT"
-fi
+# 业务校验：必须只有 2 数据行，A 一次，B 一次，不重复
+python3 - "$CSV" >> "$TXT" <<'PY'
+import csv, sys, os
+fp = sys.argv[1]
+if not os.path.exists(fp):
+    print("BUSINESS VALIDATION FAIL — CSV missing")
+    sys.exit(1)
+with open(fp) as f:
+    rows = list(csv.reader(f))
+header = rows[0]
+data = rows[1:]
+EXPECTED_FIELDS = len(header)
+print(f"schema: header cols={EXPECTED_FIELDS}")
+ok_schema = all(len(r) == EXPECTED_FIELDS for r in data)
+print(f"  schema ALL OK = {ok_schema}")
+# 业务校验
+candidates = [r[1] for r in data] if data else []
+unique_cands = set(candidates)
+print(f"  data rows={len(data)}, unique candidates={len(unique_cands)} ({sorted(unique_cands)})")
+ok_business = (len(data) == 2 and unique_cands == {"candidate_a", "candidate_b"})
+print(f"  business check (exactly 2 rows, A+B) = {ok_business}")
+if ok_schema and ok_business:
+    print("ALL OK")
+else:
+    print("VALIDATION FAILED")
+    sys.exit(1)
+PY
 
-# 中间汇总
+# A/B 对比
+A_OVERALL=$(python3 -c "
+import json
+try:
+    d = json.load(open('$A_RESULT'))
+    print(d.get('overall', 'NOT_TESTED'))
+except Exception: print('NOT_TESTED')
+")
+B_OVERALL=$(python3 -c "
+import json
+try:
+    d = json.load(open('$B_RESULT'))
+    print(d.get('overall', 'NOT_TESTED'))
+except Exception: print('NOT_TESTED')
+")
+
 {
     echo ""
     echo "=========================================="
-    echo " 最终汇总（机器可读 CSV: $CSV）"
+    echo " 最终汇总"
     echo "=========================================="
-    cat "$CSV"
     echo ""
-    echo "=========================================="
-    echo " A/B 对比"
-    echo "=========================================="
+    echo "## A/B 对比"
     printf "%-15s %-12s\n" "CANDIDATE" "OVERALL"
     printf "%-15s %-12s\n" "candidate_a" "$A_OVERALL"
     printf "%-15s %-12s\n" "candidate_b" "$B_OVERALL"
+    echo ""
+    echo "## CSV ($(basename "$CSV"))"
+    cat "$CSV"
 } | tee -a "$TXT"
 
+# 提示用户回传
 echo ""
-echo "=========================================="
-echo " 验证完成。证据文件："
-echo "   CSV: $CSV"
-echo "   TXT: $TXT"
-echo "   原始 result JSON: $DST/evidence/acceptor_runs/"
-echo "=========================================="
+echo "==========================================" | tee -a "$TXT"
+echo " RUN_ID=$RUN_ID 完成" | tee -a "$TXT"
+echo "" | tee -a "$TXT"
+echo "请把以下两份文件回传 MiniMax：" | tee -a "$TXT"
+echo "   $CSV" | tee -a "$TXT"
+echo "   $TXT" | tee -a "$TXT"
+echo "" | tee -a "$TXT"
+echo "本轮的全部 result JSON、runtime log 都在：" | tee -a "$TXT"
+echo "   $LOG_DIR" | tee -a "$TXT"
+echo "==========================================" | tee -a "$TXT"
+echo "$CSV"
+echo "$TXT"

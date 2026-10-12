@@ -1,10 +1,7 @@
 #!/bin/bash
-# one_click_test/run_pet_acceptor_b.sh
-#
-# 启动候选 B (Electron + PixiJS) + PetAcceptor 图形验收窗口
+# one_click_test/run_pet_acceptor_b.sh — 候选 B 版 (Electron + PixiJS)
 set -e
 DST="/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0"
-BUNDLE="$DST/candidates/candidate_b_electronpixir/build/PetCandidateB.app"
 ACCEPTOR="$DST/test_window/PetAcceptor/build/PetAcceptor.app/Contents/MacOS/PetAcceptor"
 PROBE="$DST/test_window/ClickThroughProbe/build/ClickThroughProbe.app/Contents/MacOS/ClickThroughProbe"
 
@@ -16,50 +13,56 @@ LOG="$LOG_DIR/${RUN_ID}.log"
 RUNTIME_LOG="$LOG_DIR/${RUN_ID}_runtime.log"
 RESULT="$LOG_DIR/${RUN_ID}_result.json"
 
-GIT_COMMIT=$(cd "$DST" && git log --oneline -1 2>/dev/null | head -1 | cut -d' ' -f1)
+GIT_COMMIT=$(cd "$DST" && git rev-parse HEAD 2>/dev/null | head -c 7)
 if [ -z "$GIT_COMMIT" ]; then GIT_COMMIT="uncommitted"; fi
 
-# --- 1. 启动探针 ---
-pkill -f "ClickThroughProbe" 2>/dev/null || true
-sleep 1
-"$PROBE" </dev/null >/dev/null 2>&1 &
-PROBE_PID=$!
-sleep 2
-echo "[run_pet_acceptor_b] probe PID=$PROBE_PID" >> "$LOG"
+NOW="$(date +%Y-%m-%dT%H:%M:%S+08:00)"
 
-# --- 2. 启动候选 B ---
-pkill -f "Electron.*candidates/candidate_b" 2>/dev/null || true
-sleep 1
-# B 用的是 raw node + electron，不是 .app bundle；直接调入口脚本
-B_ENTRY="$DST/candidates/candidate_b_electronpixir/src/main.js"
-echo "" > "$RUNTIME_LOG"
-
-if [ ! -f "$B_ENTRY" ]; then
+write_launch_fail_result() {
     cat > "$RESULT" <<JSON
 {
   "candidate": "candidate_b",
   "version": "V0.0",
   "commit": "$GIT_COMMIT",
   "bundle_id": "com.test.petB",
-  "tested_at": "$(date +%Y-%m-%dT%H:%M:%S+08:00)",
+  "tested_at": "$NOW",
   "overall": "FAIL",
+  "launch_status": "LAUNCH_FAIL",
+  "launch_ok": false,
+  "termination_reason": "RUNNER_LAUNCH_FAIL",
   "counts_pass": 0,
   "counts_fail": 1,
   "counts_not_tested": 7,
   "counts_disabled": 0,
-  "launch_ok": false,
   "items": [
-    {"key":"launch","label":"1/8 启动验证","status":"FAIL","notes":"$B_ENTRY 缺失;R45 候选 B 入口未就绪"},
-    {"key":"display","label":"2/8 显示方向","status":"NOT_TESTED","notes":""},
-    {"key":"animation","label":"3/8 动画表现","status":"NOT_TESTED","notes":""},
-    {"key":"click","label":"4/8 点击反馈","status":"NOT_TESTED","notes":""},
-    {"key":"drag","label":"5/8 拖动同步","status":"NOT_TESTED","notes":""},
-    {"key":"transparent","label":"6/8 透明区穿透","status":"NOT_TESTED","notes":""},
-    {"key":"window_focus","label":"7/8 焦点与置顶","status":"NOT_TESTED","notes":""},
-    {"key":"multidisplay","label":"8/8 多显示器","status":"DISABLED_SINGLE_DISPLAY","notes":""}
+    {"key":"launch","label":"1/8 启动验证","status":"FAIL","notes":"Electron 进程在 6 秒内退出;详细诊断见 $RUNTIME_LOG"},
+    {"key":"display","label":"2/8","status":"NOT_TESTED","notes":""},
+    {"key":"animation","label":"3/8","status":"NOT_TESTED","notes":""},
+    {"key":"click","label":"4/8","status":"NOT_TESTED","notes":""},
+    {"key":"drag","label":"5/8","status":"NOT_TESTED","notes":""},
+    {"key":"transparent","label":"6/8","status":"NOT_TESTED","notes":""},
+    {"key":"window_focus","label":"7/8","status":"NOT_TESTED","notes":""},
+    {"key":"multidisplay","label":"8/8","status":"DISABLED_SINGLE_DISPLAY","notes":""}
   ]
 }
 JSON
+}
+
+# --- 启动探针 ---
+pkill -f "ClickThroughProbe" 2>/dev/null || true
+sleep 1
+"$PROBE" </dev/null >/dev/null 2>&1 &
+PROBE_PID=$!
+sleep 2
+
+# --- 启动候选 B ---
+pkill -f "Electron.*candidates/candidate_b" 2>/dev/null || true
+sleep 1
+B_ENTRY="$DST/candidates/candidate_b_electronpixir/src/main.js"
+echo "" > "$RUNTIME_LOG"
+
+if [ ! -f "$B_ENTRY" ]; then
+    write_launch_fail_result
     pkill -f "ClickThroughProbe" 2>/dev/null || true
     echo "$RESULT"
     exit 0
@@ -75,57 +78,37 @@ cd "$DST/candidates/candidate_b_electronpixir"
         >> "$RUNTIME_LOG" 2>&1
 ) &
 CAND_PID=$!
-echo "[run_pet_acceptor_b] candidate B PID=$CAND_PID" >> "$LOG"
 sleep 6
 
+LAUNCH_STATUS="LAUNCH_PASS"
 if ! ps -p $CAND_PID > /dev/null; then
-    cat > "$RESULT" <<JSON
-{
-  "candidate": "candidate_b",
-  "version": "V0.0",
-  "commit": "$GIT_COMMIT",
-  "bundle_id": "com.test.petB",
-  "tested_at": "$(date +%Y-%m-%dT%H:%M:%S+08:00)",
-  "overall": "FAIL",
-  "counts_pass": 0,
-  "counts_fail": 1,
-  "counts_not_tested": 7,
-  "counts_disabled": 0,
-  "launch_ok": false,
-  "items": [
-    {"key":"launch","label":"1/8 启动验证","status":"FAIL","notes":"Electron 进程在 6 秒内退出;详细诊断见 $RUNTIME_LOG"},
-    {"key":"display","label":"2/8 显示方向","status":"NOT_TESTED","notes":""},
-    {"key":"animation","label":"3/8 动画表现","status":"NOT_TESTED","notes":""},
-    {"key":"click","label":"4/8 点击反馈","status":"NOT_TESTED","notes":""},
-    {"key":"drag","label":"5/8 拖动同步","status":"NOT_TESTED","notes":""},
-    {"key":"transparent","label":"6/8 透明区穿透","status":"NOT_TESTED","notes":""},
-    {"key":"window_focus","label":"7/8 焦点与置顶","status":"NOT_TESTED","notes":""},
-    {"key":"multidisplay","label":"8/8 多显示器","status":"DISABLED_SINGLE_DISPLAY","notes":""}
-  ]
-}
-JSON
+    LAUNCH_STATUS="LAUNCH_FAIL"
+fi
+
+if [ "$LAUNCH_STATUS" = "LAUNCH_FAIL" ]; then
+    write_launch_fail_result
     pkill -f "ClickThroughProbe" 2>/dev/null || true
     echo "$RESULT"
     exit 0
 fi
 
-# --- 3. 启动 PetAcceptor ---
+# --- 启动 PetAcceptor ---
 (
     exec "$ACCEPTOR" \
         --candidate candidate_b \
         --version V0.0 \
         --commit "$GIT_COMMIT" \
         --bundle-id com.test.petB \
+        --launch-status "$LAUNCH_STATUS" \
         --result-out "$RESULT" \
         < /dev/null
 ) &
 ACC_PID=$!
-echo "[run_pet_acceptor_b] PetAcceptor PID=$ACC_PID" >> "$LOG"
+echo "[run_pet_acceptor_b] PetAcceptor PID=$ACC_PID launch=$LAUNCH_STATUS" >> "$LOG"
 wait $ACC_PID
 ACC_RC=$?
 echo "[run_pet_acceptor_b] PetAcceptor exit=$ACC_RC" >> "$LOG"
 
-# --- 4. 清理 ---
 pkill -f "Electron.*candidates/candidate_b" 2>/dev/null || true
 pkill -f "ClickThroughProbe" 2>/dev/null || true
 sleep 1
@@ -133,6 +116,13 @@ sleep 1
 if [ -f "$RESULT" ]; then
     echo "$RESULT"
 else
-    echo '{"candidate":"candidate_b","overall":"NOT_TESTED","items":[]}' > "$RESULT"
+    cat > "$RESULT" <<JSON
+{
+  "candidate": "candidate_b","version":"V0.0","commit":"$GIT_COMMIT","bundle_id":"com.test.petB",
+  "tested_at":"$NOW","overall":"NOT_TESTED","launch_status":"$LAUNCH_STATUS","launch_ok":true,
+  "termination_reason":"RUNNER_NO_RESULT","counts_pass":0,"counts_fail":0,
+  "counts_not_tested":8,"counts_disabled":0,"items":[]
+}
+JSON
     echo "$RESULT"
 fi

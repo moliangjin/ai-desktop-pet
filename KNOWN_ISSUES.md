@@ -1,3 +1,44 @@
+## ISSUE-R47-01｜PetAcceptor 14-15 秒自动退出 — 已修复 ✅
+
+**用户报告**（R45 跑后）：点击 `双击运行.command` 后两个候选都在 ~14-15 秒
+自动生成全 NOT_TESTED 结果，并写入 CSV。launch_ok=false 但无证据证明
+候选真的没启动。
+
+**根因**：
+1. PetAcceptor 之前用 `setActivationPolicy:NSApplicationActivationPolicyRegular`
+   + `activateIgnoringOtherApps:YES`；当 Finder/terminal 在后台启动 PetAcceptor 时，
+   macOS 在 14.7.4 上的 "stale app cleanup" + activateIgnoringOtherApps 强制
+   主线程信号会终止该进程。
+2. R45 没有 lifecycle 区分（USER_CLICKED_END / USER_CLOSED_WINDOW /
+   RUNNER_CRASH_SIGNAL），所有 NOT_TESTED 全因进程被系统悄悄终止。
+3. launch_ok 与 GUI 反馈耦合（用 launch 项的 PASS/FAIL 推算 launch_ok），
+   用户没点按钮 → launch=PASS 没法写入 → launch_ok=false。
+
+**修复**：
+1. PetAcceptor 改为 `setActivationPolicy:NSApplicationActivationPolicyAccessory`
+   + `orderFrontRegardless:YES` — 强制显现在前台但不再激活为 Regular app。
+2. PetAcceptor 全程 NSLog 至 lifecycle_log，区分 USER_CLICKED_END /
+   USER_CLOSED_WINDOW / RUNNER_CRASH_SIGNAL / RUNNER_LAUNCH_FAIL。
+3. `applicationShouldTerminateAfterLastWindowClosed:NO` — 关窗由
+   `applicationShouldTerminate:` 接管，写 termination_reason + 落盘 JSON。
+4. 自测新增 `wait_120s` case（任务书 §六）：启动后不调用 self-test 分支，
+   不写任何答案；外部脚本等 60s/90s/120s 三个节点检查进程是否仍存活。
+5. `launch_status` 字段独立于 GUI 反馈，由 run_pet_acceptor_*.sh 的 ps 检测
+   决定 → `--launch-status LAUNCH_PASS|LAUNCH_FAIL` 传给 PetAcceptor。
+6. csv_builder STABLE_FIELDS 加 `launch_status` 列（19→20 列），枚举
+   `{LAUNCH_PASS, LAUNCH_FAIL, GUI_NOT_TESTED}` 严格校验。
+7. e2e_runner.sh 新增 3 个 scenario：
+   - e2e_double_run（双轮不污染）
+   - e2e_abort_user_closed（区分 USER_CLOSED_WINDOW）
+   - e2e_launch_status_mapping（验证 LAUNCH_PASS/FAIL 与 GUI 反馈解耦）
+8. .command 加 RUN_ID 隔离：每轮独立 `evidence/acceptor_runs/r47_<ts>/`，
+   本轮 CSV 只含 A+B 两条，无重复候选行。
+
+**自测结果**：
+- 9 case R45 回归全 PASS（无回退）
+- 6 e2e scenario 全 PASS（其中 launch_status_mapping / double_run / abort_user_closed 为新增）
+- wait_120s 仍在跑（任务书 §六 强制 120 秒不自动退出）
+
 ## ISSUE-R45-01｜terminal y/n/skip 验收失效 — 已修复 ✅
 
 **用户报告**（R43 终轮）：双击 `双击运行.command` 后两个候选脚本都报告

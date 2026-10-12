@@ -22,8 +22,8 @@ import io
 import os
 
 STABLE_FIELDS = [
-    "tested_at", "candidate", "version", "commit", "bundle_id", "launch_ok",
-    "overall",
+    "tested_at", "candidate", "version", "commit", "bundle_id",
+    "launch_status", "launch_ok", "overall",
     "launch", "display", "animation", "click", "drag", "transparent",
     "window_focus", "multidisplay",
     "notes", "result_path",
@@ -34,6 +34,7 @@ ITEM_KEYS = ["launch", "display", "animation", "click", "drag",
              "transparent", "window_focus", "multidisplay"]
 
 VALID_STATUSES = {"PASS", "FAIL", "NOT_TESTED", "DISABLED_SINGLE_DISPLAY"}
+VALID_LAUNCH_STATUSES = {"LAUNCH_PASS", "LAUNCH_FAIL", "GUI_NOT_TESTED"}
 
 
 def build_row(result_path):
@@ -49,6 +50,9 @@ def build_row(result_path):
     out["bundle_id"]   = d.get("bundle_id", "")
     out["overall"]     = d.get("overall", "")
     out["result_path"] = result_path
+    out["launch_status"] = d.get("launch_status", "GUI_NOT_TESTED")
+    if out["launch_status"] not in VALID_LAUNCH_STATUSES:
+        raise ValueError(f"bad launch_status {out['launch_status']}")
 
     # items[].status 按 key 取
     items_by_key = {it["key"]: it for it in d.get("items", [])}
@@ -61,8 +65,13 @@ def build_row(result_path):
         else:
             out[k] = "NOT_TESTED"
 
-    # 启动是否 ok：launch=PASS 才算
-    out["launch_ok"] = "true" if out["launch"] == "PASS" else "false"
+    # launch_ok 来自 launch_status 字段（ps 检测独立），不是 GUI launch 项
+    # LAUNCH_PASS → true, LAUNCH_FAIL → false, GUI_NOT_TESTED → false
+    ls = out["launch_status"]
+    if ls == "LAUNCH_PASS":
+        out["launch_ok"] = "true"
+    else:
+        out["launch_ok"] = "false"
 
     # notes 合并
     notes = []

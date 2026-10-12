@@ -59,8 +59,42 @@ case "$SCENARIO" in
         run_pet_acceptor_simulated candidate_b com.test.petB mixed | xargs -I{} python3 "$DST/one_click_test/csv_builder.py" {} "$CSV"
         run_pet_acceptor_simulated candidate_a com.test.petA abort_midway | xargs -I{} python3 "$DST/one_click_test/csv_builder.py" {} "$CSV"
         ;;
+    e2e_double_run)
+        # R47：同一程序连续跑两次 — 不污染
+        run_pet_acceptor_simulated candidate_a com.test.petA all_pass | xargs -I{} python3 "$DST/one_click_test/csv_builder.py" {} "$CSV"
+        run_pet_acceptor_simulated candidate_a com.test.petA all_pass | xargs -I{} python3 "$DST/one_click_test/csv_builder.py" {} "$CSV"
+        ;;
+    e2e_abort_user_closed)
+        # R47：用户关闭窗口（≠ 主动点击■）
+        cat > "$LOG_DIR/candidate_a_USER_CLOSED.json" <<JSON
+{
+  "candidate": "candidate_a","version": "V0.0","commit": "$GIT_COMMIT","bundle_id": "com.test.petA",
+  "tested_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)","overall": "NOT_TESTED","launch_status": "LAUNCH_PASS","launch_ok": true,
+  "termination_reason": "USER_CLOSED_WINDOW",
+  "counts_pass": 0,"counts_fail": 0,"counts_not_tested": 8,"counts_disabled": 0,
+  "items": [{"key":"launch","label":"1/8","status":"NOT_TESTED","notes":"启动完成 (ps 检测)"},{"key":"display","label":"2/8","status":"NOT_TESTED","notes":""},{"key":"animation","label":"3/8","status":"NOT_TESTED","notes":""},{"key":"click","label":"4/8","status":"NOT_TESTED","notes":""},{"key":"drag","label":"5/8","status":"NOT_TESTED","notes":""},{"key":"transparent","label":"6/8","status":"NOT_TESTED","notes":""},{"key":"window_focus","label":"7/8","status":"NOT_TESTED","notes":""},{"key":"multidisplay","label":"8/8","status":"DISABLED_SINGLE_DISPLAY","notes":""}]
+}
+JSON
+        python3 "$DST/one_click_test/csv_builder.py" "$LOG_DIR/candidate_a_USER_CLOSED.json" "$CSV" > /dev/null
+        ;;
+    e2e_launch_status_mapping)
+        # R47: launch_status 字段独立于 GUI 反馈
+        for cand_launch in LAUNCH_PASS LAUNCH_FAIL; do
+            cat > "$LOG_DIR/candidate_a_${cand_launch}.json" <<JSON
+{
+  "candidate": "candidate_a","version":"V0.0","commit":"$GIT_COMMIT","bundle_id":"com.test.petA",
+  "tested_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","overall":"NOT_TESTED",
+  "launch_status":"$cand_launch","launch_ok":$( [ "$cand_launch" = LAUNCH_PASS ] && echo true || echo false ),
+  "termination_reason":"RUNNER_CRASH_SIGNAL",
+  "counts_pass":0,"counts_fail":0,"counts_not_tested":7,"counts_disabled":1,
+  "items":[]
+}
+JSON
+            python3 "$DST/one_click_test/csv_builder.py" "$LOG_DIR/candidate_a_${cand_launch}.json" "$CSV" > /dev/null
+        done
+        ;;
     *)
-        echo "usage: e2e_runner.sh [e2e_normal|e2e_a_fail|e2e_csv_audit]"
+        echo "usage: e2e_runner.sh [e2e_normal|e2e_a_fail|e2e_csv_audit|e2e_double_run|e2e_abort_user_closed|e2e_launch_status_mapping]"
         exit 2
         ;;
 esac
@@ -87,22 +121,35 @@ with open(fp) as f:
     rows = list(reader)
 if not rows:
     print("EMPTY CSV"); sys.exit(1)
-EXPECTED = 19
+EXPECTED = 20
 print(f"header cols: {len(rows[0])} (expected {EXPECTED}) {'OK' if len(rows[0])==EXPECTED else 'FAIL'}")
 print(f"data rows: {len(rows)-1}")
 all_ok = True
 ALLOWED = {'PASS','FAIL','NOT_TESTED','DISABLED_SINGLE_DISPLAY','true','false'}
+ALLOWED_LAUNCH = {'LAUNCH_PASS','LAUNCH_FAIL','GUI_NOT_TESTED'}
 for i, row in enumerate(rows[1:], start=2):
     if len(row) != EXPECTED:
         print(f"  row {i}: {len(row)} cols FAIL")
         all_ok = False
         continue
-    for col_i, field_name in enumerate(['tested_at','candidate','version','commit','bundle_id','launch_ok','overall','launch','display','animation','click','drag','transparent','window_focus','multidisplay']):
-        v = row[col_i]
-        if field_name in ('overall',) or field_name in {'launch','display','animation','click','drag','transparent','window_focus','multidisplay'}:
-            if v not in ALLOWED and v != '':
-                print(f"  row {i} col[{field_name}]={v!r} NOT IN ENUM")
-                all_ok = False
+    # 列对应 csv_builder.py STABLE_FIELDS:
+    # 0=tested_at, 1=candidate, 2=version, 3=commit, 4=bundle_id,
+    # 5=launch_status, 6=launch_ok, 7=overall,
+    # 8=launch, 9=display, 10=animation, 11=click, 12=drag, 13=transparent,
+    # 14=window_focus, 15=multidisplay, 16=notes, ...
+    if row[5] not in ALLOWED_LAUNCH:
+        print(f"  row {i} launch_status={row[5]!r} NOT IN ENUM")
+        all_ok = False
+    # launch_ok (col 6) — 应是 'true'/'false'
+    if row[6] not in ('true','false',''):
+        print(f"  row {i} launch_ok={row[6]!r} NOT 'true'/'false'")
+        all_ok = False
+    # overall + 8 项 (col 7..15)
+    for col_i, field_name in enumerate(['overall','launch','display','animation','click','drag','transparent','window_focus','multidisplay']):
+        v = row[col_i + 7]
+        if v not in ALLOWED and v != '':
+            print(f"  row {i} col[{field_name}]={v!r} NOT IN ENUM")
+            all_ok = False
 print("ALL OK" if all_ok else "SOME ROWS FAIL")
 PY
 

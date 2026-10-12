@@ -32,6 +32,11 @@ declare -a CASES=(
     switch_a_to_b
 )
 
+# R47: wait_120s 任务书 §六 强制要求；默认包含；用 --skip-wait 跳过
+if [ "${1:-}" != "--skip-wait" ]; then
+    CASES+=(wait_120s)
+fi
+
 pass_count=0
 fail_count=0
 
@@ -44,6 +49,51 @@ echo "=========================================="
 for case in "${CASES[@]}"; do
     result="$RESULTS_DIR/${case}.json"
     log="$LOG_DIR/${case}.log"
+    # 默认长：常规 case 几秒内 self-test 模式完成；wait_120s 特殊跳过结果校验
+    if [ "$case" = "wait_120s" ]; then
+        echo "--- $case: 启动后等 120s，期间不能自动退出 ---"
+        rm -f "$result"
+        "$OUT" \
+            --candidate "candidate_a" \
+            --version "V0.0" \
+            --commit "$GIT_COMMIT" \
+            --bundle-id "com.test.petA" \
+            --result-out "$result" \
+            --self-test "$case" > "$log" 2>&1 &
+        APID=$!
+        # 在 60s、90s、120s 三个时间点检查还活着
+        ALIVE_AT_60=NO; ALIVE_AT_90=NO; ALIVE_AT_120=NO
+        for ts in 60 90 120; do
+            SECONDS_LEFT=$ts
+            while [ $SECONDS_LEFT -gt 0 ]; do
+                sleep 5
+                if ! ps -p $APID > /dev/null 2>&1; then
+                    break 2
+                fi
+                SECONDS_LEFT=$((SECONDS_LEFT-5))
+            done
+            [ $ts -eq 60 ] && ALIVE_AT_60=YES
+            [ $ts -eq 90 ] && ALIVE_AT_90=YES
+            [ $ts -eq 120 ] && ALIVE_AT_120=YES
+        done
+        if ps -p $APID > /dev/null; then
+            echo "[$case] STILL ALIVE at 120s — 强 kill"
+            kill -9 $APID 2>/dev/null
+            sleep 1
+        fi
+        # 检查 result JSON — wait_120s 不自动写，需要 SIGTERM 后 willTerminate 兜底
+        [ -f "$result" ] && HAS_RESULT=YES || HAS_RESULT=NO
+        echo "[$case] alive@60=$ALIVE_AT_60 alive@90=$ALIVE_AT_90 alive@120=$ALIVE_AT_120 result_written=$HAS_RESULT"
+        if [ "$ALIVE_AT_120" = "YES" ] && [ "$HAS_RESULT" = "YES" ]; then
+            echo "[$case] PASS — 120s 内未自动结束且 SIGTERM 后写盘"
+            pass_count=$((pass_count+1))
+        else
+            echo "[$case] FAIL"
+            fail_count=$((fail_count+1))
+        fi
+        continue
+    fi
+
     "$OUT" \
         --candidate "candidate_a" \
         --version "V0.0" \

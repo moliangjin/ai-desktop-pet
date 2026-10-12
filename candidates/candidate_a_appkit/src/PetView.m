@@ -146,8 +146,9 @@
     BOOL shouldIgnore = !hit;
     if (w.ignoresMouseEvents != shouldIgnore) {
         [w setIgnoresMouseEvents:shouldIgnore];
-        NSLog(@"[PetView] passthrough toggle: cursor-in-hitbox=%@ -> ignoresMouseEvents=%@",
-              @(hit), @(shouldIgnore));
+        // R43: do NOT NSLog here — the toggle fires up to 5 times per second
+        // and NSLog goes through ASL/syslogd which adds measurable main-thread
+        // latency on the AppKit main run loop.
     }
     _lastHitboxInside = hit;
 }
@@ -157,12 +158,18 @@
     CGContextClearRect(ctx, self.bounds);
     CGImageRef img = [self.store imageForAction:self.currentAction frameIndex:(NSUInteger)_frameIdx];
     if (img) {
-        CGContextSaveGState(ctx);
-        CGContextTranslateCTM(ctx, 0, self.bounds.size.height);
-        CGContextScaleCTM(ctx, 1, -1);
+        // V0.0 R43: The view is flipped (see isFlipped below). When the view
+        // is flipped, its y-axis runs top-to-bottom — the same direction as
+        // CGImage's row 0 (top) → row h (bottom). Therefore CGContextDrawImage
+        // with self.bounds draws the image **right-side up** with no Y-flip
+        // transform. The previous R38/R39 implementation used
+        //   translate(0, h) + scale(1, -1)
+        // for an unflipped view; the user reported the sprite rendering
+        // upside-down on real Mac mini (R43 round 1). Flipping the view
+        // removes the transform and matches what most macOS sprite
+        // implementations do (SKView, sprite-kit-style buttons, etc.).
         CGRect r = CGRectMake(0, 0, self.bounds.size.width, self.bounds.size.height);
         CGContextDrawImage(ctx, r, img);
-        CGContextRestoreGState(ctx);
     } else {
         CGContextSetRGBFillColor(ctx, 0, 0, 0, 0.0);
         CGContextFillRect(ctx, self.bounds);
@@ -170,6 +177,7 @@
 }
 
 - (BOOL)isOpaque { return NO; }
+- (BOOL)isFlipped { return YES; }     // R43: flip view so CG drawImage is right-side up
 - (BOOL)wantsUpdateLayer { return NO; }   // R38 fix: keep drawRect path
 
 #pragma mark - Mouse

@@ -18,3 +18,10 @@ Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s,2026-10-12
 Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s,2026-10-12T22:30,cpu_percent_peak,35.3,percent single core,process.cpuUsage,peak
 Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,20x relaunch loop,2026-10-12T22:32,exit_clean,20/20,iteration,test_loop.js,no zombies
 Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,20x relaunch loop,2026-10-12T22:32,fatal_count,0,count,grep FATAL,clean
+
+Candidate_A,Mac mini M2,14.7.4 (23H420),R43 flipped+background-IO 138320 bytes,30s idle r43_perf 2026-10-13 01:59,2026-10-13T01:59,fps_sampler,13.00,Hz,PerfSampler 1s rolling counter (60Hz tick),after R43 perfTimer dispatched to background queue (file I/O off main)
+Candidate_A,Mac mini M2,14.7.4 (23H420),R43 flipped+background-IO,30s idle r43_perf,2026-10-13T01:59,frame_advances_per_sec,7.7,frames/sec,rolling 1s counter on PetView._advance,manifest idle fps=8; current 7.7 ~manifest target
+Candidate_A,Mac mini M2,14.7.4 (23H420),R43 flipped+background-IO,30s idle r43_perf,2026-10-13T01:59,frame_ms_p50,16.67,ms,PerfSampler p50 of last 1s frame deltas,60Hz timer alignment gives ~16.67ms median
+Candidate_A,Mac mini M2,14.7.4 (23H420),R43 flipped+background-IO,30s idle r43_perf,2026-10-13T01:59,frame_ms_p95,17.43,ms,PerfSampler p95,stable — was 1.5x worse before perfTimer dispatched off main
+Candidate_A,Mac mini M2,14.7.4 (23H420),R43 flipped+background-IO,30s idle r43_perf,2026-10-13T01:59,rss_mb,31.5,MB,process.memoryUsage peak,within task book ≤250MB bound
+Candidate_A,Mac mini M2,14.7.4 (23H420),R43 flipped+background-IO,30s idle r43_perf,2026-10-13T01:59,cpu_percent,3.5,%,PerfSampler cpuUsage/duration,within task book ≤10% single-core bound (was 7.59% peak)

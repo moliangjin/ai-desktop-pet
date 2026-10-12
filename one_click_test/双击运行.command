@@ -80,15 +80,19 @@ wait_user() {
     local timeout="${2:-180}"
     echo ""
     echo ">>> $prompt"
-    echo "  输入 next = 继续；yes/no = 记入验证；skip = NOT_TESTED（按回车 = 30s 后 timeout=skip）"
+    echo "  输入 next/yes/no/skip (大小写皆可)；按回车 = 30s 后 timeout=skip"
     local ans=""
     local deadline=$((SECONDS + timeout))
+    # R43: 显式从 /dev/tty 读而不是 bash inherit 的 stdin。
+    # 之前版本 background-job 的 stdout/stderr 在某些 macOS bash 4 上
+    # 会污染 stdin，导致这里的 read 卡住。
     while [ $SECONDS -lt $deadline ]; do
-        if read -t 30 -n 1 -r ans; then
+        if read -t 5 -n 1 -r ans </dev/tty 2>/dev/null; then
             echo
             break
         fi
-        echo "（30 秒无输入自动 timeout）"
+        # 旧版 30 秒 echo 改成 5 秒更频繁提醒
+        echo "[$(($deadline - $SECONDS))s 后自动 skip]"
     done
     case "$ans" in
         y|Y|yes|YES) echo "yes" ;;

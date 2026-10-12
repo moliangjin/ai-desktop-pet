@@ -63,35 +63,45 @@
 
     if (self.perfOutPath) {
         __weak typeof(self) weakSelf = self;
+        // V0.0 R43: move file I/O off the main thread.
+        // Background serial queue avoids every-second fileExistsAtPath /
+        // fileHandleForWritingAtPath / seekToEndOfFile / writeData / closeFile
+        // blocking the AppKit main run loop, which was the dominant source of
+        // dropped frames in the R41 GUI run.
+        dispatch_queue_t perfQueue = dispatch_queue_create("com.v0.perfsampler", DISPATCH_QUEUE_SERIAL);
         self.perfTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 repeats:YES block:^(NSTimer *t) {
             __strong typeof(weakSelf) self = weakSelf;
             if (!self) return;
+            // Snapshot is light (reads atomic ints) so still safe on main.
             NSDictionary *snap = [self snapshotPerf];
-            NSArray *cols = @[@"timestamp", @"action", @"fps", @"frame_advances_per_sec",
-                              @"frame_ms_p50", @"frame_ms_p95", @"rss_mb", @"cpu_percent"];
-            NSString *row = [NSString stringWithFormat:@"%@,%@,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
-                             snap[@"timestamp"], snap[@"action"],
-                             [snap[@"fps"] doubleValue],
-                             [snap[@"frame_advances_per_sec"] doubleValue],
-                             [snap[@"frame_ms_p50"] doubleValue],
-                             [snap[@"frame_ms_p95"] doubleValue],
-                             [snap[@"rss_mb"] doubleValue],
-                             [snap[@"cpu_percent"] doubleValue]];
-            NSString *parent = [self.perfOutPath stringByDeletingLastPathComponent];
-            [[NSFileManager defaultManager] createDirectoryAtPath:parent withIntermediateDirectories:YES attributes:nil error:nil];
-            BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:self.perfOutPath];
-            NSFileHandle *fh = [NSFileHandle fileHandleForWritingAtPath:self.perfOutPath];
-            if (!fh) {
-                [[NSFileManager defaultManager] createFileAtPath:self.perfOutPath contents:[NSData data] attributes:nil];
-                fh = [NSFileHandle fileHandleForWritingAtPath:self.perfOutPath];
-            }
-            [fh seekToEndOfFile];
-            if (!exists) {
-                [fh writeData:[[cols componentsJoinedByString:@","] dataUsingEncoding:NSUTF8StringEncoding]];
-                [fh writeData:[@"\n" dataUsingEncoding:NSUTF8StringEncoding]];
-            }
-            [fh writeData:[[row stringByAppendingString:@"\n"] dataUsingEncoding:NSUTF8StringEncoding]];
-            [fh closeFile];
+            NSString *perfPath = [self.perfOutPath copy];
+            dispatch_async(perfQueue, ^{
+                NSArray *cols = @[@"timestamp", @"action", @"fps", @"frame_advances_per_sec",
+                                  @"frame_ms_p50", @"frame_ms_p95", @"rss_mb", @"cpu_percent"];
+                NSString *row = [NSString stringWithFormat:@"%@,%@,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+                                 snap[@"timestamp"], snap[@"action"],
+                                 [snap[@"fps"] doubleValue],
+                                 [snap[@"frame_advances_per_sec"] doubleValue],
+                                 [snap[@"frame_ms_p50"] doubleValue],
+                                 [snap[@"frame_ms_p95"] doubleValue],
+                                 [snap[@"rss_mb"] doubleValue],
+                                 [snap[@"cpu_percent"] doubleValue]];
+                NSString *parent = [perfPath stringByDeletingLastPathComponent];
+                [[NSFileManager defaultManager] createDirectoryAtPath:parent withIntermediateDirectories:YES attributes:nil error:nil];
+                BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:perfPath];
+                NSFileHandle *fh = [NSFileHandle fileHandleForWritingAtPath:perfPath];
+                if (!fh) {
+                    [[NSFileManager defaultManager] createFileAtPath:perfPath contents:[NSData data] attributes:nil];
+                    fh = [NSFileHandle fileHandleForWritingAtPath:perfPath];
+                }
+                [fh seekToEndOfFile];
+                if (!exists) {
+                    [fh writeData:[[cols componentsJoinedByString:@","] dataUsingEncoding:NSUTF8StringEncoding]];
+                    [fh writeData:[@"\n" dataUsingEncoding:NSUTF8StringEncoding]];
+                }
+                [fh writeData:[[row stringByAppendingString:@"\n"] dataUsingEncoding:NSUTF8StringEncoding]];
+                [fh closeFile];
+            });
         }];
     }
 }

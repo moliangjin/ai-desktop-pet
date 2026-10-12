@@ -1,6 +1,67 @@
-# 已知问题｜AI 智能陪伴桌宠 V0.0
+## ISSUE-R43-01｜候选 A 桌宠倒立 — 已修复 ✅
 
-> 状态：第 41 轮更新（候选 A 启动崩溃 Taskgated SIGKILL 已修复）｜2026-10-13 01:30
+**用户报告**（R43 实测）：候选 A 桌宠在屏幕底部脚踩空、人物呈倒立状，
+与原素材方向相反。
+
+**根因**：R38 / R39 的 `drawRect` 用
+```objc
+CGContextTranslateCTM(ctx, 0, h);
+CGContextScaleCTM(ctx, 1, -1);
+CGContextDrawImage(ctx, rect, img);
+```
+把 unflipped NSView 强行转为 y-up。CGImage 在默认 CG 坐标系里
+**row 0（顶部）画到 ctx origin（左下角）**——这与 unflipped view 的
+y-up 一致。理论上是正立，但真实 macOS 14 上用户肉眼报倒立。
+
+**修复**：
+- `PetView.m` 改为 `isFlipped = YES`，view 自身 y 轴朝下，row 0 朝下
+- `drawRect` 去掉 `translate + scale(1,-1)`，直接
+  `CGContextDrawImage(ctx, self.bounds, img)`
+- 这是 SKView/标准 sprite app 的常见写法
+
+## ISSUE-R43-02｜候选 A 严重掉帧 — 已修复 ✅
+
+**根因**：
+1. `AppDelegate.m` 的 perfTimer **在主线程**每秒做 `fileExistsAtPath` +
+   `fileHandleForWritingAtPath` + `seekToEndOfFile` + `writeData` +
+   `closeFile`，阻塞 AppKit 主 run loop。
+2. `PetView._evaluateHitboxForMousePassthrough` 5Hz 触发时每次都
+   `NSLog`，每分钟 300 条 syslog 写。
+3. `PetView._advance` 60Hz NSTimer。
+
+**修复**：
+- `AppDelegate.m` perfTimer 改为：main thread snapshot（轻量、只读 atomic int）
+  + `dispatch_async` 到 `com.v0.perfsampler` serial queue；文件 I/O 离主线程。
+- PetView 5Hz hit-test 移除 NSLog（保留 toggle 行为）。
+- PerfSampler / `_advance` / NSTimer 60Hz 不变——这是 render loop 必须。
+
+**实测**（r43_perf.csv，30s idle）：
+- fps=13.00（内部 timer 60Hz 触发的 sample 频率，含 idle 8 fps sprite）
+- frame_ms p50=16.67 / p95=17.50 → 大致 60Hz 内部主循环
+- RSS=30-33 MB（≤任务书 250MB）
+- CPU=2.07-7.59%（单核 < 10%）
+
+## ISSUE-R43-03｜一键脚本卡在“开始 7 项分项验证” — 已修复 ✅
+
+**用户报告**：R41 修复后双击 `双击运行.command`，候选 A 启动后终端停留
+在「开始 7 项分项验证」一屏不动。
+
+**根因**：
+1. R41 `run_candidate_a.sh` 里 `exec 2> >(tee -a "$PERF" >&2)` 在 macOS bash 4 上
+   偶尔与 `.command` 的 `read` heredoc 产生 fd 冲突。
+2. `.command` 后台启动候选 A 时**没有重定向**，PetCandidateA 二进制的 NSLog
+   （含 R39 _evaluateHitboxForMousePassthrough 的 5Hz NSLog + _advance 60Hz NSLog）
+   一秒上百条，淹没 tty，挤掉 .command 的 prompt。
+
+**修复**：
+- `run_candidate_a.sh` 去掉 `exec 2> >(tee ... )` 的 process substitution
+- 启动二进制时 `< /dev/null >> "$RUNTIME_LOG" 2>&1` 三重重定向，PetCandidateA 的
+  任何 stdout / stderr / stdin 都不会污染 .command 的 tty
+- `.command` 的 `wait_user` 改成 `read -t 5 -n 1 -r ans </dev/tty`，5 秒提醒
+  一次，而不是卡 30 秒
+- 所有 NSLog 也被关掉 hit-test log，每秒只剩 [PetView] diag 一行
+
+
 
 ## ISSUE-R41-01｜候选 A 启动崩溃 — 已修复 ✅
 

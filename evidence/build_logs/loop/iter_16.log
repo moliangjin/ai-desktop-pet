@@ -1,9 +1,9 @@
-2026-10-12 20:53:21.372 PetCandidateA[34324:1748324] NSWindow does not support nonactivating panel styleMask 0x80
-2026-10-12 20:53:21.381 PetCandidateA[34324:1748324] [FrameStore] action=idle loaded=6/6
-2026-10-12 20:53:21.381 PetCandidateA[34324:1748324] [FrameStore] action=walk loaded=8/8
-2026-10-12 20:53:21.382 PetCandidateA[34324:1748324] [FrameStore] action=jump loaded=8/8
-2026-10-12 20:53:21.382 PetCandidateA[34324:1748324] [FrameStore] action=drag loaded=4/4
-2026-10-12 20:53:21.382 PetCandidateA[34324:1748324] [PetWindow] total frames loaded=26
-2026-10-12 20:53:21.383 PetCandidateA[34324:1748324] [AppDelegate] pet window up:  frame={{600, 600}, {256, 256}}
-2026-10-12 20:53:22.373 PetCandidateA[34324:1748324] [PetView] diag action=idle frame=1 hits=0 miss=0 hover=0
-2026-10-12 20:53:22.373 PetCandidateA[34324:1748324] [AppDelegate] terminating cleanly
+2026-10-12 22:32:51.623 PetCandidateA[47009:1838670] NSWindow does not support nonactivating panel styleMask 0x80
+2026-10-12 22:32:51.644 PetCandidateA[47009:1838670] [FrameStore] action=idle loaded=6/6
+2026-10-12 22:32:51.645 PetCandidateA[47009:1838670] [FrameStore] action=walk loaded=8/8
+2026-10-12 22:32:51.645 PetCandidateA[47009:1838670] [FrameStore] action=jump loaded=8/8
+2026-10-12 22:32:51.646 PetCandidateA[47009:1838670] [FrameStore] action=drag loaded=4/4
+2026-10-12 22:32:51.646 PetCandidateA[47009:1838670] [PetWindow] total frames loaded=26
+2026-10-12 22:32:51.650 PetCandidateA[47009:1838670] [AppDelegate] pet window up:  frame={{600, 600}, {256, 256}}
+2026-10-12 22:32:52.623 PetCandidateA[47009:1838670] [PetView] diag action=idle frame=1 hits=0 miss=0 hover=0
+2026-10-12 22:32:52.623 PetCandidateA[47009:1838670] [AppDelegate] terminating cleanly

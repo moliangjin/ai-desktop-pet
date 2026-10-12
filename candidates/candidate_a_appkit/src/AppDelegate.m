@@ -67,11 +67,12 @@
             __strong typeof(weakSelf) self = weakSelf;
             if (!self) return;
             NSDictionary *snap = [self snapshotPerf];
-            NSArray *cols = @[@"timestamp", @"action", @"fps", @"frame_ms_p50",
-                              @"frame_ms_p95", @"rss_mb", @"cpu_percent"];
-            NSString *row = [NSString stringWithFormat:@"%@,%@,%.2f,%.2f,%.2f,%.2f,%.2f",
+            NSArray *cols = @[@"timestamp", @"action", @"fps", @"frame_advances_per_sec",
+                              @"frame_ms_p50", @"frame_ms_p95", @"rss_mb", @"cpu_percent"];
+            NSString *row = [NSString stringWithFormat:@"%@,%@,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
                              snap[@"timestamp"], snap[@"action"],
                              [snap[@"fps"] doubleValue],
+                             [snap[@"frame_advances_per_sec"] doubleValue],
                              [snap[@"frame_ms_p50"] doubleValue],
                              [snap[@"frame_ms_p95"] doubleValue],
                              [snap[@"rss_mb"] doubleValue],
@@ -94,6 +95,7 @@
         }];
     }
 }
+
 
 - (void)applicationWillTerminate:(NSNotification *)n {
     [(PetView *)self.petWindow.contentView stopTicking];
@@ -136,6 +138,7 @@
         @"timestamp": [fmt stringFromDate:[NSDate dateWithTimeIntervalSince1970:s.timestamp]],
         @"action": v.currentAction ?: @"idle",
         @"fps": @(s.fps),
+        @"frame_advances_per_sec": @(v.lastSecondFrameAdvances),
         @"frame_ms_p50": @(s.frameMsP50),
         @"frame_ms_p95": @(s.frameMsP95),
         @"rss_mb": @(s.rssMB),

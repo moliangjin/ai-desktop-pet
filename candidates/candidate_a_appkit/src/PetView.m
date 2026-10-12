@@ -10,6 +10,9 @@
     BOOL _dragging;
     NSPoint _dragOriginWindow;
     NSPoint _dragOriginMouse;
+    NSInteger _frameAdvancesThisSecond;
+    NSTimeInterval _frameAdvanceWindowStart;
+    NSInteger _lastSecondFrameAdvances;
 }
 @property (nonatomic) BOOL hovered;
 @property (nonatomic) NSInteger dragStartFrame;
@@ -25,6 +28,8 @@
         _currentAction = @"idle";
         _frameIdx = 0;
         _frameStartedAt = [NSDate timeIntervalSinceReferenceDate];
+        _frameAdvanceWindowStart = [NSDate timeIntervalSinceReferenceDate];
+        _lastSecondFrameAdvances = 0;
     }
     return self;
 }
@@ -63,12 +68,18 @@
 
 - (void)startTicking {
     if (_timer) return;
-    _timer = [NSTimer scheduledTimerWithTimeInterval:1.0/60.0
-                                              target:self
-                                            selector:@selector(_advance:)
-                                            userInfo:nil
-                                             repeats:YES];
-    [[NSRunLoop currentRunLoop] addTimer:_timer forMode:NSRunLoopCommonModes];
+    // Use a tighter timer interval than the desired FPS so the engine can
+    // react promptly to action switches and drag events even when the
+    // animation FPS is low. The per-frame advance logic inside _advance
+    // decides whether to actually flip the sprite frame.
+    _timer = [NSTimer timerWithTimeInterval:1.0/60.0
+                                     target:self
+                                   selector:@selector(_advance:)
+                                   userInfo:nil
+                                    repeats:YES];
+    // Explicitly schedule on the main run loop in all common modes so
+    // background UI work (mouse tracking, status menu) does not block ticks.
+    [[NSRunLoop mainRunLoop] addTimer:_timer forMode:NSRunLoopCommonModes];
 }
 
 - (void)stopTicking {
@@ -78,15 +89,22 @@
 
 - (void)_advance:(NSTimer *)t {
     NSUInteger n = [self.store frameCountForAction:self.currentAction];
+    // Always tick the sampler (engine cycle frequency).
+    [self.sampler tick];
+    NSTimeInterval nowS = [NSDate timeIntervalSinceReferenceDate];
+    if (nowS - _frameAdvanceWindowStart >= 1.0) {
+        _lastSecondFrameAdvances = _frameAdvancesThisSecond;
+        _frameAdvanceWindowStart = nowS;
+        _frameAdvancesThisSecond = 0;
+    }
     if (n == 0) return;
-    NSInteger fps = 8;     // match manifest idle fps
-    NSTimeInterval now = [NSDate timeIntervalSinceReferenceDate];
-    NSTimeInterval dt = now - _frameStartedAt;
+    NSInteger fps = 8;     // V0.1 should pull this from ManifestAction
+    NSTimeInterval dt = nowS - _frameStartedAt;
     NSTimeInterval per = 1.0 / fps;
     if (dt >= per) {
         _frameIdx = (_frameIdx + 1) % n;
-        _frameStartedAt = now;
-        [self.sampler tick];
+        _frameStartedAt = nowS;
+        _frameAdvancesThisSecond++;
         [self setNeedsDisplay:YES];
     }
 }

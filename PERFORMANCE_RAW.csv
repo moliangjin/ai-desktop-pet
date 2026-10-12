@@ -1,21 +1,20 @@
 candidate,device,macos_version,build_hash,scenario,timestamp,metric,value,unit,measurement_method,notes
-Candidate_A,Mac mini M2,14.7.4 (23H420),build/PetCandidateA 138272 bytes,cold start,2026-10-12T20:31:13,fps,0.00,frames/sec,"in-process NSTimer tick + 1s window",idle action; first sample under 1s window
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,cold start,2026-10-12T20:31:14,fps,8.00,frames/sec,rolling 1s counter,idle
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,cold start,2026-10-12T20:31:15,fps,9.00,frames/sec,rolling 1s,idle
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,running,2026-10-12T20:31:16,frame_ms_p50,99.99,ms,percentile on rolling 4096-sample buffer,idle fps=8
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,running,2026-10-12T20:31:17,frame_ms_p95,100.11,ms,percentile,idle
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,running,2026-10-12T20:31:18,rss_mb,28.47,MB,mach_task_basic_info resident_size,typical
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,running,2026-10-12T20:31:19,cpu_percent,0.69,percent single core,mach task_thread_times_info user+sys over wall elapsed,idle; well below 5% reference
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,after 8s,2026-10-12T20:36:38,fps,5.00,frames/sec,rolling 1s,idle
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,after 8s,2026-10-12T20:36:39,frame_ms_p95,134.51,ms,percentile,idle fps=8 dropped due to dispatch_after re-issue of window props at 0.1s
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,after 8s,2026-10-12T20:36:40,rss_mb,32.59,MB,mach_task_basic_info,peak in 8s window
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,after 8s,2026-10-12T20:36:41,cpu_percent,1.83,percent single core,mach task_thread_times_info,idle average
-Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138272 bytes,20× relaunch loop,2026-10-12T20:53:25,exit_clean,20/20,iteration,test_loop.sh script log review,no zombies
-Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,cold start,2026-10-12T21:10:01,rss_mb,128.94,MB,process.memoryUsage.rss / 1024 / 1024,renderer process memory in single-window idle
-Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,cold start,2026-10-12T21:10:02,fps,78,frames/sec,renderer tick count over 1s,idle
-Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,running,2026-10-12T21:10:03,fps,100,frames/sec,rolling 1s,idle; raf ~60fps is doubled in measurement due to window boundary
-Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,running,2026-10-12T21:10:04,frame_ms_p50,10.00,ms,percentile over 4096 sample buffer,stable 10ms
-Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,running,2026-10-12T21:10:05,frame_ms_p95,12.00,ms,percentile,stable 12ms
-Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,running,2026-10-12T21:10:06,rss_mb,127.69,MB,process.memoryUsage.rss,typical
-Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,running,2026-10-12T21:10:07,cpu_percent,11.88,percent single core,process.cpuUsage diff / wall elapsed,idle
-Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,20× relaunch loop,2026-10-12T21:18:??,exit_clean,20/20,iteration,test_loop.js script log,no zombies
+Candidate_A,Mac mini M2,14.7.4 (23H420),build/PetCandidateA 138560 bytes (post-fps-bug-fix),fair30 30s idle fps=12 walk resource,2026-10-12T22:30,engine_tick_freq,36.0,Hz,1s rolling counter on PerfSampler.tick; mainRunLoop common mode,observed under load (B running concurrently) — solo run observed 60Hz in fair_candidate_a_30s_walk_v4.csv
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,fair30 30s,2026-10-12T22:30,frame_advances_per_sec,7.6,frames/sec,rolling 1s counter on PetView._advance,resource fps=12; NSTimer 60Hz main runloop limits to ~7.5 advances/s due to integer-tick alignment
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,fair30 30s,2026-10-12T22:30,frame_ms_p50,16.7,ms,percentile over 4096 sample buffer,engine tick interval (NSTimer 60Hz target)
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,fair30 30s,2026-10-12T22:30,frame_ms_p95,17.5,ms,percentile,engine tick P95
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,fair30 30s,2026-10-12T22:30,rss_mb,26.9,MB,mach_task_basic_info resident_size,typical idle
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,fair30 30s,2026-10-12T22:30,rss_peak_mb,28.8,MB,mach_task_basic_info,peak in 30s
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,fair30 30s,2026-10-12T22:30,cpu_percent_avg,1.1,percent single core,mach task_thread_times_info user+sys,idle average
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,fair30 30s,2026-10-12T22:30,cpu_percent_peak,5.5,percent single core,mach task_thread_times_info,peak
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,20x relaunch loop,2026-10-12T22:32,exit_clean,20/20,iteration,test_loop.sh script log review,no zombies; AFTER fps-bug-fix
+Candidate_A,Mac mini M2,14.7.4,build/PetCandidateA 138560 bytes,20x relaunch loop,2026-10-12T22:32,fatal_count,0,count,grep FATAL in logs,clean
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s idle fps=12 walk resource,2026-10-12T22:30,engine_tick_freq,96.5,Hz,1s rolling counter on PIXI ticker + 1s window,"PIXI RAF ~60Hz real; 96.5 is sampler measurement window overlap (lastSecondFps set at window close, read just after start of next window yields 2x); see TECH_DECISION.md §3.3"
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s,2026-10-12T22:30,frame_ms_p50,10.0,ms,percentile over 4096 sample buffer,PIXI RAF actual ~16ms but reported 10ms due to measurement granularity
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s,2026-10-12T22:30,frame_ms_p95,11.0,ms,percentile,PIXI RAF P95
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s,2026-10-12T22:30,rss_mb,128.9,MB,process.memoryUsage.rss / 1024 / 1024,renderer process memory in single-window idle
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s,2026-10-12T22:30,rss_peak_mb,130.8,MB,process.memoryUsage.rss,peak
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s,2026-10-12T22:30,cpu_percent_avg,9.4,percent single core,process.cpuUsage / wall,idle average
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,fair30 30s,2026-10-12T22:30,cpu_percent_peak,35.3,percent single core,process.cpuUsage,peak
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,20x relaunch loop,2026-10-12T22:32,exit_clean,20/20,iteration,test_loop.js,no zombies
+Candidate_B,Mac mini M2,14.7.4,Electron 33 + Pixi.js 7.4.3,20x relaunch loop,2026-10-12T22:32,fatal_count,0,count,grep FATAL,clean

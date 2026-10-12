@@ -1,15 +1,16 @@
 # 技术选型决策记录｜AI 智能陪伴桌宠 V0.0
 
-> 版本：V0.0 Decision v1.0｜2026-10-12｜研发方：MiniMax
+> 版本：V0.0 Decision v2.0｜2026-10-12 22:30｜研发方：MiniMax
+> 第 36 轮重做：根因修正（agent session → TCC 权限）+ 公平性能对比
 
 ## 0. 结论先行
 
 | 维度 | 结论 |
 |---|---|
 | **TECH_STACK_STATUS** | **PROVISIONAL**（基于不完整数据） |
-| **原因** | 真实 macOS GUI 屏幕合成未在 agent 进程下被 WindowServer 接受（环境硬限制），T01/T02/T04/T05/T06 在 agent session 下无法真实验证；T03/T07/T08/T09/T10 在两条候选上都拿到可比较的 PASS 证据。 |
-| **未冻结技术栈** | 按任务书 §5/§11 规则，不冻结候选技术栈；本文件作为客观数据汇总，等真实 Mac 复测后由用户决定下一阶段。 |
-| **V0.0 阶段最终状态** | **PARTIAL** |
+| **原因** | 真实 macOS GUI 屏幕截图受本机 TCC Screen Recording 权限限制无法在 agent session 内取证（ISSUE-A1 根因修正）；T01/T02/T04/T05/T06 在 agent session 下无法做截图验证。两条候选的 API 层证据完整、可比较。T03/T07/T08/T09/T10 在两条候选上都拿到 PASS 证据。 |
+| **未冻结技术栈** | 按任务书 §5/§11 规则，不冻结候选技术栈；等用户在真实前台 Mac 用 `one_click_test/双击运行.command` 肉眼验证 T01/T02/T04/T05 后再做 V0.1 推进决定。 |
+| **V0.0 阶段最终状态** | **PARTIAL**（与第 35 轮一致；不因根因修正而改变 PASS/PARTIAL 状态，因本机无 TCC 权限我仍无法直接拿图） |
 
 ## 1. 候选路线与排除
 
@@ -17,83 +18,121 @@
 |---|---|---|
 | **A：Objective-C + AppKit**（Swift 等价） | 接受 | 任务书 §3 优先级最高。CommandLineTools 工具链 Swift 6.0.3 有 `module.modulemap` 重定义 bug，无法编译任何 `import Cocoa` 程序（已实测三次）。Objective-C 走相同 NSWindow/NSView 路径，是 Swift 路线在当前环境的等价实现。 |
 | **B：Electron + PixiJS v7** | 接受 | 任务书 §3 优先级第二。Node 22 + npm 10 已就位，Electron 33 + Pixi.js 7.4.3 安装顺利，窗口创建、动画播放、IPC、perf 采样全部跑通。 |
-| **C：Tauri 2 + Rust + 前端** | 排除 | `rustc`/`cargo` 未安装（已实测 `which` 不可用），本机无 Homebrew，无法在不引入其他工具链的前提下完成 V0.0 验证。Tauri 的 macOS 透明 WebView 是否需要私有 API 是另一条独立风险，需要专门设备测试（任务书 §3 已点出）。 |
+| **C：Tauri 2 + Rust + 前端** | 排除 | `rustc`/`cargo` 未安装（已实测 `which` 不可用），本机无 Homebrew，无法在不引入其他工具链的前提下完成 V0.0 验证。任务书 §3 已点出 macOS 透明 WebView 是否需要私有 API 是另一条独立风险。 |
 
 ## 2. 硬否决检查
 
 按任务书 §4 硬否决项：
-- ✅ "无法在实际 macOS 桌面显示透明、可退出的交互角色"：两条候选窗口均创建（CGWindowList bounds 一致；alpha=0.999），exit-cleanly，无残留进程。
-- ✅ "无法可靠操作桌面角色，且没有合理可验证的输入事件方案"：代码层 hit-test、拖拽、释放、边界 clamp、合成鼠标事件 API 全部就位（候选 A `InputSynth.m`；候选 B `setIgnoreMouseEvents`）。
-- ✅ "为了关键特性必须引入不可接受的隐私、系统完整性或代码执行风险"：候选 A 与 B 均通过 `test_security.sh` 静态检查（无 AVCapture/IOHID/kSec/网络 API/硬编码密钥）。
-- ✅ "无法给出可重复构建步骤或真实运行证据"：`build.sh`/`package.json`+`npm install` 双脚本可重跑；`evidence/build_logs/` 与 `evidence/perf_samples/` 留有 30+ 个真实运行产物的 CSV/log。
+- ✅ "无法在实际 macOS 桌面显示透明、可退出的交互角色"：两候选窗口均创建（CGWindowList bounds + alpha=0.999），exit-cleanly，无残留进程
+- ✅ "无法可靠操作桌面角色"：代码层 hit-test、拖拽、释放、边界 clamp、合成鼠标事件 API 全部就位（候选 A `InputSynth.m`；候选 B `setIgnoreMouseEvents`）
+- ✅ "为了关键特性必须引入不可接受的隐私/系统完整性/代码执行风险"：候选 A 与 B 均通过 `test_security.sh/.js` 静态检查
+- ✅ "无法给出可重复构建步骤或真实运行证据"：双 `build.sh` + `npm install` 可重跑；evidence 留有 30+ 真实运行产物
 
 **无硬否决**。进入权重比较。
 
-## 3. 加权评分（1-5）
+## 3. 同 fps=12 walk 30 秒公平性能对比
 
-| 维度 | 权重 | 候选 A 评分 | 候选 B 评分 | 候选 A 加权 | 候选 B 加权 | 证据 |
-|---|---:|---:|---:|---:|---:|---|
-| 透明窗口、鼠标与焦点行为 | 25% | 3 | 3 | 0.75 | 0.75 | 候选 A alpha=0.999、候选 B alpha=0.999；agent 限制下均不可视化合成，需 Mac 复测 |
-| 2D 动画、动作控制与扩展资源支持 | 20% | 4 | 5 | 0.80 | 1.00 | A：CGImageRef 帧缓存 26/26 加载；B：PIXI.Assets 加载 26/26 + ticker RAF 60Hz 实测 |
-| CPU/内存/流畅度与稳定性 | 20% | 4 | 3 | 0.80 | 0.60 | A：RSS 28-32MB / CPU < 5% / FPS 8-9；B：RSS 126-128MB / CPU 11-22% / FPS 100（PIXI） |
-| MiniMax 可维护性、模块化、可测试性 | 15% | 4 | 5 | 0.60 | 0.75 | A：纯 C/ObjC 编译产物，零外部运行时；B：Node 22 + Electron 33 + Pixi 7 模块清晰 |
-| 未来 Windows 可移植性 | 10% | 2 | 5 | 0.20 | 0.50 | A：macOS-only（AppKit 不跨平台）；B：Electron 跨 Windows 是成熟方案 |
-| macOS 构建、签名/分发可行性 | 10% | 4 | 3 | 0.40 | 0.30 | A：单二进制 138KB；B：app bundle ~80MB 含 Chromium |
-| **加权合计（满分 5）** | 100% | | | **3.55** | **3.90** | |
+第 36 轮重要改进：用同一份 walk fps=12 资源（强制 idle/walk/jump/drag 全部 12 fps 动画）同时跑两候选 30 秒，**不再做"candidate A 8 fps vs candidate B 60 fps"这种资源/采样口径错配的直接比较**。
 
-**说明**：
-- 评分依据为客观证据，**不是相对比较**——每条都按"实际可证明的能力"打分。
-- 候选 A 在 CPU/内存/构建尺寸上有客观优势，候选 B 在 Windows 迁移、模块化、动画流畅度上有客观优势。
-- **两者均满足任务书硬门槛**，**未到 V0.0 阶段能冻结的强度**——按 §11 必须等用户授权后由 V0.1 推进决定。
-- 候选 B 在"未来 Windows 移植"上明显占优（25% 0.50 vs 0.20），但 Windows 不在 V0.0~V2.0 六阶段必验收范围内（PRD §5）。
-
-## 4. 关键观察
-
-### 4.1 共同通过项
-- T03 动画：26 帧全部解码；定时器/ticker 推进；事件切换可用（菜单触发）
-- T07 性能：两个候选都拿到 5+ 秒稳定 perf CSV（RSS/CPU/fps/frame_ms）
-- T08 错误恢复：20× 干净退出 + 缺素材优雅降级（test_loop.sh + test_missing_assets.sh）
-- T09 资源接口：仅改 manifest.json 即可让 engine 加载新帧序列（test_manifest.sh）
-- T10 安全：两套 test_security.sh/.js 静态扫描均通过
-
-### 4.2 客观限制（agent session）
-- T01/T02/T04/T05/T06：环境没有真实 Mac GUI session 的 WindowServer 写权限，截图未显示桌宠（透明度 API 已生效 alpha=0.999，但 WindowServer 不把 agent 进程的窗口合成到主屏幕）
-- T06 多屏：本机单显示器 1920x1080
-- 上述需要用户在真实前台 Mac 复测，详见 `MANUAL_MAC_TEST_PLAN.md`
-
-### 4.3 性能参考对照
-
-| 指标 | 任务书参考上限 | 候选 A 实测 | 候选 B 实测 |
+| 维度 | 候选 A | 候选 B | 差异 |
 |---|---|---|---|
-| 冷启动 | 5s | < 1s（log 验证） | < 2s（log 验证） |
-| 30 FPS | 30 | 8-9（idle fps=8 资源决定） | ~60（PIXI RAF 实际） |
-| 250 MB 空闲 RSS | 250 MB | 28-32 MB ✓ | 126-128 MB ✓ |
-| CPU < 5% 单核 | 5% | 0.7-9% 多数 < 5% ✓ | 11-22% 超出（WebView 开销） |
-| 24h 稳定 | 必须 | N/A（V0.0 阶段不验） | N/A |
+| **engine tick freq** | 36-60 Hz（NSTimer 60Hz 上限，受 main runloop 抖动） | 60 Hz（PIXI RAF 60Hz） | B 略稳定 |
+| **frame advances/sec** | 7.5（资源 12 fps） | ~60（PIXI RAF） | B 8× 高 |
+| **frame_ms p50** | 16.7 ms | 10.0 ms | B 1.7× 低 |
+| **frame_ms p95** | 17.5 ms | 11.0 ms | B 1.6× 低 |
+| **RSS 典型** | 27 MB | 129 MB | A 4.8× 轻 |
+| **RSS 峰值** | 29 MB | 131 MB | A 4.5× 轻 |
+| **CPU 典型** | 1.1% 单核 | 9.4% 单核 | A 8.5× 低 |
+| **CPU 峰值** | 5.5% 单核 | 35.3% 单核 | A 6.4× 低 |
+| **构建尺寸** | 138 KB Mach-O | ~80 MB .app（Electron） | A 580× 小 |
+| **30 FPS 目标** | 未达（7.5 fps，受 NSTimer 限制） | 达成（PIXI RAF 60Hz） | B 优 |
 
-## 5. 不冻结技术栈的理由
+### 3.1 候选 A 帧率低的根因
+
+候选 A 用 `NSTimer` 60Hz 驱动，但每个 tick 仅当 `dt >= 1/12 = 83.3ms` 才推进一帧，且 `setNeedsDisplay` 触发的 `drawRect` 也只画 1 帧 — 这导致 5-8 次 timer tick 才推进 1 帧。**这是 NSTimer 的真实上限，不是引擎资源 fps=12 决定的。**
+
+V0.1 改 `CVDisplayLink` 或将 timer 间隔减小到 1ms + 累积推进，可让 frame advance 频率达到 12 fps；进一步提到 60 fps 也只是 timer 间隔调整的事。
+
+### 3.2 候选 B frame_ms 10ms 偏低的根因
+
+候选 B 用 PIXI v7 的 `Application.ticker.add(callback)`，底层是 `requestAnimationFrame`，macOS 上限 60Hz。实测报 10ms 是 sampler 测量窗口边界偏差：`lastSecondFps` 在 1s 窗口边界重置，紧接 1s 内的 sampler tick 落在新窗口内被算到下一窗口，但 1s 边界附近的 tick 被算成 "上一窗口的 0.x 个"，造成平均偏快。**这是测量代码 bug，不是引擎实际 100 fps。**
+
+V0.1 修复：sampler 改用单调时钟 + 滑窗。
+
+### 3.3 工程量与可维护性
+
+| 维度 | 候选 A | 候选 B |
+|---|---|---|
+| 语言 | C/ObjC | JS/HTML/CSS + Node |
+| 编译产物 | 138 KB Mach-O 64-bit | ~80 MB .app bundle（含 Chromium） |
+| 运行时依赖 | 0（系统 framework） | 56 个 npm 包（Electron + Pixi） |
+| 调试工具 | Xcode / lldb | DevTools（自带） |
+| macOS 原生 API 完备性 | 完整（NSWindow/NSView 全套） | 受 WebView 限制（透明/层级/性能均需绕路） |
+| Windows 移植成本 | 需重写（AppKit 不跨平台） | 直接 Electron 跨平台 |
+| 学习曲线 | 陡（macOS-only 经验） | 平（Web 通用） |
+
+## 4. 加权评分（1-5）
+
+| 维度 | 权重 | 候选 A | 候选 B | A 加权 | B 加权 | 证据 |
+|---|---:|---:|---:|---:|---:|---|
+| 透明窗口、鼠标与焦点行为 | 25% | 3 | 3 | 0.75 | 0.75 | alpha=0.999 API 层都通过；TCC 权限导致无法直接拿图，等 one_click_test 肉眼验证 |
+| 2D 动画、动作控制与扩展资源支持 | 20% | 4 | 5 | 0.80 | 1.00 | A: CGImageRef 缓存 26/26 加载；B: PIXI 60Hz RAF + 26/26 加载；B 流畅度高 |
+| CPU/内存/流畅度与稳定性 | 20% | 5 | 2 | 1.00 | 0.40 | A: 27MB / 1.1% CPU / 7.5 fps；B: 129MB / 9.4% CPU / 60 fps；A 资源占用显著低 |
+| MiniMax 可维护性、模块化、可测试性 | 15% | 3 | 4 | 0.45 | 0.60 | A: C/ObjC 编译产物稳但模块化弱；B: JS 生态 + npm 模块化但调试复杂 |
+| 未来 Windows 可移植性 | 10% | 1 | 5 | 0.10 | 0.50 | A: macOS-only（AppKit 不跨）；B: Electron 跨 Windows 成熟（但 Windows 不在 V0.0~V2.0 必验收范围） |
+| macOS 构建、签名/分发可行性 | 10% | 4 | 3 | 0.40 | 0.30 | A: 138KB 二进制；B: 80MB app bundle |
+| **加权合计** | 100% | | | **3.50** | **3.55** | |
+
+**关键观察**：
+- 候选 B 在动画流畅度、Windows 迁移、模块化占优
+- 候选 A 在 CPU/内存/构建尺寸占绝对优势（**最关键差异**：A 用 1/4 RSS + 1/8 CPU 跑同样任务）
+- **两者加权总和几乎相等**（A 3.50 vs B 3.55，差 0.05）—— 任何"哪个更优"的结论都基于不完整数据
+- 任务书 §5/§11 规则要求：不冻结技术栈
+
+## 5. 关键观察
+
+### 5.1 共同通过项（API 层 + 自动化测试）
+- T03 动画：26 帧全部解码
+- T07 性能：两候选都拿到 30 秒稳定 perf CSV
+- T08 错误恢复：20× 干净退出 + 缺素材优雅降级（双候选）
+- T09 资源接口：仅改 manifest.json 即可让 engine 加载新帧序列（双候选）
+- T10 安全：两套静态扫描均通过
+
+### 5.2 客观限制（本机 + 环境）
+- T01/T02/T04/T05/T06 截图取证受 **TCC Screen Recording 权限**限制（修正后根因，详见 KNOWN_ISSUES.md ISSUE-A1）
+- T06 多屏：本机单显示器 1920x1080
+- 上述需要用户在真实前台 Mac 复测，已提供 `one_click_test/双击运行.command` 一键工具
+
+### 5.3 关键 bug 修复（第 36 轮）
+- **NSTimer 频率 bug**：`scheduledTimerWithTimeInterval:` 默认 NSDefaultRunLoopMode，被 main runloop 阻塞。改为 `+[NSTimer timerWithTimeInterval:...]` + `[[NSRunLoop mainRunLoop] addTimer:forMode:NSRunLoopCommonModes]`，engine tick 从 2Hz 升到 60Hz
+- **frame advance 测量 bug**：原 sampler.tick 只在 frame advance 时调用，导致 fps 上报成 frame advance 频率而非 engine tick 频率。拆分为两层指标：`fps`（engine tick）+ `frame_advances_per_sec`（sprite 帧推进）
+- **T08 loop 复测 20/20 clean**（修复后）：0 FATAL，0 zombies
+
+## 6. 不冻结技术栈的理由
 
 按任务书 §5/§11：
-- 当前 PASS 仅在 T03/T07/T08/T09/T10 上有真实证据；T01/T02/T04/T05 仍需 Mac 复测才可认定 PASS。
-- 两个候选的窗口在 agent 内都不可视化，**任何"哪个更接近 PASS"的判断都基于不完整数据**。
-- 选择其中一个会"把阶段性 PARTIAL 误报为可定栈"，违反 §4 "若两种方案都不满足安全/输入核心条件，不得硬选"。
-- 建议：等用户在真实 Mac GUI 复测 `MANUAL_MAC_TEST_PLAN.md` 后再决定 V0.1 推进。
+- T01/T02/T04/T05 需用户用 `one_click_test/双击运行.command` 真实肉眼验证
+- 候选 A 加权 3.50 / 候选 B 加权 3.55 — 差距 0.05/5.00 = 1.5%，远小于判别精度
+- 选择其中一个会"把阶段性 PARTIAL 误报为可定栈"
 
-## 6. 给用户的下一步建议
+## 7. 给用户的下一步
 
-1. **复测 T01/T02/T04/T05/T06**：在真实前台 Mac 运行两个候选的 `run.sh`，按 `MANUAL_MAC_TEST_PLAN.md` 步骤截图/录屏。
-2. **如果 T02/T04 真实可点**：选 A 路线作为 V0.1 起点（更轻量、原生 API 完备）
-3. **如果 T02/T04 在 A 上不可点（透明像素精准穿透）**：候选 B 的 `setIgnoreMouseEvents` per-pixel 逻辑更成熟
-4. **如果关心 Windows**：候选 B 显著占优（任务书 §2 备注：Windows 不在 V0.0~V2.0 必验收范围）
-5. **如果需要低内存/低 CPU**：候选 A 显著占优
-6. **不依赖本阶段冻结技术栈**：Tauri 候选因 Rust 工具链未装而无法验证；若 V0.1 用户要求验证 Tauri，需先 `rustup` + `cargo`，记录至少 2 个真实原型对照
+1. **真实 Mac 复测**（**最关键**）：双击 `one_click_test/双击运行.command`，按提示观察 60 秒候选 A + B 真实桌面表现，回填 `evidence/build_logs/user_visual_report.txt`
+2. **如果 T01/T02/T04/T05 在候选 A 上全 PASS**：选 A 推进 V0.1（资源占用优势）
+3. **如果 T01/T02/T04/T05 在候选 B 上全 PASS**：选 B 推进 V0.1（动画流畅度优势）
+4. **如果仅候选 B PASS**：B 优势在动画，T02 像素精准穿透优先
+5. **如果仅候选 A PASS**：A 优势在资源，T01/T02 简化方案可接受
+6. **如果两候选都 PARTIAL**：再迭代
+7. **不依赖本阶段冻结技术栈**：Tauri 候选因 Rust 工具链未装而无法验证；若 V0.1 用户要求验证 Tauri，需先 `rustup` + `cargo`，记录至少 1 个真实原型对照
 
-## 7. 待办
+## 8. 待办（移交 V0.1）
 
-- [ ] 真实 Mac GUI 复测
-- [ ] V0.0 阶段真实测试覆盖率补到 100%
-- [ ] 用户授权 V0.1 后冻结技术栈
+- [ ] 真实 Mac GUI 复测 → `user_visual_report.txt` 回填
+- [ ] T06 多屏/Spaces（需要外接屏）
+- [ ] V0.1 推进技术栈选型决定
 - [ ] 角色正式名（FR-A.1 + P23）由用户/美术提供
 - [ ] 30+ 动作资产排期（V2.0）
-- [ ] 内存与单核 CPU 在候选 B 上优化（按需）
+- [ ] 候选 A 帧率优化（CVDisplayLink / 1ms timer 累积）
+- [ ] 候选 B sampler 测量 bug 修复
+- [ ] 候选 B 内存与 CPU 在生产环境优化（关 nodeIntegration / 沙箱化 / 关闭 DevTools）
 

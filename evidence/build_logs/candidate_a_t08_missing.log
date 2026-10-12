@@ -1,3 +1,3 @@
-2026-10-12 20:55:44.174 PetCandidateA[34797:1750346] NSWindow does not support nonactivating panel styleMask 0x80
-2026-10-12 20:55:44.183 PetCandidateA[34797:1750346] [FrameStore] load fail: /Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/assets/prototype_chibi/animations/missing/000.png
-2026-10-12 20:55:46.176 PetCandidateA[34797:1750346] [AppDelegate] terminating cleanly
+2026-10-12 22:31:16.199 PetCandidateA[44970:1831518] NSWindow does not support nonactivating panel styleMask 0x80
+2026-10-12 22:31:16.209 PetCandidateA[44970:1831518] [FrameStore] load fail: /Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/assets/prototype_chibi/animations/missing/000.png
+2026-10-12 22:31:18.200 PetCandidateA[44970:1831518] [AppDelegate] terminating cleanly

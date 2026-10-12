@@ -1,0 +1,91 @@
+{
+  "schema_version": "0.0.1-prototype",
+  "character_id": "prototype_scientist_geometric",
+  "appearance_id": "prototype_default",
+  "display_name": "\u51e0\u4f55\u5360\u4f4d\u7814\u7a76\u5458\uff08\u975e\u6b63\u5f0f\u89d2\u8272\u7acb\u7ed8\uff09",
+  "canvas_px": [
+    256,
+    256
+  ],
+  "anchor_normalized": [
+    0.5,
+    0.9
+  ],
+  "hitbox_normalized": [
+    0.29,
+    0.24,
+    0.72,
+    0.87
+  ],
+  "atlas": {
+    "file": "atlas.png",
+    "columns": 8,
+    "rows": 4,
+    "frame_count": 26,
+    "frame_size_px": [
+      256,
+      256
+    ]
+  },
+  "animation_order": [
+    "idle",
+    "walk",
+    "jump",
+    "drag"
+  ],
+  "actions": {
+    "idle": {
+      "fps": 12,
+      "loop": true,
+      "frames": [
+        "animations/walk/000.png",
+        "animations/walk/001.png",
+        "animations/walk/002.png",
+        "animations/walk/003.png",
+        "animations/walk/004.png",
+        "animations/walk/005.png",
+        "animations/walk/006.png",
+        "animations/walk/007.png"
+      ]
+    },
+    "walk": {
+      "fps": 12,
+      "loop": true,
+      "frames": [
+        "animations/walk/000.png",
+        "animations/walk/001.png",
+        "animations/walk/002.png",
+        "animations/walk/003.png",
+        "animations/walk/004.png",
+        "animations/walk/005.png",
+        "animations/walk/006.png",
+        "animations/walk/007.png"
+      ]
+    },
+    "jump": {
+      "fps": 12,
+      "loop": true,
+      "frames": [
+        "animations/walk/000.png",
+        "animations/walk/001.png",
+        "animations/walk/002.png",
+        "animations/walk/003.png",
+        "animations/walk/004.png",
+        "animations/walk/005.png",
+        "animations/walk/006.png",
+        "animations/walk/007.png"
+      ]
+    },
+    "drag": {
+      "fps": 12,
+      "loop": true,
+      "frames": [
+        "animations/drag/000.png",
+        "animations/drag/001.png",
+        "animations/drag/002.png",
+        "animations/drag/003.png"
+      ]
+    }
+  },
+  "license": "Generated locally for this technical prototype; use within this project; not a final brand asset."
+}

@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSRect hitboxRect;        // transparent-vs-hit rect
 @property (nonatomic, readonly) BOOL hovered;
 @property (nonatomic, readonly) NSInteger dragStartFrame;
+@property (nonatomic, readonly) NSInteger lastSecondFrameAdvances;  // rolling 1s counter of sprite-frame advances
 
 - (void)setAction:(NSString *)action;   // switches animation; safe at any time
 - (void)startTicking;                    // install CADisplayLink equivalent (NSTimer)

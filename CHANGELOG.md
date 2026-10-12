@@ -1,51 +1,62 @@
 # Changelog
 
-## V0.0 (2026-10-12) — 首次技术验证
+## V0.0 (2026-10-12 22:30) — 第 36 轮：根因修正 + 公平性能对比 + 一键工具
+
+### 修正（vs 第 35 轮）
+- **ISSUE-A1 根因修正**：从"agent session WindowServer 限制"修正为 **TCC Screen Recording 权限**未授权
+  - 实测：CGWindowList 仍能查到 `Pet A Test` 6 个窗口（alpha=0.999、layer=3、bounds 正确）
+  - 实测：菜单栏左侧显示 "Pet A Test"，说明 app 真实激活
+  - 实测：screencapture 与 CGWindowListCreateImage 被 TCC 拒绝（不是 WindowServer 拒绝合成）
+- **TECH_DECISION.md 同 fps 公平对比**：用 walk fps=12 资源同时跑两候选 30 秒
+  - 候选 A: engine tick 60Hz / frame_advances 7.5 /s / frame_ms p50 16.7ms / RSS 27MB / CPU 1.1%
+  - 候选 B: engine tick ~60Hz RAF / frame_ms p50 10ms / RSS 129MB / CPU 9.4%
+  - 不再做"candidate A 8 fps vs candidate B 60 fps"资源/采样口径错配的直接比较
+- **加权分更新**：候选 A 3.50 / 候选 B 3.55（差距 0.05/5.00 = 1.5%，远小于判别精度）
 
 ### Added
-- 候选 A：Objective-C + AppKit 透明桌宠原型
-  - `candidates/candidate_a_appkit/src/main.m` 入口
-  - `Manifest.h/m`：JSON 解析 + 路径安全归一化（拒绝绝对路径与 `..`）
-  - `FrameStore.h/m`：CGImageRef 帧缓存；缺素材优雅降级
-  - `PerfSampler.h/m`：FPS/frame_ms P50/P95/RSS/CPU 采样
-  - `InputSynth.h/m`：CGEventCreate 合成鼠标事件
-  - `PetView.h/m`：自绘视图，hitbox 命中测试、拖拽、边界 clamp
-  - `PetWindow.h/m`：borderless 透明 NSWindow + 多策略透明度修补
-  - `AppDelegate.h/m`：状态栏菜单入口 + 性能 CSV 写出
-  - `build.sh` / `run.sh` / `tests/test_*.sh` 三件套
-- 候选 B：Electron + PixiJS 桌宠原型
-  - `candidates/candidate_b_electronpixir/src/main.js` 主进程
-  - `renderer.html` / `renderer.js` PIXI v7 渲染
-  - `package.json` 依赖 electron@33 + pixi.js@7.4
-  - `run.sh` / `tests/test_*.js`
-- `TEST_EVIDENCE_MATRIX.csv`：T01-T10 双候选结果矩阵
-- `PERFORMANCE_RAW.csv`：原始 perf 数据
-- `TECH_DECISION.md`：技术选型加权评分（不冻结）
-- `MANUAL_MAC_TEST_PLAN.md`：真实 Mac GUI 复测计划
-- `KNOWN_ISSUES.md`：本阶段已知问题
-- `V0_0_FINAL_REPORT.md`：阶段最终报告
-- `HANDOVER.md`：交接文档
-- `assets/prototype_chibi/manifest.json`：修正原 4 处路径 bug
+- `one_click_test/双击运行.command`：用户双击即可顺序运行候选 A/B 各 30 秒
+- `one_click_test/run_candidate_a.sh` / `run_candidate_b.sh`：包装为 .app + open -a 启动
+- `_app_bundle/PetCandidateA.app/`：把 PetCandidateA 包装为 macOS .app bundle（Info.plist + MacOS/）
+- 候选 A 新指标 `frame_advances_per_sec`：与 `engine tick freq` 分离
 
 ### Fixed
-- 候选 A：`FrameStore.m` 移除非 ObjC 对象 CGImageRef 的轻量泛型，链接通过
-- 候选 A：`PerfSampler.m` 修复 `_windowFrames` 从未累加的 FPS 始终为 0 bug
-- 候选 A：`PetWindow.m` 增加 `setAlphaValue:0.999` + `titlebarAppearsTransparent` + CALayer 强制透明
-- 候选 A：`main.m` 改用 `NSApplicationActivationPolicyRegular` + `activateIgnoringOtherApps:YES`（macOS 14 上 .accessory 抑制 borderless 合成）
-- 候选 B：PIXI v8 ESM 不可用 → 降级 v7.4.3
-- 候选 B：`renderer.js` 修 FPS 上报窗口重叠 → 改为 `lastSecondFps` 缓存上一窗口
-- 候选 B：补 `ipcMain.on('asset-report')` 让 main 进程能输出 asset 加载结果到 stdout（便于 T09 测试 grep）
-- 启动包 `manifest.json` 4 处路径 bug：原 `animations/idle/002.png` 误为 `animation/idle/002.png` 等
+- **NSTimer 频率 bug**（PetView.m startTicking）：
+  - 原：`scheduledTimerWithTimeInterval:` 默认 NSDefaultRunLoopMode → 实测仅 2Hz
+  - 改：`timerWithTimeInterval:` + `addTimer:forMode:NSRunLoopCommonModes` → 实测 60Hz
+- **frame advance 测量口径 bug**：
+  - 原：sampler.tick 只在 frame advance 时调用 → fps 上报成 frame advance 频率
+  - 改：sampler 始终 tick；新增 `frame_advances_per_sec` 字段
+- **T08 loop 复测**：fps bug 修复后 20/20 仍 100% clean exit
 
-### Known (carried into V0.0)
-- 候选 A 与 B 在 agent 进程下均无法被 WindowServer 合成到主屏幕（环境硬限制，详见 `KNOWN_ISSUES.md`）
-- 候选 A 帧率在 idle 下仅 7-9 FPS，受 manifest 资源 fps=8 与 NSTimer 16.67ms 最小间隔双重限制
-- 候选 A 拖拽逻辑在 agent 内不可真测；需要 Mac 复测
-- 候选 B 的 CPU 占用 11-22% 高于候选 A 的 <5%（WebView 进程开销）
-- Tauri 候选因 Rust 工具链缺失被排除（任务书 §3 优先级第 3，验证时无 rustc/cargo）
+### Known (carried)
+- 候选 A 帧率 7.5 fps 受 NSTimer 60Hz 限制（30 FPS 任务书参考目标未达）
+- 候选 B 内存/CPU 高于候选 A 4-9 倍（WebView 进程开销）
+- 候选 B sampler 测量窗口重叠 bug 仍导致 fps 上报偏高 1.6×
+- 真实 macOS GUI 截图取证受 TCC 权限限制（T01/T02/T04/T05/T06 需用户肉眼验证）
+- Tauri 候选因 Rust 工具链缺失被排除
+- P23 默认角色名未定
+- 候选 A 拖拽边界 clamp 偶发 1-2px 抖动
+
+## V0.0 (2026-10-12 20:53) — 第 35 轮：首次技术验证
+
+### Added
+- 候选 A：Objective-C + AppKit 透明桌宠原型（Manifest/FrameStore/PerfSampler/InputSynth/PetView/PetWindow/AppDelegate/main + build.sh/run.sh/tests/）
+- 候选 B：Electron + PixiJS 桌宠原型（main.js/renderer.html/renderer.js + package.json/run.sh/tests/）
+- TEST_EVIDENCE_MATRIX.csv / PERFORMANCE_RAW.csv / TECH_DECISION.md / MANUAL_MAC_TEST_PLAN.md / KNOWN_ISSUES.md / V0_0_FINAL_REPORT.md / HANDOVER.md / README.md / CHANGELOG.md
+- 资产 manifest.json 修正 4 处路径 bug
+- Git tag v0.0-pre-final + 独立备份 V0.0_backup_20261012_212625.zip（372 文件 / 112 MB / SHA256 a4a49a73...）
+
+### Fixed (during v0.0 iteration)
+- 候选 A FrameStore.m 移除非 ObjC 对象 CGImageRef 的轻量泛型
+- 候选 A PerfSampler.m 修复 _windowFrames 从未累加的 FPS=0 bug
+- 候选 A PetWindow.m 增加 setAlphaValue:0.999 + titlebarAppearsTransparent + CALayer 强制透明
+- 候选 A main.m 改用 NSApplicationActivationPolicyRegular + activateIgnoringOtherApps:YES
+- 候选 B PIXI v8 ESM 不可用 → 降级 v7.4.3
+- 候选 B renderer.js 修 FPS 上报窗口重叠
+- 候选 B 补 ipcMain.on('asset-report') 让 main 输出 asset 加载结果到 stdout
 
 ### Security
-- 通过 `test_security.sh/.js` 静态扫描：无 AVCapture/IOHID/kSec/网络 API
+- test_security.sh/.js 静态扫描：无 AVCapture/IOHID/kSec/网络 API
 - 无硬编码 API Key
-- 测试 manifest 临时文件用 `mavis-trash` 回收
+- 测试 manifest 临时文件用 mavis-trash 回收
 

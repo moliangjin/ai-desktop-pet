@@ -145,5 +145,99 @@ ipcMain.on('action-switch', (_evt, action) => {
     }
 });
 
-// V0.0 R53: passthrough removed. macOS transparent-window + PIXI stage
-// eventMode='none' handles forwarding. See renderer.js for full rationale.
+// V0.0 R54 passthrough state machine.
+//
+// Three stable states:
+//
+//   SPRITE_HOVER (ignore=false)
+//       cursor inside the BrowserWindow AND inside the sprite hitbox.
+//       BrowserWindow receives events; PIXI sprite reacts to click/drag.
+//
+//   WIN_HOVER (ignore=true, forward=true)
+//       cursor inside the BrowserWindow BUT outside the sprite hitbox.
+//       BrowserWindow does NOT receive events; macOS forwards them to
+//       the underlying window (ClickThroughProbe, Finder, etc.).
+//
+//   OUTSIDE (ignore=false)
+//       cursor outside the BrowserWindow. We keep ignore=false so if
+//       the user moves back into the window we receive the mouse event
+//       that re-enters.
+//
+// Transitions are driven by a 20 Hz main-process loop using
+// screen.getCursorScreenPoint() — no renderer IPC needed once the
+// renderer pushes the sprite bounds once on resize/move.
+//
+// Anti-jitter rules:
+//  * Only call setIgnoreMouseEvents when the desired state changes.
+//  * While the user is dragging (drag-active IPC), force ignore=false.
+//  * The transition log caps at 1 line per change.
+
+const { screen } = require('electron');
+
+let spriteBounds = null;     // {x,y,width,height} in screen DIP coordinates
+let dragActive = false;
+let ignoreState = false;     // last applied state
+let transitions = 0;
+
+ipcMain.on('sprite-bounds', (_evt, b) => {
+    if (b && typeof b.x === 'number') spriteBounds = b;
+});
+
+ipcMain.on('drag-state', (_evt, d) => {
+    dragActive = !!d;
+});
+
+function setIfChanged(wantIgnore) {
+    if (!mainWindow || wantIgnore === ignoreState) return;
+    ignoreState = wantIgnore;
+    transitions++;
+    try {
+        if (wantIgnore) {
+            mainWindow.setIgnoreMouseEvents(true, { forward: true });
+        } else {
+            mainWindow.setIgnoreMouseEvents(false);
+        }
+    } catch (e) {
+        console.log('[main] setIgnoreMouseEvents error:', e && e.message);
+    }
+    console.log(`[main] transition ${transitions}: setIgnoreMouseEvents(${wantIgnore})`);
+}
+
+function step() {
+    if (!mainWindow) return;
+    if (dragActive) { setIfChanged(false); return; }
+    const cursor = screen.getCursorScreenPoint();  // DIP
+    const wb = mainWindow.getBounds();              // DIP (electron returns DIP for non-scaling)
+    if (!wb) return;
+    const insideWindow =
+        cursor.x >= wb.x && cursor.x < wb.x + wb.width &&
+        cursor.y >= wb.y && cursor.y < wb.y + wb.height;
+    if (!insideWindow) {
+        // User left BrowserWindow. Keep ignore=false so the re-enter
+        // event lands back in this window.
+        setIfChanged(false);
+        return;
+    }
+    let insideSprite = false;
+    if (spriteBounds) {
+        insideSprite =
+            cursor.x >= spriteBounds.x &&
+            cursor.x <  spriteBounds.x + spriteBounds.width &&
+            cursor.y >= spriteBounds.y &&
+            cursor.y <  spriteBounds.y + spriteBounds.height;
+    }
+    setIfChanged(!insideSprite);
+}
+
+setInterval(step, 50);  // 20 Hz
+console.log('[main] R54 passthrough state machine started (20 Hz)');
+
+// Diagnostic: expose transition count and current state to renderer for the
+// GUI perf overlay (kept lightweight — no per-tick log to syslog).
+ipcMain.handle('passthrough-stats', () => {
+    return {
+        transitions: transitions,
+        ignore: ignoreState,
+        bounds: mainWindow ? mainWindow.getBounds() : null,
+    };
+});

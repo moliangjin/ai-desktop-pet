@@ -162,9 +162,10 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
         sprite_.width,
         sprite_.height
     );
-    app_.stage.eventMode = 'none';          // 整 stage 不接 click
-    app_.stage.interactive = false;          // legacy PIXI v7
-    app_.stage.interactiveChildren = false;  // children 不自动接
+    // R54 修正：stage.interactiveChildren 必须 = true，否则 children 也接不到 event (PIXI v7)
+    app_.stage.interactive = false;          // stage 自身不接 event
+    app_.stage.interactiveChildren = true;   // children 可接 (sprite.pointerdown 才能触发)
+    app_.stage.eventMode = 'passive';        // PIXI v8 兼容；PIXI v7 仅认 interactiveChildren
     app_.stage.addChild(sprite_);
     console.log('[renderer] sprite enabled: interactive=', sprite_.interactive,
                 'buttonMode=', sprite_.buttonMode,
@@ -219,6 +220,7 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
                 sprite_.width,
                 sprite_.height
             );
+            pushSpriteBounds();  // R54: 更新 sprite hitArea 屏幕 bbox 给 main
         }
         const meta = spritesByAction[currentAction];
         if (!meta || meta.frames.length === 0) return;
@@ -261,6 +263,57 @@ ipcRenderer.on('set-action', (_evt, action) => {
         fallback.textContent = '[renderer] switched to ' + action;
     }
 });
+
+// ============================================================================
+// V0.0 R54: sprite-bounds IPC — main.js polls screen.getCursorScreenPoint()
+// and toggles setIgnoreMouseEvents(ignore, {forward:true}). We push the
+// sprite's screen-DIP bounding box so main can decide.
+// ============================================================================
+
+let lastPushedBounds = '';
+let lastPushedAt = 0;
+let windowOriginX = 0;
+let windowOriginY = 0;
+
+function syncWindowOrigin() {
+    windowOriginX = window.screenX || 0;
+    windowOriginY = window.screenY || 0;
+}
+syncWindowOrigin();
+window.addEventListener('resize', syncWindowOrigin);
+
+function pushSpriteBounds() {
+    if (!sprite_) return;
+    syncWindowOrigin();
+    const sx = sprite_.x - sprite_.width  * sprite_.anchor.x;
+    const sy = sprite_.y - sprite_.height * sprite_.anchor.y;
+    const dpr = window.devicePixelRatio || 1;
+    const box = {
+        x: windowOriginX + sx * dpr,
+        y: windowOriginY + sy * dpr,
+        width:  sprite_.width  * dpr,
+        height: sprite_.height * dpr,
+    };
+    const key = `${Math.round(box.x)},${Math.round(box.y)},${Math.round(box.width)},${Math.round(box.height)}`;
+    const now = performance.now();
+    if (key === lastPushedBounds && (now - lastPushedAt) < 250) return;  // dedupe
+    lastPushedBounds = key;
+    lastPushedAt = now;
+    ipcRenderer.send('sprite-bounds', box);
+}
+
+// drag 状态广播给 main — main 在 drag 期间强制 ignore=false
+function broadcastDrag() {
+    const now = performance.now();
+    if (now - dragStateBroadcastAt < 100) return;
+    dragStateBroadcastAt = now;
+    ipcRenderer.send('drag-state', !!dragging);
+}
+let dragStateBroadcastAt = 0;
+sprite_.on('pointerdown', broadcastDrag);
+sprite_.on('pointerup',   broadcastDrag);
+sprite_.on('pointerupoutside', broadcastDrag);
+broadcastDrag();
 
 // ============================================================================
 // V0.0 R53: Transparent-area passthrough — macOS native forwarding.

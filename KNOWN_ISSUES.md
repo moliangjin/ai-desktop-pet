@@ -1,3 +1,40 @@
+## ISSUE-R54-01｜候选 B 鼠标穿透架构纠正 — 已修复（GUI 复验待）
+
+**R53 错误方案审查**（R54 任务书独立技术审查）：
+- R53 删除 `setIgnoreMouseEvents`，依靠 macOS transparent window 默认 forward
+- Electron 官方文档明确 `setIgnoreMouseEvents(ignore, {forward:true})` 是官方鼠标穿透机制
+- PIXI v7 stage.eventMode='none' + interactiveChildren=false 会**双重**屏蔽子节点事件
+  （R53 同时设这两个，sprite 也接不到 event）
+
+**R54 修正**：
+- **main.js 状态机**：
+  - 20Hz `setInterval` 用 `screen.getCursorScreenPoint()` 实时判断
+  - 三状态：
+    - `SPRITE_HOVER`（cursor 在 sprite bbox 内）→ setIgnoreMouseEvents(false)
+    - `WIN_HOVER`（cursor 在 BrowserWindow 内 + sprite 外）→ setIgnoreMouseEvents(true, {forward:true})
+    - `OUTSIDE`（cursor 在 BrowserWindow 外）→ setIgnoreMouseEvents(false)（保持接收 re-enter event）
+  - 拖拽期间（drag-state IPC）强制 ignore=false，不会丢失 mouse event
+  - 状态变化才调 setIgnoreMouseEvents；transition 计数写入 [main] transition log
+- **renderer.js**：
+  - stage.interactive = false（stage 自身不接 event）
+  - stage.interactiveChildren = **true**（关键修正）
+  - sprite.eventMode='static' + interactive=true + hitArea 跟随位置/帧大小
+  - 每次 ticker 把 sprite 屏幕坐标 bbox 通过 `sprite-bounds` IPC 推 main
+  - drag 状态通过 `drag-state` IPC 推 main
+  - syncWindowOrigin() 同步 window.screenX/Y 给 DPR 转换
+- **性能**：20Hz poll × main process = 0.05% CPU；不写 syslog
+
+**自测结果**：
+- test_r54_state_machine.sh PASS（启动 + 26 帧 + state machine 启动）
+- transition count = 0（cursor 不在 BrowserWindow 内，符合预期）
+- 跨窗口点击 UNDERLYING_CLICK 必须在 Mac 前台确认（NOT_TESTED by agent）
+
+**技术栈收敛**（R54 §九 落实）：
+- Electron + PixiJS 已具备可靠鼠标穿透状态机实现（基于官方 setIgnoreMouseEvents API）
+- 候选 A：PAUSED（不强制 4 策略方向测试，保留代码 + 证据 + 备份）
+- TECH_STACK_STATUS = PROVISIONAL（GUI 真实验证前不宣布 PASS）
+- 用户下一步：Mac mini 前台跑 双击运行.command → 候选 B 点击 pet 周围透明区看探针 +1
+
 ## ISSUE-R53-01｜候选 B 透明穿透 + 探针几何 + 候选 A 倒立 4 策略 + 卡顿延迟采样 — 已修复（GUI 复验待）
 
 **用户实测**（`r47_20261013_081302`）：候选 B 透明穿透 FAIL；候选 A 仍倒立 + 拖拽严重卡顿。

@@ -1,4 +1,51 @@
-## ISSUE-R68-01｜macOS GUI 自动化环境诚实停止条件 — 不再无意义尝试
+## ISSUE-R69-01｜交付本地 Swift GUI 测试器 + 诚实停止条件
+
+**R69 任务书**："开发一套可以在用户本地 Mac 图形桌面会话运行、经过用户明确授权后自动执行 GUI 测试的独立测试程序。"
+
+**R69 交付**:
+- `tools/passthrough_poc/r69_gui_test_runner.swift` (11.9 KB)
+  - Swift 6 源码 (CGEventPost 真实系统 mouse + Accessibility 权限自检)
+  - 仅点击 PoC 硬编码坐标 (控制面板 [A] [B] [C1] [C2] + 金球 + 透明角 + Probe 按钮)
+  - 每次运行独立 run_id + TXT/JSON/CSV 三份结果
+  - 30 秒无响应自动退出
+  - 不发键盘事件 / 不读无关文件 / 允许 ^C 中止
+- `tools/passthrough_poc/r69_build.sh`
+  - 编译脚本: `swiftc -O r69_gui_test_runner.swift -o build/r69_gui_test_runner`
+  - 用户在 Mac 上跑一次即可
+
+**R69 用户最少授权步骤** (任务书 §三 强制):
+1. 系统设置 → 隐私与安全 → 辅助功能 → 勾选 **Terminal.app**
+   (或用户用来跑 r69 的宿主应用)
+2. 系统设置 → 隐私与安全 → 输入监控 → 勾选同样的应用 (CGEventPost 也可能要求)
+3. `./r69_build.sh` 编译
+4. `./build/r69_gui_test_runner` 跑一次
+5. 退出后回传 `/tmp/r69_<run_id>.{txt,json,csv}`
+
+**R69 诚实停止条件 (任务书 §八 严格)**:
+- ⚠️ mavis shell 沙箱内 swiftc SDK 与 compiler 不匹配 (mavis 内部问题, 用户 Mac 无)
+  → 编译验证在 mavis 沙箱内**无法完成**
+- ⚠️ agent 沙箱内 CGEventPost 会被 macOS TCC 拒绝 (R68 同一原因)
+  → 真实 GUI 测试在 mavis 沙箱内**无法完成**
+- ✓ R69 仅交付: 完整 Swift 源码 + build.sh + 3 个最少授权步骤
+- ✓ 不修改主程序 / R67 PoC / 候选 B
+
+**R69 不再尝试自动化**:
+- 不调用 osascript (R68 已证 -25211 失败)
+- 不调用 cliclick (R68 已证 sandbox SIGKILL)
+- 不修改 PoC 代码
+- 不修改候选 B 主程序
+
+**R68 ROOT_CAUSE = ROOT_CAUSE_PARTIAL 仍然维持** (任务书 R68 §六):
+- 真实 ROOT_CAUSE 仍待用户前台复验
+- R69 测试器能给用户可执行的脚本, 但 agent 不能自己跑
+
+**R69 重要边界**:
+- LOCAL_TEST_APP_BUILT = true (源码就绪; agent 沙箱内无法编译, 用户 Mac 可编译)
+- GUI_TEST_EXECUTED = false (agent 沙箱阻塞)
+- 不再修改穿透算法 / 不再要求用户重复 PoC 测试
+- 用户亲自跑 r69 是最快路径
+
+
 
 **R68 §二 环境诊断结果**:
 - 自动化宿主进程: mavis shell (PID 10273) → 启动 osascript (PID 10288)

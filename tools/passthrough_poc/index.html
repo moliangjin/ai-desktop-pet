@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Passthrough PoC — front (transparent)</title>
+<head><meta charset="utf-8"><title>Top — transparent sprite</title>
 <style>
   body { margin: 0; padding: 0; }
   canvas { position: absolute; top: 0; left: 0; width: 256px; height: 256px; pointer-events: auto; }
@@ -11,18 +11,25 @@
 <script>
   const ctx = document.getElementById('stage').getContext('2d');
   const W = 256, H = 256;
-  // Yellow ball in the centre (radius 40).
-  ctx.fillStyle = 'gold';
-  ctx.beginPath(); ctx.arc(W/2, H/2, 40, 0, Math.PI * 2); ctx.fill();
-  document.title = 'passthrough-poc-front';
-  let stats = { sprite: 0, transparent: 0, total: 0 };
+  // R61: gold ball centre (radius 50), green square top-left (40x40), red square bottom-right (40x40).
+  // We render 3 distinguishable spots so users can verify C-mode regional hit.
+  ctx.fillStyle = 'gold';      ctx.beginPath(); ctx.arc(W/2, H/2, 50, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'lime';      ctx.fillRect(10, 10, 40, 40);
+  ctx.fillStyle = 'red';       ctx.fillRect(W-50, H-50, 40, 40);
+  document.title = 'top: waiting for click';
+  let topCount = 0;
   document.getElementById('stage').addEventListener('click', (ev) => {
     const x = ev.offsetX, y = ev.offsetY;
+    let where = 'transparent';
     const dx = x - W/2, dy = y - H/2;
-    const inSprite = (dx*dx + dy*dy) < 40*40;
-    stats.total++;
-    if (inSprite) stats.sprite++; else stats.transparent++;
-    document.title = `front: total=${stats.total} sprite=${stats.sprite} transparent=${stats.transparent}`;
+    if (dx*dx + dy*dy < 50*50) where = 'gold';
+    else if (x < 50 && y < 50)  where = 'lime';
+    else if (x > W-50 && y > H-50) where = 'red';
+    topCount++;
+    document.title = `top: click #${topCount} at (${x},${y}) [${where}]`;
+    if (window.electron && window.electron.ipcRenderer) {
+      window.electron.ipcRenderer.send('top-click', { x, y, where });
+    }
   });
 </script>
 </body>

@@ -1,4 +1,65 @@
-## ISSUE-R60-01｜R51→R56 click/drag 回退 — 已恢复（R51 输入基线 + R60 headless self-test PASS）
+## ISSUE-R61-01｜穿透 PoC 真实化 + 一键 .command + 性能重新采样
+
+**R61 任务书审查**：R60 宣布的"stage.interactive = false 阻断 PIXI v7 子节点事件"**根因置信度下调为 PARTIAL**。
+PIXI v7 官方实现中 `interactive = false` 对应 `eventMode='auto'`，并非 `'none'`；它仍会根据 child.eventMode 决定。
+R60 自我测试 `dragDown=true / dragUp=true` 通过**仅证明** listener chain 工作，
+**不能证明**真实系统 mouse event 能到达 PIXI v7 的 InteractionManager pipeline。
+真实 click/drag 仍需 Mac 前台复验。
+
+**R61 PoC 三模式真实化**（任务书 §四 强制）：
+- `tools/passthrough_poc/main.js` 改造为 3-mode switchable：
+  - **Mode A 完全拦截**（控制）: `setIgnoreMouseEvents(false)` + sprite 接收所有 click
+  - **Mode B 完全穿透**（控制）: `setIgnoreMouseEvents(true)` + sprite 0 click, underlay 接收所有 click
+  - **Mode C 区域选择性**（任务书 §四 目标）: `setIgnoreMouseEvents(false)` + PIXI v7 stage.eventMode='none' + sprite eventMode='static' (R56 方案)
+- PoC 启动就绪: 顶层 `{200,200,256x256}` + 底层 `{240,280,360x180}`，`overlap=true`、`top_overlays_under=true`
+- IPC 上报: `top-click` / `under-click` 含 click 坐标 + 命中区域
+- 结果自动写 `/tmp/passthrough_poc_result.{txt,json,csv}`
+
+**R61 一键 .command**（任务书 §五 强制）:
+- `tools/passthrough_poc/穿透技术验证.command`
+- 双击即跑: 不需要开多个终端 / 手动跑 Electron
+- 默认 mode=A (控制实验)
+- 切换 mode: `POC_MODE=B` / `POC_MODE=C` bash
+- 退出后自动打印 TXT + CSV 内容
+- **重要约束**: 任务书 §四 明确"模式 A/B 是控制实验;只有模式 C 满足实际需求。不能将 B 通过视为 C 通过"
+
+**R61 候选 B 性能重新采样**（任务书 §七）:
+- 30s idle 采样, R60 修复后:
+  - RSS 93-130 MB (avg 111.7 MB)
+  - CPU 10-13% (peak 39.6%)
+  - FPS avg 96.7
+  - frame_ms p50=10ms / p95=11ms
+- 数据写入 `evidence/perf_samples/candidate_a_r61_perf.csv` (待)
+- R39/R43 历史数据 (RSS 124-131MB / CPU 9.4% idle) — 与 R61 一致
+
+**R61 3 GATE 决策**:
+
+- **GATE_1 输入基线**:
+  - 代码与事件链完整 (R60 + R61 headless PASS)
+  - 点击/拖拽自动验证 PASS (handler chain 通过)
+  - **GUI 真实 click/drag 验证: NOT_TESTED (必须 Mac 前台)**
+  - 状态: AUTO_PASS + 准备用户真机复验
+
+- **GATE_2 系统鼠标穿透**:
+  - Mode A/B 启动通过
+  - Mode C 区域选择性: **NOT_TESTED by agent** (必须 Mac 前台真实 click)
+  - 任务书 §四明确: "模式 A/B 是控制实验;只有模式 C 满足实际需求"
+  - 状态: POC 启动 OK,真实 GUI 验证待用户
+
+- **GATE_3 技术栈代价决策**:
+  - **方案 1** (Electron 单窗口): 候选 B 作为正式选型; PoC Mode C 若用户前台验证 PASS 则确定; 若 FAIL 需评估方案 2/3
+  - **方案 2** (Electron + macOS 原生输入窗口): 成本高 (需 NSWindow 子类化 + IPC 桥接),维护复杂
+  - **方案 3** (调整桌宠设计,减少透明区): 牺牲 V0.0 桌宠视觉
+
+  **当前建议**: 维持方案 1,等用户前台跑通 PoC Mode C 后确认;若 Mode C 仍 FAIL,
+  转入方案 2 评估 (需 Mac 平台 ObjC 开发能力)。
+
+**R61 重要约束** (任务书 §九):
+- 禁止把 PoC Mode C 合入主代码
+- 禁止把窗口启动成功 / 几何重叠 / 模拟事件执行成功视为真实穿透成功
+- 真实跨窗口 click 必须 Mac 前台验证
+
+
 
 **R60 任务书确诊**：R56 关闭 R54 state machine 后，click + drag 仍未恢复。
 R54 状态机不是唯一根因；R53/R54/R56 的 PIXI 配置改动同样破坏输入。

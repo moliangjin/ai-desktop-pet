@@ -1,24 +1,31 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Probe — underlay click counter</title>
+<head><meta charset="utf-8"><title>Underlay — click counter</title>
 <style>
   body { margin: 0; padding: 8px; font: 13px monospace; background: white; }
   h3 { margin: 4px 0; }
   #counter { font-size: 36px; font-weight: bold; color: blue; margin: 12px 0; }
+  #log { font-size: 11px; max-height: 100px; overflow-y: auto; border: 1px solid #ccc; padding: 4px; }
 </style>
 </head>
 <body>
-<h3>Probe (underlay)</h3>
-<p style="margin: 4px 0">Click on the gold ball center (sprite), then click on
-the corner area (transparent). The counter below should increment whenever
-alpha=0 click successfully forwards from the front window.</p>
+<h3>Underlay (under the transparent top window)</h3>
+<p style="margin: 4px 0">When alpha=0 click in the top window forwards,
+this counter increments and a row is appended below.</p>
 <div id="counter">Clicks: 0</div>
+<div id="log"></div>
 <script>
   let n = 0;
-  document.addEventListener('click', () => {
+  document.addEventListener('click', (ev) => {
     n++;
     document.getElementById('counter').textContent = 'Clicks: ' + n;
-    document.title = `probe: underlay-clicks=${n}`;
+    document.title = `under: under-clicks=${n}`;
+    const row = document.createElement('div');
+    row.textContent = `#${n} at (${Math.round(ev.clientX)},${Math.round(ev.clientY)})`;
+    document.getElementById('log').appendChild(row);
+    if (window.electron && window.electron.ipcRenderer) {
+      window.electron.ipcRenderer.send('under-click', { x: ev.clientX, y: ev.clientY });
+    }
   });
 </script>
 </body>

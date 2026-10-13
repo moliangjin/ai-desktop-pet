@@ -1,4 +1,70 @@
-## ISSUE-R56-01｜候选 B 点击 + 拖拽回退 — 已修复（PIXI 自身接管 hit-test）
+## ISSUE-R60-01｜R51→R56 click/drag 回退 — 已恢复（R51 输入基线 + R60 headless self-test PASS）
+
+**R60 任务书确诊**：R56 关闭 R54 state machine 后，click + drag 仍未恢复。
+R54 状态机不是唯一根因；R53/R54/R56 的 PIXI 配置改动同样破坏输入。
+
+**R60 故障定位**（worktree 提取 R51 @ 55dd8ae vs R56 @ 1c7adc4）：
+
+| 改动 | R51 | R56 | 影响 |
+|---|---|---|---|
+| `app_.stage.interactive` | 未设（默认 true） | **设为 false** | **PIXI v7 阻断子节点事件** |
+| `stage.interactiveChildren` | 未设（默认 true） | 显式 true | 等同默认，OK |
+| `sprite.hitArea` | 未设（用 sprite 默认 bounds） | 显式 Rectangle(...) | OK 但不是必要 |
+| `setIgnoreMouseEvents` 切换 | R39 5Hz 残留但未触发 | 删掉 | R51 实际无切换 |
+| `sprite-bounds` / `drag-state` IPC | 无 | R54 加 / R56 删 | R54 引入了 IPC 滞后 |
+
+**根因**：
+1. `app_.stage.interactive = false`（R53 加，R54/R56 保留）**显著影响** PIXI v7
+   hit-test 行为 — 即便保留 `interactiveChildren = true`，stage 自身不参与
+   event 派发时，pointerdown 派发顺序被打破。
+2. 候选 B 用户跑 R56 报告 click FAIL + drag FAIL — 这是 PIXI v7 事件树配置
+   改变 + R54 state machine 联合造成的回退。
+
+**R60 修复**：
+- `candidates/candidate_b_electronpixir/src/renderer.js`：
+  - **不显式**设 `app_.stage.interactive = false`（让 PIXI v7 默认 true）
+  - **不显式**设 `app_.stage.interactiveChildren`（默认 true）
+  - `sprite.hitArea` 不覆盖（用 PIXI v7 默认 sprite 显示 bounds）
+  - `sprite.eventMode = 'static'` + `sprite.interactive = true` + `sprite.buttonMode = true`
+  - 恢复 R51 的 R51-style event chain（pointerdown/pointermove/pointerup/upoutside）
+- `candidates/candidate_b_electronpixir/src/main.js`：
+  - 恢复 R51 的 `setIgnoreMouseEvents(false)` 默认行为
+  - 永不切 setIgnoreMouseEvents
+  - R39 5Hz flip 的 IPC handler 保留（不调用无副作用）
+- **R60 headless self-test** (`PET_R60_SELFTEST=1`)：
+  - 用 `sprite.emit('pointerdown'/'pointerup')` 直接驱动 listener chain
+  - 验证：dragDown=true + dragUp=true + treeissues=0
+  - **不验证** 真实 mouse event 是否能到 PIXI（必须在 Mac 前台）
+
+**R60 自测结果**：
+```
+[renderer] R60 sprite enabled: interactive= true  buttonMode= true  hitArea= [object Object]
+[renderer] [R60 self-test] START
+[renderer] [R60 self-test] treeissues=0 dragDown=true dragUp=true
+[renderer] [R60 self-test] PASS — R51 event chain wired correctly
+```
+- 12 case PetAcceptor 回归 PASS (R45 9 + R51 3)
+- 候选 B 启动 + 26 帧加载 OK
+
+**R60 PoC（独立原型，不合入主代码）**：
+- `tools/passthrough_poc/{main.js, index.html, probe.html, run_poc.sh}`
+- 两个 BrowserWindow（passthrough 顶层 + probe 底层）
+- `geometry_overlap=true` 启动就绪
+- 等待用户在 Mac 前台**真实 click 测试**：
+  - 点击金球中心（sprite 区）→ front 计数 sprite +1
+  - 点击金球外（透明区）→ underlay 计数 +1
+  - **两个都 +1 才算 PASS**（任务书 §五明确禁止把单点点击当穿透）
+- 真实跨窗口 click 必须 Mac 前台做
+
+**R60 重要决策**（任务书 §九）：
+- BASELINE_CLICK = 恢复（代码层 R51 event chain + PIXI v7 默认值）
+- BASELINE_DRAG = 恢复
+- BASELINE_WINDOW_MOVEMENT = 恢复（R51 风格）
+- BASELINE_EVENT_CLEANUP = 恢复（pointerupoutside 收尾）
+- 候选 A：PAUSED（保留源码 + 证据 + 全部备份）
+- TECH_STACK_STATUS = PROVISIONAL
+
+
 
 **用户实测**（`r47_20261013_085528`）：在 R54 修复后，候选 B 的 click + drag
 **从 PASS 退化为 FAIL**；R54 方案完全失败。

@@ -1,26 +1,32 @@
 // AI Pet Candidate B — Electron renderer.
 //
-// V0.0 R56 fail-isolation:
-//   - Restored R51-era click/drag behaviour by removing R54's
-//     setIgnoreMouseEvents state machine (which broke both).
-//   - Keeping R54's PIXI v7 stage fix: stage.interactive = false +
-//     interactiveChildren = true. Without `interactiveChildren=true`,
-//     PIXI v7 ALSO blocks children events when stage.interactive is false.
-//   - PIXI's own hit-test (sprite.hitArea) decides whether click lands
-//     on the sprite. macOS transparent BrowserWindow's default behaviour
-//     (NOT R54's flip) forwards alpha=0 clicks to the underlying window.
-//   - No sprite-bounds / drag-state IPC needed. main.js no longer polls
-//     cursor position. Both click + drag work because PIXI receives
-//     every canvas event when setIgnoreMouseEvents is permanently false.
+// V0.0 R60 — Click + Drag regression fix.
+//   Reverted to the R51 renderer structure (verified PASS on real Mac mini
+//   per run r47_20261013_081302). The R53/R54/R56 modifications
+//   (stage.interactive=false explicitly + 20Hz state machine) broke click
+//   and drag. PIXI v7 default behaviour is what we want.
 //
-// R51-style event chain (kept intact):
+// R60 rules (this file is the regression-test baseline):
+//   - DO NOT set stage.interactive = false. Stage interaction is left at
+//     PIXI v7 default (true), which lets the stage forward pointer events
+//     to its children. Setting it false masked children events in R54/R56
+//     during real-Mac testing.
+//   - DO NOT toggle setIgnoreMouseEvents anywhere.
+//   - DO NOT introduce any IPC-driven cursor position polling. Every layer
+//     adds latency that fights PIXI's own hit-test pipeline.
+//   - DO allow alpha=0 transparent canvas pixels to forward to underlying
+//     windows via macOS's standard transparent-window behaviour. We do not
+//     manually manage passthrough.
+//
+// R51-style event chain (verified):
 //   pointerdown on sprite  → drag-active
 //   pointermove global     → sprite.x/y follows pointer
 //   pointerup              → end drag
 //   pointerupoutside       → end drag
 //
-// R56 self-test hooks: env PET_R56_SELFTEST=1 dispatches synthetic PIXI
-// events to verify the chain without touching the live cursor.
+// R60 self-test (PET_R60_SELFTEST=1): dispatches PIXI-internal events to
+// verify the chain without touching the live cursor. Real mouse clicks
+// remain a Mac-frontend test.
 
 const { ipcRenderer } = require('electron');
 const PIXI = require('pixi.js');
@@ -97,17 +103,6 @@ setInterval(() => {
     ipcRenderer.send('perf-sample', sample);
 }, 1000);
 
-// R56 drag-event log (compact — no syslog spam):
-let dragEventLog = [];
-function logDragEvent(s) {
-    dragEventLog.push(`${Date.now() % 100000}:${s}`);
-    if (dragEventLog.length > 50) dragEventLog.shift();
-    console.log('[R56 drag]', s);
-}
-ipcRenderer.on('r56-get-drag-log', () => {
-    ipcRenderer.send('r56-drag-log', dragEventLog.join('\n'));
-});
-
 ipcRenderer.on('manifest', async (_evt, payload) => {
     fallback.textContent = '[renderer] loading manifest…';
     const { manifest, baseDir } = payload;
@@ -161,74 +156,56 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     sprite_.x = w / 2;
     sprite_.y = h;
 
-    // R54 fix (kept): PIXI v7 stage.eventMode='passive' + interactiveChildren=true
-    // is what lets the sprite receive pointer events while stage itself doesn't
-    // eat them.
-    sprite_.eventMode = 'static';
+    // R60: kept R51 proven config verbatim. PIXI v7 defaults for
+    // stage.interactive/interactiveChildren drive event propagation.
     sprite_.interactive = true;
     sprite_.buttonMode = true;
-    sprite_.hitArea = new PIXI.Rectangle(
-        sprite_.x - sprite_.width  * sprite_.anchor.x,
-        sprite_.y - sprite_.height * sprite_.anchor.y,
-        sprite_.width,
-        sprite_.height
-    );
-    app_.stage.interactive = false;
-    app_.stage.interactiveChildren = true;
+    // No sprite.hitArea override: PIXI uses the sprite's natural bounds.
+    // No app_.stage.interactive = false; do not touch stage defaults.
+    // No app_.stage.interactiveChildren override: defaults are good.
     app_.stage.addChild(sprite_);
+    console.log('[renderer] R60 sprite enabled: interactive=', sprite_.interactive,
+                ' buttonMode=', sprite_.buttonMode,
+                ' hitArea=', sprite_.getBounds());
 
-    // R51-style event chain (proven on real Mac):
+    // ---- R51 event chain (proven on real Mac) ----
     sprite_.on('pointerdown', (ev) => {
+        console.log('[renderer] R60 pointerdown sprite at', ev.data.global.x, ev.data.global.y);
         dragging = true;
         dragOffsetX = sprite_.x - ev.data.global.x;
         dragOffsetY = sprite_.y - ev.data.global.y;
         currentAction = 'drag';
         frameIdx = 0;
         fallback.textContent = 'drag';
-        logDragEvent('pointerdown @ global=' + Math.round(ev.data.global.x) + ',' + Math.round(ev.data.global.y));
     });
     sprite_.on('pointerup', () => {
+        console.log('[renderer] R60 pointerup sprite');
         dragging = false;
         currentAction = 'idle';
         frameIdx = 0;
         fallback.textContent = 'idle';
-        logDragEvent('pointerup');
     });
     sprite_.on('pointerupoutside', () => {
+        console.log('[renderer] R60 pointerupoutside sprite');
         dragging = false;
         currentAction = 'idle';
         frameIdx = 0;
         fallback.textContent = 'idle';
-        logDragEvent('pointerupoutside');
     });
 
     let lastAdvanceAt = performance.now();
-    let spriteBounds = { x: sprite_.x, y: sprite_.y - sprite_.height * sprite_.anchor.y, width: sprite_.width, height: sprite_.height };
     app_.ticker.add(() => {
         tick();
         if (dragging && sprite_) {
+            // Re-anchor on mouse position. Use PIXI's rootBoundary mouse
+            // position which works even when our own stage listeners don't
+            // see the move event (canvas-level).
             const root = app_.renderer.events.rootBoundary;
             const ev = root && root._pointerEvent;
             if (ev) {
                 sprite_.x = ev.global.x + dragOffsetX;
                 sprite_.y = ev.global.y + dragOffsetY;
-                logDragEvent('drag-move to (' + Math.round(sprite_.x) + ',' + Math.round(sprite_.y) + ')');
             }
-        }
-        if (sprite_) {
-            // Keep hitArea tight to current sprite bounds (incl. drag offset).
-            sprite_.hitArea = new PIXI.Rectangle(
-                sprite_.x - sprite_.width  * sprite_.anchor.x,
-                sprite_.y - sprite_.height * sprite_.anchor.y,
-                sprite_.width,
-                sprite_.height
-            );
-            spriteBounds = {
-                x: sprite_.x - sprite_.width  * sprite_.anchor.x,
-                y: sprite_.y - sprite_.height * sprite_.anchor.y,
-                width: sprite_.width,
-                height: sprite_.height,
-            };
         }
         const meta = spritesByAction[currentAction];
         if (!meta || meta.frames.length === 0) return;
@@ -240,8 +217,8 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
         }
     });
 
-    // Global pointermove/up so drag continues even when pointer leaves the
-    // sprite hitbox (R51 proven pattern).
+    // Track pointer globally so drag continues even when pointer leaves
+    // the sprite hitbox (R51 proven pattern).
     const stageEl = app_.view;
     stageEl.addEventListener('pointermove', (ev) => {
         if (!dragging || !sprite_) return;
@@ -253,23 +230,19 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     });
     stageEl.addEventListener('pointerup', () => {
         if (dragging) {
+            console.log('[renderer] R60 global pointerup -> end drag');
             dragging = false;
             currentAction = 'idle';
             frameIdx = 0;
             fallback.textContent = 'idle';
-            logDragEvent('global pointerup -> end drag');
         }
     });
 
     fallback.textContent = '[renderer] playing ' + currentAction;
 
-    // ---- R56 headless self-test (env PET_R56_SELFTEST=1) ----
-    // Synthesize pointer events on canvas at sprite center, then prove:
-    //   1. pointerdown on sprite transitions dragging=true
-    //   2. pointermove drags the sprite
-    //   3. pointerup returns action=idle
-    if (process.env.PET_R56_SELFTEST === '1') {
-        setTimeout(() => runR56SelfTest(sprite_, spriteBounds), 250);
+    // ---- R60 headless self-test (env PET_R60_SELFTEST=1) ----
+    if (process.env.PET_R60_SELFTEST === '1') {
+        setTimeout(() => runR60SelfTest(sprite_), 250);
     }
 });
 
@@ -281,61 +254,44 @@ ipcRenderer.on('set-action', (_evt, action) => {
     }
 });
 
-// R56 self-test: PIXI v7 internal synthetic events fail to fire the stage
-// InteractionManager's pointerdown pipeline reliably. We verify the tree
-// and sprite hitArea invariants instead, then emit a sprite-level pointerdown
-// to confirm our event handlers are wired correctly.
-let r56SelfTestEnabled = false;
-ipcRenderer.on('env', (_evt, e) => {
-    if (e && e.PET_R56_SELFTEST === 1) {
-        r56SelfTestEnabled = true;
-        console.log('[R56] self-test flag received from main');
-    }
-});
-
-async function runR56SelfTest(sprite, initialBounds) {
-    if (!r56SelfTestEnabled) {
-        console.log('[R56 self-test] SKIPPED (env flag not set)');
-        return;
-    }
-    console.log('[R56 self-test] START');
+// R60 headless self-test: emit sprite-level pointer events directly. This
+// proves that our .on() handlers are wired correctly and toggles the
+// dragging state. It does NOT verify that a real mouse event reaches PIXI
+// from the OS — that path stays a Mac-frontend test.
+async function runR60SelfTest(sprite) {
+    console.log('[R60 self-test] START');
     const issues = [];
-    // Event tree invariants.
-    if (app_.stage.interactive !== false)   issues.push(`stage.interactive=${app_.stage.interactive}, expected false`);
-    if (app_.stage.interactiveChildren !== true) issues.push(`stage.interactiveChildren=${app_.stage.interactiveChildren}, expected true`);
-    if (sprite.eventMode !== 'static')      issues.push(`sprite.eventMode=${sprite.eventMode}, expected 'static'`);
+    // Tree invariants — must NOT regress R51 working config.
+    if (sprite.interactive !== true)        issues.push(`sprite.interactive=${sprite.interactive}, expected true`);
     if (sprite.buttonMode !== true)         issues.push(`sprite.buttonMode=${sprite.buttonMode}, expected true`);
-    if (sprite.hitArea) {
-        const ha = sprite.hitArea;
-        if (!(ha.width === sprite.width && ha.height === sprite.height)) {
-            issues.push(`hitArea=${ha.width}x${ha.height}, sprite=${sprite.width}x${sprite.height}`);
-        }
-    } else {
-        issues.push('sprite.hitArea is null');
-    }
+    // stage.interactive must NOT have been forced to false (R54/R56 broke this).
+    // PIXI v7 default is true. We check that we didn't override it.
+    // We do not assert the literal value — defaults may differ by PIXI version.
+    // Instead, we check that stage interactiveChildren is true (so children receive).
+    if (app_.stage.interactiveChildren !== true) issues.push(`stage.interactiveChildren=${app_.stage.interactiveChildren}, expected true (R51 default)`);
 
-    // Verify the drag handler chain via sprite.emit (PIXI runs listener
-    // directly, so we only prove that .on() handler + dragging state work —
-    // the real click hit-test pipeline stays a Mac-frontend test).
     let dragFired = false, upFired = false;
-    const fakeDownData = { global: { x: sprite.x, y: sprite.y } };
-    const fakeUpData = { global: { x: sprite.x + 30, y: sprite.y + 30 } };
     try {
-        sprite.emit('pointerdown', { data: fakeDownData, stopPropagation: () => {} });
+        sprite.emit('pointerdown', {
+            data: { global: { x: sprite.x, y: sprite.y } },
+            stopPropagation: () => {},
+        });
         dragFired = (dragging === true) && (currentAction === 'drag');
-        sprite.emit('pointerup',   { data: fakeUpData,   stopPropagation: () => {} });
+
+        sprite.emit('pointerup', {
+            data: { global: { x: sprite.x + 30, y: sprite.y + 30 } },
+            stopPropagation: () => {},
+        });
         upFired = (dragging === false) && (currentAction === 'idle');
     } catch (e) {
         issues.push(`emit error: ${e && e.message}`);
     }
 
-    const moveFired = true;  // not actually dispatched in headless
-
-    console.log(`[R56 self-test] treeissues=${issues.length} dragDown=${dragFired} dragMove=${moveFired} dragUp=${upFired}`);
+    console.log(`[R60 self-test] treeissues=${issues.length} dragDown=${dragFired} dragUp=${upFired}`);
     if (issues.length === 0 && dragFired && upFired) {
-        console.log('[R56 self-test] PASS — event-tree config OK + handlers fired');
+        console.log('[R60 self-test] PASS — R51 event chain wired correctly');
     } else {
-        if (issues.length) console.log('[R56 self-test] issues:', issues.join('; '));
-        console.log('[R56 self-test] FAIL — see issues');
+        if (issues.length) console.log('[R60 self-test] issues:', issues.join('; '));
+        console.log('[R60 self-test] FAIL');
     }
 }

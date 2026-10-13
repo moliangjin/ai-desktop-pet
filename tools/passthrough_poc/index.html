@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Passthrough PoC — front (transparent)</title>
+<style>
+  body { margin: 0; padding: 0; }
+  canvas { position: absolute; top: 0; left: 0; width: 256px; height: 256px; pointer-events: auto; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<script>
+  const ctx = document.getElementById('stage').getContext('2d');
+  const W = 256, H = 256;
+  // Yellow ball in the centre (radius 40).
+  ctx.fillStyle = 'gold';
+  ctx.beginPath(); ctx.arc(W/2, H/2, 40, 0, Math.PI * 2); ctx.fill();
+  document.title = 'passthrough-poc-front';
+  let stats = { sprite: 0, transparent: 0, total: 0 };
+  document.getElementById('stage').addEventListener('click', (ev) => {
+    const x = ev.offsetX, y = ev.offsetY;
+    const dx = x - W/2, dy = y - H/2;
+    const inSprite = (dx*dx + dy*dy) < 40*40;
+    stats.total++;
+    if (inSprite) stats.sprite++; else stats.transparent++;
+    document.title = `front: total=${stats.total} sprite=${stats.sprite} transparent=${stats.transparent}`;
+  });
+</script>
+</body>
+</html>

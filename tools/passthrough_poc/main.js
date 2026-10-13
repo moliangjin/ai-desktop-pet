@@ -305,6 +305,46 @@ function writeResult() {
 }
 
 let quitTimer = null;
+// R71: stdout tick — every 200ms, emit a single-line JSON to stdout with
+// current bounds + click counters + mode. This lets the external Swift
+// test runner (r69_gui_test_runner.swift) read these values in real-time
+// without IPC.
+// R71: probe button screen rect reported by probe.html via IPC.
+let probeButtonScreen = null;
+let probeButtonIpCount = 0;
+ipcMain.on('probe-button-rect', (_e, b) => {
+    probeButtonScreen = b;
+    probeButtonIpCount++;
+    console.log(`[R67 PoC] probe button screen rect: ${JSON.stringify(b)} (ip #${probeButtonIpCount})`);
+});
+ipcMain.on('probe-ready', () => { console.log('[R67 PoC] probe ready'); });
+
+let stdoutTickHandle = null;
+function emitStdoutTick() {
+    if (!testWindow || testWindow.isDestroyed()) return;
+    try {
+        const tb = testWindow.getBounds();
+        const ub = probeWindow.getBounds();
+        const cb = controlWindow.getBounds();
+        const tick = {
+            type: 'poc-tick',
+            run_id: RUN_ID,
+            mode: currentMode,
+            ignore: lastIgnoreState,
+            test_window: { x: Math.round(tb.x), y: Math.round(tb.y), w: Math.round(tb.width), h: Math.round(tb.height) },
+            probe_window: { x: Math.round(ub.x), y: Math.round(ub.y), w: Math.round(ub.width), h: Math.round(ub.height) },
+            control_window: { x: Math.round(cb.x), y: Math.round(cb.y), w: Math.round(cb.width), h: Math.round(cb.height) },
+            sprite: { cx: SPRITE_CX, cy: SPRITE_CY, r: SPRITE_R },
+            probe_button: probeButtonScreen,
+            clicks: { test: topClicks, probe: underClicks },
+            transitions,
+        };
+        process.stdout.write(JSON.stringify(tick) + '\n');
+    } catch (e) {
+        // ignore
+    }
+}
+
 app.whenReady().then(() => {
     console.log(`[R67 PoC] run_id=${RUN_ID} quit-after=${QUIT_AFTER}s`);
     createControlWindow();
@@ -318,8 +358,11 @@ app.whenReady().then(() => {
         console.log(`[R67 PoC] probe   bounds: ${JSON.stringify(geo.ub)}`);
         console.log(`[R67 PoC] test/probe overlap: ${geo.overlap}`);
         console.log('[R67 PoC] READY — three windows: control (always clickable), test (transparent), probe (underlay)');
+        // R71: emit real-time state tick every 200 ms (so Swift runner reads live)
+        stdoutTickHandle = setInterval(emitStdoutTick, 200);
         quitTimer = setTimeout(() => {
             console.log('[R67 PoC] timeout, quitting');
+            if (stdoutTickHandle) clearInterval(stdoutTickHandle);
             try { writeResult(); } catch (e) {}
             app.quit();
         }, QUIT_AFTER * 1000);
@@ -327,10 +370,12 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
+    if (stdoutTickHandle) clearInterval(stdoutTickHandle);
     try { writeResult(); } catch (e) {}
     app.quit();
 });
 app.on('before-quit', () => {
+    if (stdoutTickHandle) clearInterval(stdoutTickHandle);
     try { writeResult(); } catch (e) {}
 });
 

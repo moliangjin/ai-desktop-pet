@@ -19,6 +19,11 @@
 <button id="probe-btn">Probe Button (click directly)</button>
 <div id="log"></div>
 <script>
+  // R71 fix: Electron renderer has no `window.electron` global. Use the
+  // require() bridge (nodeIntegration=true, contextIsolation=false in
+  // the BrowserWindow config).
+  const { ipcRenderer } = require('electron');
+
   let n = 0;
   function bump(x, y) {
     n++;
@@ -27,17 +32,35 @@
     const row = document.createElement('div');
     row.textContent = '#' + n + ' at (' + Math.round(x) + ',' + Math.round(y) + ')';
     document.getElementById('log').appendChild(row);
-    if (window.electron?.ipcRenderer) {
-      window.electron.ipcRenderer.send('under-click', { x, y });
-    }
+    ipcRenderer.send('under-click', { x, y });
   }
   document.getElementById('probe-btn').addEventListener('click', (ev) => {
-    const r = ev.target.getBoundingClientRect();
     bump(ev.clientX, ev.clientY);
   });
   document.addEventListener('click', (ev) => {
     bump(ev.clientX, ev.clientY);
   });
+
+  // R71: report probe button screen rect to main so the Swift runner
+  // can pick a guaranteed-overlap transparent test point.
+  function reportProbeButton() {
+    const btn = document.getElementById('probe-btn');
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const sx = window.screenX || 0;
+    const sy = window.screenY || 0;
+    ipcRenderer.send('probe-button-rect', {
+      x: Math.round(sx + r.left),
+      y: Math.round(sy + r.top),
+      w: Math.round(r.width),
+      h: Math.round(r.height),
+    });
+  }
+  ipcRenderer.send('probe-ready', { ready: true });
+  setTimeout(reportProbeButton, 200);
+  setTimeout(reportProbeButton, 800);
+  setInterval(reportProbeButton, 500);
+  window.addEventListener('resize', reportProbeButton);
 </script>
 </body>
 </html>

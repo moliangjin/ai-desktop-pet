@@ -26,12 +26,14 @@
 <div class="status" id="status">READY — click a mode button to switch</div>
 <div class="status" id="counters">TEST: 0   PROBE: 0   TRANS: 0   IGNORE: false</div>
 <script>
+  // R71: Electron renderer has no `window.electron` global. Use the
+  // require() bridge (nodeIntegration=true, contextIsolation=false).
+  const { ipcRenderer } = require('electron');
+
   const status = document.getElementById('status');
   const counters = document.getElementById('counters');
   function setMode(m) {
-    if (window.electron && window.electron.ipcRenderer) {
-      window.electron.ipcRenderer.send('set-mode', m);
-    }
+    ipcRenderer.send('set-mode', m);
   }
   document.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', (ev) => {
@@ -39,19 +41,17 @@
       setMode(btn.dataset.mode);
     });
   });
-  if (window.electron?.ipcRenderer) {
-    window.electron.ipcRenderer.on('mode-changed', (_e, info) => {
-      document.querySelectorAll('button').forEach(b => {
-        b.classList.toggle('active', b.dataset.mode === info.mode);
-      });
-      status.innerHTML = `Mode: <span class="${info.ignore ? 'bad' : 'ok'}">${info.mode}</span>  testWindow.ignore=${info.ignore}`;
+  ipcRenderer.on('mode-changed', (_e, info) => {
+    document.querySelectorAll('button').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === info.mode);
     });
-    setInterval(() => {
-      window.electron.ipcRenderer.invoke('r67_get_state').then(s => {
-        counters.textContent = `TEST: ${s.top_clicks}   PROBE: ${s.under_clicks}   TRANS: ${s.transitions}   IGNORE: ${s.ignore}`;
-      });
-    }, 500);
-  }
+    status.innerHTML = `Mode: <span class="${info.ignore ? 'bad' : 'ok'}">${info.mode}</span>  testWindow.ignore=${info.ignore}`;
+  });
+  setInterval(() => {
+    ipcRenderer.invoke('r67_get_state').then(s => {
+      counters.textContent = `TEST: ${s.top_clicks}   PROBE: ${s.under_clicks}   TRANS: ${s.transitions}   IGNORE: ${s.ignore}`;
+    });
+  }, 500);
 </script>
 </body>
 </html>

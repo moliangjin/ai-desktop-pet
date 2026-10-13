@@ -1,4 +1,73 @@
-## ISSUE-R69-01｜交付本地 Swift GUI 测试器 + 诚实停止条件
+## ISSUE-R71-01｜Swift 测试器 R69 错误纠正（坐标 + 权限 + 隐藏 IPC bug）
+
+**R69 错误审计（任务书 §一 强制纠正）**:
+1. **R69 报告 `LOCAL_TEST_APP_BUILT = true` 是错的** — agent 沙箱 SDK/compiler 不匹配导致编译失败
+   → R71 正确状态:
+   - `SOURCE_READY = true` (源码已写,语法已修)
+   - `BUILD_VERIFIED = false` (agent 沙箱无法编译,需用户 Mac 自己 swiftc)
+   - `GUI_VERIFIED = false` (真实 GUI 测试必须用户在 Mac 前台跑)
+
+2. **R69 硬编码坐标 (340,220) 不在 probe 窗口内**:
+   - test window: (320, 200, 256x256) → x:320-576, y:200-456
+   - probe window: (360, 320, 360x180) → x:360-720, y:320-500
+   - 旧 (340,220) y=220 < probe y=320 → 根本不在 probe 覆盖区
+   - → R69 测的"透明角"实际没点击到下层探针,不能证明穿透
+   - 任务书 §二: 必须从运行时几何计算,不允许硬编码
+
+3. **R69 用一次 CGEventPost(mouseMoved) 当作权限已通过**:
+   → R71 改用 Apple 官方 `AXIsProcessTrustedWithOptions` + `kAXTrustedCheckOptionPrompt: false`
+
+4. **R67 PoC 隐藏 IPC bug**:
+   - `test.html` / `probe.html` / `control.html` 用 `window.electron?.ipcRenderer` (undefined)
+   - → R67 跑 PoC 时 `top-click` / `under-click` / `set-mode` IPC **从未成功** (但 agent 因没有真实 click 测不到)
+   - → R71 全部改为 `const { ipcRenderer } = require('electron')` 真实 IPC
+   - 验证: probe_button rect IPC 上报成功 (372, 414, 284, 36)
+
+**R71 Swift 测试器关键修复 (静态代码已检查)**:
+- 权限检查: `AXIsProcessTrustedWithOptions(opts)` 替代 R69 伪证
+- 几何来源: 全部从 PoC 实时 stdout tick JSON 读, **无任何硬编码坐标**
+- 有效透明测试点计算:
+  ```swift
+  满足 test_window ∩ probe_button ∩ (不在 sprite 圆内) ∩ (不在 control_window 内)
+  找不到 → GEOMETRY_INVALID → 直接退出,不发送任何 click
+  ```
+- 真实事件验证 3 步:
+  1. EVENT_POSTED — CGEventPost 调用执行完毕
+  2. TARGET_RECEIVED — PoC 控制台日志显示收到 click event
+  3. COUNTER_CHANGED — 通过 PoC stdout tick 读 clicks 字段验证 +/- 1
+- INPUT_MONITORING: 显式标记为 false (R71 只 post mouse, 不读全局输入)
+- 每次运行独立 run_id + TXT/JSON/CSV
+- 30 秒无响应自动退出
+- 不发键盘事件 / 不读无关文件
+
+**R71 PoC 测试支持接口改动（任务书 §八 允许）**:
+- `tools/passthrough_poc/main.js`:
+  - 每 200 ms 通过 stdout 写一行 JSON tick:
+    `{type, run_id, mode, ignore, test_window, probe_window, control_window, sprite, probe_button, clicks, transitions}`
+  - 接收 IPC: `set-mode`, `top-click`, `under-click`, `drag-state`, `r67_get_state`, `probe-button-rect`, `probe-ready`
+- `tools/passthrough_poc/probe.html`:
+  - 加载后 200/800ms + 每 500ms 报告 `#probe-btn` 的 screen rect (用 `getBoundingClientRect + screenX/Y` 转 DIP)
+  - 用 `const { ipcRenderer } = require('electron')` 真实 IPC (R67 隐藏 bug 修复)
+- `tools/passthrough_poc/test.html` + `control.html`: 同样修 IPC 桥
+
+**R71 静态代码检查 (任务书 §十)**:
+- ✓ AXIsProcessTrustedWithOptions: 6 处出现
+- ✓ CGEventPost mouse-moved/click: 12 处
+- ✓ 几何计算: 7 处 (全部从 tick.* 字段读, 无硬编码)
+- ✓ 计数变化验证: 18 处
+- ✓ 3 cycles stability: 13 处
+- ✓ 结果写盘 per run_id: 12 处
+- Swift 文件大小: 457 行
+- 编译验证: mavis 沙箱 SDK/compiler 不匹配 → BUILD_VERIFIED=false
+  用户在自己 Mac 跑 `swiftc r69_gui_test_runner.swift` 即可
+
+**R71 重要边界**:
+- SOURCE_READY=true, BUILD_VERIFIED=false, GUI_VERIFIED=false (诚实报告)
+- 不修改候选 B 主程序 (R60 已通过用户真机测试)
+- 不修改 R67 PoC 核心测试支持逻辑
+- 候选 B 主程序冻结保护
+
+
 
 **R69 任务书**："开发一套可以在用户本地 Mac 图形桌面会话运行、经过用户明确授权后自动执行 GUI 测试的独立测试程序。"
 

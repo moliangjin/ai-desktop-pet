@@ -52,8 +52,10 @@ static TestItem kItems[] = {
     { @"click",           @"4/8 点击反馈",     @"用鼠标点击桌宠主体，能看到动作切换或姿态变化。" },
     { @"drag",            @"5/8 拖动同步",     @"鼠标按下并拖动桌宠，桌宠位置应与鼠标基本同步，无跳变。" },
     { @"transparent",     @"6/8 透明区穿透",   @"点击桌宠周围空白处，‘点这里测试穿透’按钮的计数应 +1。" },
-    { @"window_focus",    @"7/8 焦点与置顶",   @"候选不应抢走探针窗口 / Terminal 的输入焦点；切换 Spaces 桌宠应跟随。" },
-    { @"multidisplay",    @"8/8 多显示器",     @"需要多屏环境验证 — 本机单屏固定 DISABLED（可选项，不会影响验收）。" },
+    { @"window_focus",    @"7/8 窗口焦点与虚拟桌面",
+       @"**不是键盘空格键**。请检查：(1) 探针窗口是否能正常输入（例如点击探针按钮仍能 +1），桌宠不应抢走焦点；(2) 打开 macOS 调度中心（默认快捷键 F3 或四指上滑），看桌宠是否随当前桌面移动，而不会游离或消失。如本机无法操作调度中心，可标记 NOT_TESTED。" },
+    { @"multidisplay",    @"8/8 多显示器",
+       @"只有当你的 Mac 连接了**两台或以上**的显示器时才需要这一项；普通笔记本 + 一台外接屏也属于多屏。本机如果只有一块屏幕（默认情况），程序已经把它标记为 DISABLED_SINGLE_DISPLAY — 你不需要额外插屏幕，也不需要花任何力气做这一项。其它项的 PASS 不会被它影响。" },
 };
 static const NSUInteger kItemsCount = sizeof(kItems) / sizeof(kItems[0]);
 
@@ -117,7 +119,10 @@ static NSString *nowISO(void) {
         _answers = [NSMutableDictionary new];
         _notes   = [NSMutableDictionary new];
         _lifecycleLog = [NSMutableArray new];
-        _terminationReason = kTermRunnerCrash;  // 默认最坏情况
+        // R53: 不要在 init 用 RUNNER_CRASH 默认值误导用户。
+        // 实际终止原因由 applicationShouldTerminate 决定。
+        // 这里放 @"GUI_RUNNING" — 标记 GUI 正在运行中。
+        _terminationReason = @"GUI_RUNNING";
     }
     return self;
 }

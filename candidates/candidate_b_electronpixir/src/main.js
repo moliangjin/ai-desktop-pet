@@ -65,11 +65,12 @@ function createWindow() {
     });
     // T01 workaround: force the window into a translucent backing.
     mainWindow.setOpacity(0.999);
-    // V0.0 R38 fix: default the window to accepting events. R39 wires up
-    // a renderer-driven hit-test that flips this on/off per cursor position
-    // through the IPC channel `set-passthrough` below. We never toggle it
-    // 30/60 Hz from a timer in main — the renderer is the only place that
-    // knows whether the cursor is over the sprite hitbox.
+    // R53 passthrough: keep the BrowserWindow in standard event-receiving
+    // mode. The transparent-area click forwarding is now handled entirely
+    // by PIXI (stage.eventMode='none' + sprite.eventMode='static') plus
+    // macOS's native transparent-window alpha forwarding.
+    // We do NOT use setIgnoreMouseEvents(true,{forward:true}) anymore —
+    // R53 real-Mac test confirmed that flip caused click losses.
     mainWindow.setIgnoreMouseEvents(false);
 
     // Diagnostic: log window lifecycle.
@@ -144,16 +145,5 @@ ipcMain.on('action-switch', (_evt, action) => {
     }
 });
 
-// V0.0 R39: renderer-driven transparent-area passthrough.
-//   - ignore=true  → window stops receiving events; with {forward:true}
-//     the underlying window still receives them (mouse click propagates).
-//   - ignore=false → window is interactive (sprite hitbox receives them).
-// Throttled to 5 Hz in the renderer so we do not spam this bridge.
-let lastPassthrough = null;
-ipcMain.on('set-passthrough', (_evt, ignore) => {
-    if (!mainWindow) return;
-    if (lastPassthrough === ignore) return;
-    lastPassthrough = ignore;
-    mainWindow.setIgnoreMouseEvents(!!ignore, { forward: true });
-    console.log(`[main] setIgnoreMouseEvents(${!!ignore}, forward=true) (R39 passthrough)`);
-});
+// V0.0 R53: passthrough removed. macOS transparent-window + PIXI stage
+// eventMode='none' handles forwarding. See renderer.js for full rationale.

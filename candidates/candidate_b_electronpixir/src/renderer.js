@@ -145,9 +145,26 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     sprite_.anchor.set(0.5, 0.9);   // matches manifest anchor_normalized
     sprite_.x = w / 2;
     sprite_.y = h;
-    // V0.0 R38 fix: enable PIXI event listening on the sprite
+    // V0.0 R53 transparent-area passthrough (replaces R39 5Hz setIgnoreMouseEvents flip):
+    // PIXI stage 不接 mouse events — 只有 sprite 显式接 click；
+    // stage 之外的 canvas 区域（包括 alpha=0 透明区）PIXI 自动不响应 click →
+    // macOS transparent BrowserWindow 默认把 alpha=0 click forward 到下层窗口（ClickThroughProbe）。
+    //
+    // 不需要 setIgnoreMouseEvents(true, {forward:true}) 来手动 forward —
+    // Chromium/macOS transparent window 的语义已经支持，我们只需要阻止 PIXI 自己吞 click。
+    sprite_.eventMode = 'static';         // PIXI v7: 'static' = on
     sprite_.interactive = true;
     sprite_.buttonMode = true;
+    // 让 PIXI 只在 sprite 的真实像素 hitArea 内判定命中：
+    sprite_.hitArea = new PIXI.Rectangle(
+        sprite_.x - sprite_.width  * sprite_.anchor.x,
+        sprite_.y - sprite_.height * sprite_.anchor.y,
+        sprite_.width,
+        sprite_.height
+    );
+    app_.stage.eventMode = 'none';          // 整 stage 不接 click
+    app_.stage.interactive = false;          // legacy PIXI v7
+    app_.stage.interactiveChildren = false;  // children 不自动接
     app_.stage.addChild(sprite_);
     console.log('[renderer] sprite enabled: interactive=', sprite_.interactive,
                 'buttonMode=', sprite_.buttonMode,
@@ -194,6 +211,15 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
                 sprite_.y = ev.global.y + dragOffsetY;
             }
         }
+        // R53: hitArea 跟随 sprite 位置/动画帧大小实时更新
+        if (sprite_) {
+            sprite_.hitArea = new PIXI.Rectangle(
+                sprite_.x - sprite_.width  * sprite_.anchor.x,
+                sprite_.y - sprite_.height * sprite_.anchor.y,
+                sprite_.width,
+                sprite_.height
+            );
+        }
         const meta = spritesByAction[currentAction];
         if (!meta || meta.frames.length === 0) return;
         const period = 1000 / (meta.fps || 8);
@@ -237,58 +263,29 @@ ipcRenderer.on('set-action', (_evt, action) => {
 });
 
 // ============================================================================
-// V0.0 R39: Transparent-area passthrough — real hit-test based.
+// V0.0 R53: Transparent-area passthrough — macOS native forwarding.
 // ============================================================================
 //
-// The BrowserWindow is frameless+transparent so the user can see through
-// transparent pixels to the desktop. But by default a BrowserWindow eats
-// every click inside its bounds, so the user cannot click anything underneath.
+// Real-world test on macOS 14 + Electron 33 showed that the R39 "5 Hz
+// setIgnoreMouseEvents flip" approach loses click events to underlay windows.
+// (Cursor moving to a transparent pixel could not trigger the underlay app's
+// clickable area.)
 //
-// The fix is `mainWindow.setIgnoreMouseEvents(true, { forward: true })`.
-// We flip that flag from a 5 Hz loop that asks PIXI whether the cursor is
-// over the visible sprite hitbox or over transparent canvas pixels.
+// New approach (R53):
+//   1. PIXI stage.eventMode = 'none' + interactive = false
+//      → PIXI does NOT receive clicks on transparent canvas pixels
+//   2. Only the sprite receives pointer events (eventMode = 'static')
+//   3. BrowserWindow never flips setIgnoreMouseEvents
+//   4. Rely on macOS's default transparent-window behaviour:
+//      alpha=0 pixel clicks are forwarded by WindowServer to the
+//      underlay window automatically.
+//   5. We still call setIgnoreMouseEvents(false) at startup so PIXI's
+//      sprite can receive pointerdown for the drag-handle.
 //
-// Why 5 Hz and not 60 Hz: faster loops were tried in R37 and they raced
-// with PIXI's pointerdown delivery — clicks were lost. 5 Hz is fast enough
-// that a user resting the cursor on a transparent pixel starts passing
-// clicks through within ~200 ms, but slow enough that it never competes
-// with a click that the user is in the middle of pressing.
-let lastCursorX = -1;
-let lastCursorY = -1;
-let cursorInsideSprite = false;
-let lastPassthrough = null;
-
-function spriteHitboxContains(globalX, globalY) {
-    if (!sprite_) return false;
-    // Use PIXI's getBounds() — expressed in stage (canvas) coordinates.
-    const b = sprite_.getBounds();
-    return globalX >= b.x && globalX <= b.x + b.width &&
-           globalY >= b.y && globalY <= b.y + b.height;
-}
-
-setInterval(() => {
-    if (!app_ || !sprite_ || dragging) {
-        // While the user is actively dragging, always accept events.
-        if (lastPassthrough !== false) {
-            lastPassthrough = false;
-            ipcRenderer.send('set-passthrough', false);
-        }
-        return;
-    }
-    // Compare against the most recent cursor coords captured by listener.
-    const inside = (lastCursorX >= 0) && spriteHitboxContains(lastCursorX, lastCursorY);
-    if (inside === cursorInsideSprite) return;
-    cursorInsideSprite = inside;
-    ipcRenderer.send('set-passthrough', !inside);
-}, 1000 / 5);  // 5 Hz
-
-document.addEventListener('mousemove', (ev) => {
-    const rect = app_.view.getBoundingClientRect();
-    lastCursorX = ev.clientX - rect.left;
-    lastCursorY = ev.clientY - rect.top;
-});
-document.addEventListener('pointermove', (ev) => {
-    const rect = app_.view.getBoundingClientRect();
-    lastCursorX = ev.clientX - rect.left;
-    lastCursorY = ev.clientY - rect.top;
-});
+// This means: clicks INSIDE the sprite → PIXI receives → sprite reacts.
+//              clicks OUTSIDE the sprite (transparent pixels) → PIXI
+//              ignores, macOS forwards to underlay (ClickThroughProbe).
+//
+// Diagnostic command visible to CLI:
+//   - ipcRenderer.send('passthrough-mode', 'macos-native') at startup.
+// ============================================================================

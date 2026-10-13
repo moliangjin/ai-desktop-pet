@@ -48,10 +48,13 @@ write_launch_fail_result() {
 JSON
 }
 
-# --- 启动探针 ---
+# --- 启动探针（置于候选 B 矩形下层并保证重叠） ---
 pkill -f "ClickThroughProbe" 2>/dev/null || true
 sleep 1
-"$PROBE" </dev/null >/dev/null 2>&1 &
+"$PROBE" \
+    --under-pet-x 1100 --under-pet-y 600 --under-pet-w 256 --under-pet-h 256 \
+    --x 1160 --y 410 --w 360 --h 180 \
+    </dev/null >/dev/null 2>&1 &
 PROBE_PID=$!
 sleep 2
 

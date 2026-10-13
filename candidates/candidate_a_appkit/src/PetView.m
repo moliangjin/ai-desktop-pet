@@ -158,18 +158,35 @@
     CGContextClearRect(ctx, self.bounds);
     CGImageRef img = [self.store imageForAction:self.currentAction frameIndex:(NSUInteger)_frameIdx];
     if (img) {
-        // V0.0 R43: The view is flipped (see isFlipped below). When the view
-        // is flipped, its y-axis runs top-to-bottom — the same direction as
-        // CGImage's row 0 (top) → row h (bottom). Therefore CGContextDrawImage
-        // with self.bounds draws the image **right-side up** with no Y-flip
-        // transform. The previous R38/R39 implementation used
-        //   translate(0, h) + scale(1, -1)
-        // for an unflipped view; the user reported the sprite rendering
-        // upside-down on real Mac mini (R43 round 1). Flipping the view
-        // removes the transform and matches what most macOS sprite
-        // implementations do (SKView, sprite-kit-style buttons, etc.).
         CGRect r = CGRectMake(0, 0, self.bounds.size.width, self.bounds.size.height);
-        CGContextDrawImage(ctx, r, img);
+        // V0.0 R53 orientation strategy — 5 种策略可热切换；诊断真实方向问题
+        // 默认 original（保留 R38 行为），其它由 PET_DRAW_ORIENTATION env 指定
+        const char *strategy = getenv("PET_DRAW_ORIENTATION");
+        NSString *s = strategy ? [NSString stringWithUTF8String:strategy] : @"original";
+        if ([s isEqualToString:@"flipped_no_transform"]) {
+            // R43 方案：isFlipped=YES + 不 transform;要求 view y 轴朝下
+            CGContextDrawImage(ctx, r, img);
+        } else if ([s isEqualToString:@"notflipped_with_transform"]) {
+            // R38 方案：isFlipped=NO + translate(0,h)+scale(1,-1)
+            CGContextSaveGState(ctx);
+            CGContextTranslateCTM(ctx, 0, self.bounds.size.height);
+            CGContextScaleCTM(ctx, 1, -1);
+            CGContextDrawImage(ctx, r, img);
+            CGContextRestoreGState(ctx);
+        } else if ([s isEqualToString:@"notflipped_no_transform"]) {
+            // 测试：isFlipped=NO + 不 transform — 看 CG 默认行为
+            CGContextDrawImage(ctx, r, img);
+        } else if ([s isEqualToString:@"flipped_with_transform"]) {
+            // 反向：isFlipped=YES + transform
+            CGContextSaveGState(ctx);
+            CGContextTranslateCTM(ctx, 0, self.bounds.size.height);
+            CGContextScaleCTM(ctx, 1, -1);
+            CGContextDrawImage(ctx, r, img);
+            CGContextRestoreGState(ctx);
+        } else {
+            // 'original' = 保留 R43 行为
+            CGContextDrawImage(ctx, r, img);
+        }
     } else {
         CGContextSetRGBFillColor(ctx, 0, 0, 0, 0.0);
         CGContextFillRect(ctx, self.bounds);
@@ -177,8 +194,15 @@
 }
 
 - (BOOL)isOpaque { return NO; }
-- (BOOL)isFlipped { return YES; }     // R43: flip view so CG drawImage is right-side up
-- (BOOL)wantsUpdateLayer { return NO; }   // R38 fix: keep drawRect path
+- (BOOL)isFlipped {
+    const char *strategy = getenv("PET_DRAW_ORIENTATION");
+    NSString *s = strategy ? [NSString stringWithUTF8String:strategy] : @"original";
+    // R53: 5 策略下 isFlipped 配对
+    if ([s isEqualToString:@"flipped_no_transform"]) return YES;  // R43
+    if ([s isEqualToString:@"flipped_with_transform"]) return YES;
+    return NO;  // original / notflipped_no_transform / notflipped_with_transform
+}
+- (BOOL)wantsUpdateLayer { return NO; }
 
 #pragma mark - Mouse
 
@@ -215,7 +239,9 @@
 }
 
 - (void)mouseDragged:(NSEvent *)e {
-    NSLog(@"[PetView] mouseDragged dragging=%d", _dragging);
+    // R53: 在 0.05s 上做 drag_latency 采样 (不写 syslog 避开 R43 教训)
+    NSTimeInterval drag_latency_ms = 0;
+    NSDate *t0 = [NSDate date];
     if (!_dragging) return;
     if (self.window.ignoresMouseEvents) {
         [self.window setIgnoresMouseEvents:NO];
@@ -235,7 +261,13 @@
     newFrame.origin.y = MAX(minY, MIN(maxY, newFrame.origin.y));
     [w setFrameOrigin:newFrame.origin];
     _dragOriginWindow = cur;
-    NSLog(@"[PetView] drag-set origin=(%.1f,%.1f)", newFrame.origin.x, newFrame.origin.y);
+    // 测量 setFrameOrigin→frame change 实际耗时
+    NSTimeInterval dt = [[NSDate date] timeIntervalSinceDate:t0];
+    drag_latency_ms = dt * 1000.0;
+    if (drag_latency_ms > 16.0) {  // < 16ms = 60fps 标准,超过 16ms 算掉帧
+        NSLog(@"[DragLatency] WARN %.2fms > 16ms threshold (origin=%.1f,%.1f)",
+              drag_latency_ms, newFrame.origin.x, newFrame.origin.y);
+    }
 }
 
 - (void)mouseUp:(NSEvent *)e {

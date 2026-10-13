@@ -1,3 +1,60 @@
+## ISSUE-R53-01｜候选 B 透明穿透 + 探针几何 + 候选 A 倒立 4 策略 + 卡顿延迟采样 — 已修复（GUI 复验待）
+
+**用户实测**（`r47_20261013_081302`）：候选 B 透明穿透 FAIL；候选 A 仍倒立 + 拖拽严重卡顿。
+
+**R53 P0 修复 — 候选 B 透明穿透**：
+- 移除 R39 5Hz `setIgnoreMouseEvents(true,{forward:true})` flip 方案
+  —— 实测在 macOS 14 + Electron 33 上 click 透传失效
+- 改用 **PIXI stage 不接 + sprite 精确 hitArea**：
+  - `app_.stage.eventMode = 'none'` + `interactive = false` + `interactiveChildren = false`
+  - `sprite.eventMode = 'static'` + `interactive = true`
+  - `sprite.hitArea = PIXI.Rectangle(...)` 跟随 sprite 位置/帧大小更新
+- BrowserWindow 永不切 `setIgnoreMouseEvents`，macOS transparent window
+  默认把 alpha=0 click forward 到下层窗口
+- 移除对应 IPC `set-passthrough` + `lastPassthrough`
+
+**R53 P0 修复 — 探针几何校验**：
+- ClickThroughProbe 加 `--under-pet-x/y/w/h` 参数自动重叠到候选窗口
+- 启动时检查重叠，如果不相交自动漂移到 pet 矩形居中
+- 标题栏 + 顶栏显示 `probe=(x,y) wxh / pet=(x,y) wxh / OVERLAP=yes|no`
+- 未重叠时红色；重叠时绿色
+- run_pet_acceptor_a.sh / _b.sh 启动时分别传 pet 矩形参数
+
+**R53 P1 修复 — 候选 A 倒立 4 策略**：
+- 添加 `assets/prototype_chibi/calibration/orientation_reference.png`
+  （256x256: 顶部红横条 "TOP" / 底部蓝横条 "BOTTOM" / 绿色对角线）
+- PetView.m 加 `PET_DRAW_ORIENTATION` 环境变量切换 4 绘制策略：
+  - `flipped_no_transform`     : R43 默认
+  - `notflipped_with_transform`: R38 之前
+  - `notflipped_no_transform`  : CG 默认
+  - `flipped_with_transform`   : 双翻（测试）
+- `candidates/candidate_a_appkit/tests/test_r53_orientation_strategies.sh`
+  跑 4 策略（启动不崩为 PASS；真实方向需要用户在 Mac 前台肉眼确认）
+
+**R53 P1 修复 — 候选 A 卡顿延迟采样**：
+- PetView.m `mouseDragged:` 增加 `[NSDate date]` 计时
+- 单次 `setFrameOrigin` 耗时 > 16ms (60fps 阈值) 输出 `DragLatency WARN ...`
+
+**R53 P1 修复 — RUNNER_CRASH 默认值 + 第 7/8 项说明**：
+- PetAcceptor init 默认 `terminationReason` 从 `RUNNER_CRASH_SIGNAL`
+  改为 `GUI_RUNNING`，避免误导"显示崩溃"但其实正常运行
+- 第 7 项 instructions 明确："不是键盘空格键"；
+  说明调度中心如何验证焦点
+- 第 8 项 instructions 明确："不需要额外插屏幕"；
+  说明单屏环境自动 DISABLED
+
+**R53 §八 技术栈收敛**：
+- **候选 B**（Electron + PixiJS）：本轮 P0 透明穿透修复；占优方向正确，
+  资源占用高（RSS 124-131 MB / CPU 9.4% idle）但属可接受范围
+- **候选 A**（Objective-C + AppKit）：倒立实测多轮未解（4 策略已提供，
+  仍需用户在 Mac 前台确认哪一帧正立）；卡顿实测数据待补
+- 在真实穿透与焦点验收完成前，不宣布正式选型 PASS
+- `TECH_STACK_STATUS = PROVISIONAL`
+- 建议：**主路径选候选 B（Electron + PixiJS）**；候选 A 仅作 R53 §五
+  标定帧 4 策略启动验证用作反向证据，**不无限返工** — 如果用户在 Mac
+  前台确认 4 策略均不能解决倒立问题，按 R53 §五任务书指示"明确建议暂停维护
+  候选 A"
+
 ## ISSUE-R51-01｜overall 聚合逻辑误判 + 缺少提前结束提示 — 已修复 ✅
 
 **用户实测**（来自 `r47_20261013_074739` 真实运行记录）：

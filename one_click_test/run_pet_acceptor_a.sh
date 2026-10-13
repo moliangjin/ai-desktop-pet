@@ -30,13 +30,17 @@ if [ -z "$GIT_COMMIT" ]; then GIT_COMMIT="uncommitted"; fi
     echo "[run_pet_acceptor_a] RUN_ID=$RUN_ID"
 } >> "$LOG"
 
-# --- 1. 前置：启动探针窗口 ---
+# --- 1. 前置：启动探针窗口（置于候选 A 矩形下层并保证重叠） ---
 pkill -f "ClickThroughProbe" 2>/dev/null || true
 sleep 1
-"$PROBE" </dev/null >/dev/null 2>&1 &
+# 候选 A 起始位置 (600, 600), 256x256; probe (360x180) 叠到下沿
+"$PROBE" \
+    --under-pet-x 600 --under-pet-y 600 --under-pet-w 256 --under-pet-h 256 \
+    --x 660 --y 410 --w 360 --h 180 \
+    </dev/null >"$LOG_DIR/${RUN_ID}_probe.log" 2>&1 &
 PROBE_PID=$!
 sleep 2
-echo "[run_pet_acceptor_a] probe PID=$PROBE_PID" >> "$LOG"
+echo "[run_pet_acceptor_a] probe PID=$PROBE_PID under-pet=(600,600,256,256)" >> "$LOG"
 
 # --- 2. 启动候选 A ---
 pkill -f "PetCandidateA" 2>/dev/null || true

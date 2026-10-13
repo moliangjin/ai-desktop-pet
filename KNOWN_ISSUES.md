@@ -1,4 +1,66 @@
-## ISSUE-R61-01｜穿透 PoC 真实化 + 一键 .command + 性能重新采样
+## ISSUE-R62-01｜穿透 PoC 架构纠错 + 3 路径对比 + 图形化 .command
+
+**R61 Mode C 错误审计（任务书 §一）**：
+- R61 Mode C 配置: `setIgnoreMouseEvents(false)` + `stage.eventMode='none'` + `sprite.eventMode='static'`
+- 任务书 §一 明确指出：
+  > 1. Electron 透明窗口不等于鼠标自动穿透。
+  > 2. setIgnoreMouseEvents(false) 让窗口恢复正常接收鼠标事件（不会透传）。
+  > 3. PixiJS eventMode 只控制内部事件派发,不能改变 macOS 窗口级鼠标命中。
+  > 4. stage.eventMode='none' 还可能阻断精灵子节点事件。
+- **结论**：R61 Mode C **INVALID 作为系统级穿透机制**。R62 重新设计。
+
+**R62 决策：3 路径对比（任务书 §三）**：
+
+| 路径 | 机制 | 评估 |
+|---|---|---|
+| **Path 1** | main 进程 20Hz `screen.getCursorScreenPoint()` polling + 实时 `setIgnoreMouseEvents(ignore, {forward:true})` | 唯一可靠的系统级 API。R54 失败原因: 50-150ms IPC 滞后 + drag 期间切换冲突。R62 修复: 不用 IPC,直接 main 进程 polling;throttle 到 state change only。**GUI 真实 click 必须 Mac 前台验证** |
+| **Path 2** | macOS 原生 NSWindow + NSTrackingArea mouseMoved + NSEvent API | 理论可行但需引入原生桥接,维护成本高。Electron 通过 setIgnoreMouseEvents 已是官方最简 API,**实际不需要 path 2** |
+| **Path 3** | BrowserWindow bounds = sprite bbox (100x100),完全去除 alpha=0 透明 margin;macOS transparent window 默认把 alpha=0 click forward | **最简、最实际**: 不需 polling, 不需 setIgnore toggle, 完全靠 macOS 默认。代价: 桌宠窗口大小由 sprite 决定,无 padding 缓冲。**GUI 真实 click 必须 Mac 前台验证** |
+
+**R62 PoC 改造**:
+- `tools/passthrough_poc/main.js` 3 模式 A/B/C + C 路径可选 (1/3)
+- IPC `top-click` / `under-click` 收集真实 click 坐标
+- 自动写 `/tmp/passthrough_poc_result.{txt,json,csv}`
+- verdict 字段: A/B 可 AUTO_PASS;C 必须 GUI_VERIFICATION_REQUIRED
+
+**R62 图形化 .command 入口** (任务书 §六):
+- `tools/passthrough_poc/穿透技术验证.command`
+- 用户双击 → 数字菜单 1-4 选模式 (1=A, 2=B, 3=C1, 4=C3, 5=退出)
+- 不需要 env var 输入
+- 启动后明确显示 mode + 预期
+- 退出后 cat TXT/CSV
+
+**R62 PoC 启动实测 (agent)**:
+- mode=A: 启动 + bounds 正确打印 + overlap=true
+- mode=C path=1: 启动 + main poll 注册 + 20Hz poll ready
+- mode=C path=3: top window = 100x100 (sprite bbox)
+- 全部 0 click (agent 无法模拟真实系统 mouse)
+
+**三路径技术决策（任务书 §八）**:
+- **推荐: Path 3** — 最简、最稳、最易维护;代价小
+- Path 1 作为兜底 — 若 Path 3 macOS 默认行为不可靠,启用 Path 1
+- Path 2 (NSWindow 原生) **不建议** — 维护成本不划算
+
+**R62 关键约束 (任务书 §五 + §七)**:
+- 候选 B 主程序继续以 R60 输入基线为准,**不动**
+- PoC 独立运行,**不合入主代码**
+- 真实跨窗口 click 必须 Mac 前台验证
+- 真实 GUI 没验证前,**不允许把 Mode A/B 启动成功**或**几何 overlap=true** 标为穿透 PASS
+- 自动化无法真实执行的系统点击,必须保留 GUI_NOT_TESTED
+
+**R62 重要诚实声明 (任务书 §一)**:
+- R61 之前报告的"穿透 AUTO_PASS"**过度乐观**:
+  - 启动成功 ≠ 真实穿透
+  - 几何重叠 ≠ click 透传
+  - PIXI eventMode 改动 ≠ 操作系统级 click 路由
+- R62 区分 AUTO_START_OK (启动+bounds+overlap 正确打印) vs AUTO_PASS (实际系统级 click 路由证据)
+- Mode A/B 真实验证需用户前台 click;Mode C 真实验证更需用户前台 click
+
+**R60 输入基线 (任务书 §五)**:
+- 候选 B 继续以 R60 已恢复的点击、拖拽代码为基础
+- 任何穿透新机制都先在独立 PoC 验证,不直接合入主代码
+
+
 
 **R61 任务书审查**：R60 宣布的"stage.interactive = false 阻断 PIXI v7 子节点事件"**根因置信度下调为 PARTIAL**。
 PIXI v7 官方实现中 `interactive = false` 对应 `eventMode='auto'`，并非 `'none'`；它仍会根据 child.eventMode 决定。

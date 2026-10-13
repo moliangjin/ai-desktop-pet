@@ -1,4 +1,73 @@
-## ISSUE-R62-01｜穿透 PoC 架构纠错 + 3 路径对比 + 图形化 .command
+## ISSUE-R64-01｜穿透 PoC 状态机可测化 + Path 3 重新分类 + 单次启动切换
+
+**R62 Path 3 错误纠正（任务书 §一）**:
+- 任务书 §一 明确区分:
+  - **TRUE_PASSTHROUGH**: 窗口内 alpha=0 click 透传到下层
+  - **COMPACT_WINDOW**: 缩小窗口,**不**是逐像素穿透 — 窗口外的部分本来就不属于窗口
+  - **FULL_WINDOW_IGNORE**: `setIgnoreMouseEvents(true)` 整窗忽略 — 包括 sprite
+- R62 把 Path 3 当成"最简最稳"穿透方案是错误的;
+  Path 3 实际是 **COMPACT_WINDOW_FALLBACK**,不是穿透
+
+**R64 严格区分**:
+- Path 1 (Electron main 20Hz polling + setIgnoreMouseEvents) → TRUE_PASSTHROUGH
+  **if 真实 GUI click 验证 PASS**
+- Path 3 (BrowserWindow bounds = sprite bbox) → **COMPACT_WINDOW_FALLBACK**
+  仅减小桌面遮挡,不是真穿透
+
+**R64 PoC 重写**:
+- 状态机逻辑独立为 `computeState({cursor, winBounds, spriteBounds, dragging})` 纯函数
+- 6/6 self-test PASS (R64 自测)
+- 单次启动 + 用户在窗口顶部点 [A][B][C1][C2] 按钮实时切换 mode
+  不再要求用户 4 次终端命令
+- 每个 mode 切换自动写独立文件:
+  `/tmp/passthrough_poc_<run_id>_<mode>.{txt,json,csv}`
+  每次测试有独立 run_id,绝不覆盖历史证据
+- 修复 R62 超时 45s/60s 不一致 → R64 统一 90s (`POC_QUIT_AFTER`)
+
+**R64 PoC 状态机实测 (agent 环境)**:
+- Mode A 启动 + setIgnore=false + bounds 正确
+- Mode C1 (Path 1) 启动 + 5s 内实测 2 次状态转换:
+  - transition #1: cursor (335, 253) → target=true, expected=WIN_HOVER_TRANSPARENT ✓
+  - transition #2: cursor (504, 472) → target=false, expected=OUTSIDE ✓
+- Mode C2 (Path 3) 启动 + top window 100x100 + overlap=true
+  verdict: COMPACT_WINDOW_FALLBACK — see R64 §七; not a per-pixel passthrough
+
+**R64 关键修复 (任务书 §四)**:
+- `computeState` 纯函数可单测
+- 状态变化 throttle 到 state change only (不每次都调 setIgnore)
+- DRAG_LOCKED 状态: dragging=true 时强制 setIgnore=false
+- 不依赖 IPC 推送 spriteBounds (R54 失败根因)
+- 圆形 hit-test (distance < r) 而非矩形 (R64 §四 第 6 条)
+- CRT: 50ms state 变化检查 (节流) + 20Hz polling (内部)
+- 退出与异常路径清理: `window-all-closed` + `before-quit` 双重写盘
+
+**R64 性能 (R61 数据 + R64 self-test)**:
+- Candidate B RSS 93-130MB / CPU 10-13% (R61 30s 采样)
+- Path 1 20Hz poll 自身影响: 5s 内仅 2 transition (R64 实测)
+  → 频率低,屏幕.getCursorScreenPoint() 微秒级
+- Path 3 0 additional overhead (无 polling)
+
+**R64 3 GATE 决策 (任务书 §九)**:
+- **GATE A 主程序交互基线**: R60 输入基线保留 (R64 不动主代码)
+- **GATE B 真正区域穿透**:
+  - Path 1 启动 + 状态机数学 + 转换实测 PASS
+  - 真实系统 click 必须 Mac 前台验证
+- **GATE C 降级方案**:
+  - COMPACT_WINDOW_FALLBACK 实际启动 (top 100x100)
+  - 不能当作穿透 — 仅减小桌面遮挡
+
+**R64 重要诚实声明**:
+- R64 PoC 的 agent 实测只验证了:
+  1. 启动 + bounds + overlap
+  2. 状态机 math (6 self-test cases)
+  3. 状态机运行 (5s 内 2 transition)
+- **未验证**:
+  1. 真实系统 mouse click 能否 forward 到 under window
+  2. drag 期间 state 切换是否丢失
+  3. 透明区多次切换稳定性
+- 必须用户在 Mac mini 前台真实 click 才能完成最终验证
+
+
 
 **R61 Mode C 错误审计（任务书 §一）**：
 - R61 Mode C 配置: `setIgnoreMouseEvents(false)` + `stage.eventMode='none'` + `sprite.eventMode='static'`

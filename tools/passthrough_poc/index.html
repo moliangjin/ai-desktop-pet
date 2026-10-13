@@ -1,18 +1,37 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Top — transparent sprite</title>
+<head><meta charset="utf-8"><title>Top — transparent sprite + mode switcher</title>
 <style>
   body { margin: 0; padding: 0; }
   canvas { position: absolute; top: 0; left: 0; width: 256px; height: 256px; pointer-events: auto; }
+  /* Mode-switcher buttons (visible on canvas top) */
+  .mode-bar {
+    position: absolute; left: 0; top: 0; right: 0; height: 28px;
+    background: rgba(0,0,0,0.45); display: flex; align-items: center;
+    padding: 0 6px; font: 11px monospace; color: white;
+  }
+  .mode-bar button {
+    background: rgba(255,255,255,0.18); color: white; border: 0;
+    border-radius: 3px; padding: 3px 6px; margin-right: 4px; cursor: pointer;
+    font: 11px monospace;
+  }
+  .mode-bar button.active { background: #ffd24a; color: black; }
+  .mode-bar #mode-label { margin-left: 6px; opacity: 0.85; }
 </style>
 </head>
 <body>
 <canvas id="stage"></canvas>
+<div class="mode-bar">
+  <button data-mode="A">A</button>
+  <button data-mode="B">B</button>
+  <button data-mode="C1">C1</button>
+  <button data-mode="C2">C2</button>
+  <span id="mode-label">A — control (intercept)</span>
+</div>
 <script>
   const ctx = document.getElementById('stage').getContext('2d');
   const W = 256, H = 256;
-  // R61: gold ball centre (radius 50), green square top-left (40x40), red square bottom-right (40x40).
-  // We render 3 distinguishable spots so users can verify C-mode regional hit.
+  // R64: gold ball centre, lime TL, red BR, so user can identify exact hit area.
   ctx.fillStyle = 'gold';      ctx.beginPath(); ctx.arc(W/2, H/2, 50, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = 'lime';      ctx.fillRect(10, 10, 40, 40);
   ctx.fillStyle = 'red';       ctx.fillRect(W-50, H-50, 40, 40);
@@ -31,6 +50,40 @@
       window.electron.ipcRenderer.send('top-click', { x, y, where });
     }
   });
+
+  // Drag-state broadcast for Path 1 (R64).
+  // We synthesize drag events by tracking mouse-down/move/up and reporting
+  // dragActive to main. This is only meaningful when Mode = C1.
+  let dragging = false;
+  const canvas = document.getElementById('stage');
+  canvas.addEventListener('mousedown', () => { dragging = true;  if (window.electron?.ipcRenderer) window.electron.ipcRenderer.send('drag-state', true);  });
+  window.addEventListener('mouseup',   () => { if (dragging) { dragging = false; if (window.electron?.ipcRenderer) window.electron.ipcRenderer.send('drag-state', false); } });
+
+  // Mode-switcher UI
+  const LABELS = {
+    A: 'A — control (intercept)',
+    B: 'B — control (full passthrough)',
+    C1: 'C1 — Path 1 (main 20Hz polling)',
+    C2: 'C2 — compact window (R64 §7 fallback)',
+  };
+  document.querySelectorAll('.mode-bar button').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const m = btn.dataset.mode;
+      if (window.electron?.ipcRenderer) {
+        window.electron.ipcRenderer.send('set-mode', m);
+      }
+    });
+  });
+  if (window.electron?.ipcRenderer) {
+    window.electron.ipcRenderer.on('mode-changed', (_e, info) => {
+      const m = info.mode;
+      document.querySelectorAll('.mode-bar button').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === m);
+      });
+      document.getElementById('mode-label').textContent = LABELS[m] || m;
+    });
+  }
 </script>
 </body>
 </html>

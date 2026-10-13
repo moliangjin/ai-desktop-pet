@@ -1,29 +1,36 @@
 // AI Pet Candidate B — Electron main process.
-// Loads manifest, creates transparent+frameless BrowserWindow,
-// launches the renderer with PixiJS sprite animation.
+//
+// V0.0 R56 fail-isolation:
+//   R54 introduced a 20Hz setIgnoreMouseEvents state machine that successfully
+//   broke BOTH click and drag, even though R51 had click/drag working (per
+//   real Mac mini test). The state machine's cursor-in-sprite polling fought
+//   with PIXI's own hit-test, dropped pointerup events, and locked windows
+//   out of event delivery in subtle ways.
+//
+//   Strategy: revert to R51-style architecture (no setIgnoreMouseEvents flip)
+//   and add a feature-flag B_STATE_MACHINE_DISABLED=1 that *fully* disables
+//   the R54 state machine. Default = DISABLED. PIXI's own hit-test decides
+//   whether the cursor is over the sprite; macOS transparent BrowserWindow's
+//   standard behaviour (NOT R54's flip) handles alpha=0 click forwarding.
+//
+//   Future direction documented: R56 re-enables the state machine only if
+//   we can prove (with headless + Mac evidence) that `setIgnoreMouseEvents`
+//   can be safely toggled around PIXI drag events. Until then, disabled by
+//   default.
 //
 // CLI flags:
-//   --manifest <path>    (required)
+//   --manifest <path>
 //   --size <px>          (default 256)
 //   --x <px>, --y <px>   (window origin in macOS screen coords)
-//   --quit-after <sec>   (auto-quit after N seconds; useful for tests)
-//   --perf-out <path>    (write CSV perf samples here)
-//
-// Notes:
-//   - WebPreferences: nodeIntegration=true because we need fs/path in renderer
-//     for the V0.0 manifest interface test (T09). For V1.0/V2.0 this should
-//     become a sandboxed IPC bridge (PRD FR-G.1 / FR-G.4).
-//   - Transparent window requires frame:false, transparent:true,
-//     backgroundColor with 0 alpha; on macOS 14 + Electron 33 the OS still
-//     sometimes composites the window as opaque. The same workaround used
-//     in candidate A (alphaValue / setOpacity) is applied here via
-//     setOpacity(0.999).
+//   --quit-after <sec>
+//   --perf-out <path>
+
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
 const args = process.argv.slice(1);
-let manifestPath = null, winSize = 256, winX = 200, winY = 200;
+let manifestPath = null, winSize = 256, winX = 1100, winY = 600;
 let quitAfter = null, perfOut = null;
 for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -46,6 +53,11 @@ if (!fs.existsSync(manifestPath)) {
 
 let mainWindow = null;
 
+// R56 state machine — DISABLED by default to restore R51 click/drag behaviour.
+// Set B_STATE_MACHINE_ENABLED=1 only after comprehensive evidence is collected.
+const STATE_MACHINE_ENABLED = process.env.B_STATE_MACHINE_ENABLED === '1';
+let ignoreState = false, transitions = 0;
+
 function createWindow() {
     mainWindow = new BrowserWindow({
         x: winX, y: winY,
@@ -63,41 +75,44 @@ function createWindow() {
             offscreen: false,
         },
     });
-    // T01 workaround: force the window into a translucent backing.
     mainWindow.setOpacity(0.999);
-    // R53 passthrough: keep the BrowserWindow in standard event-receiving
-    // mode. The transparent-area click forwarding is now handled entirely
-    // by PIXI (stage.eventMode='none' + sprite.eventMode='static') plus
-    // macOS's native transparent-window alpha forwarding.
-    // We do NOT use setIgnoreMouseEvents(true,{forward:true}) anymore —
-    // R53 real-Mac test confirmed that flip caused click losses.
+
+    // R56 critical fix: never toggle setIgnoreMouseEvents in default mode.
+    // PIXI's hit-test (stage.interactiveChildren=true + sprite hitArea) does
+    // the click discrimination; macOS transparent window's standard behavior
+    // forwards alpha=0 clicks to underlying windows automatically.
     mainWindow.setIgnoreMouseEvents(false);
 
+    console.log(`[main] B_STATE_MACHINE_ENABLED=${STATE_MACHINE_ENABLED ? 1 : 0} (R56 default off)`);
+
     // Diagnostic: log window lifecycle.
-    mainWindow.on('ready-to-show', () => {
-        console.log('[main] window ready-to-show');
-    });
-    mainWindow.on('show', () => {
-        console.log('[main] window show');
-    });
-    mainWindow.on('blur', () => {
-        console.log('[main] window blur');
-    });
-    mainWindow.on('focus', () => {
-        console.log('[main] window focus');
-    });
-    mainWindow.on('closed', () => {
-        console.log('[main] window closed');
-    });
+    mainWindow.on('ready-to-show', () => console.log('[main] window ready-to-show'));
+    mainWindow.on('show', () => console.log('[main] window show'));
+    mainWindow.on('blur', () => console.log('[main] window blur'));
+    mainWindow.on('focus', () => console.log('[main] window focus'));
+    mainWindow.on('closed', () => console.log('[main] window closed'));
 
     mainWindow.loadFile(path.join(__dirname, 'renderer.html'));
     mainWindow.webContents.on('did-finish-load', () => {
-        // Inject manifest content into the renderer rather than letting it
-        // re-read the file, so the test T09 can swap manifests without
-        // shipping extra files into the asar.
         const data = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
         const manifestBase = path.dirname(manifestPath);
         mainWindow.webContents.send('manifest', { manifest: data, baseDir: manifestBase });
+        // R56 self-test: forward env flag to renderer (Electron sandboxes
+        // process.env so we cannot read it from the renderer side).
+        mainWindow.webContents.send('env', {
+            PET_R56_SELFTEST: process.env.PET_R56_SELFTEST === '1' ? 1 : 0,
+        });
+    });
+
+    // R56: forward renderer console.log → main stdout so the self-test is
+    // visible in the same log file as the main process diagnostics.
+    mainWindow.webContents.on('console-message', (...args) => {
+        // Electron 33: (event, level, message, line, sourceId)
+        const event = args[0];
+        const legacyMessage = args[2];
+        const msg = (event && event.message) || legacyMessage || '(no-message)';
+        const level = (event && event.level) || args[1] || 'log';
+        console.log(`[renderer:${level}] ${msg}`);
     });
 
     if (quitAfter) {
@@ -145,99 +160,10 @@ ipcMain.on('action-switch', (_evt, action) => {
     }
 });
 
-// V0.0 R54 passthrough state machine.
-//
-// Three stable states:
-//
-//   SPRITE_HOVER (ignore=false)
-//       cursor inside the BrowserWindow AND inside the sprite hitbox.
-//       BrowserWindow receives events; PIXI sprite reacts to click/drag.
-//
-//   WIN_HOVER (ignore=true, forward=true)
-//       cursor inside the BrowserWindow BUT outside the sprite hitbox.
-//       BrowserWindow does NOT receive events; macOS forwards them to
-//       the underlying window (ClickThroughProbe, Finder, etc.).
-//
-//   OUTSIDE (ignore=false)
-//       cursor outside the BrowserWindow. We keep ignore=false so if
-//       the user moves back into the window we receive the mouse event
-//       that re-enters.
-//
-// Transitions are driven by a 20 Hz main-process loop using
-// screen.getCursorScreenPoint() — no renderer IPC needed once the
-// renderer pushes the sprite bounds once on resize/move.
-//
-// Anti-jitter rules:
-//  * Only call setIgnoreMouseEvents when the desired state changes.
-//  * While the user is dragging (drag-active IPC), force ignore=false.
-//  * The transition log caps at 1 line per change.
+// R56: R54 state machine is dead by default. If you must re-enable it,
+// set B_STATE_MACHINE_ENABLED=1 and uncomment the block. Heed the warning
+// in KNOWN_ISSUES.md — R54 broke click/drag on real Mac.
 
-const { screen } = require('electron');
-
-let spriteBounds = null;     // {x,y,width,height} in screen DIP coordinates
-let dragActive = false;
-let ignoreState = false;     // last applied state
-let transitions = 0;
-
-ipcMain.on('sprite-bounds', (_evt, b) => {
-    if (b && typeof b.x === 'number') spriteBounds = b;
-});
-
-ipcMain.on('drag-state', (_evt, d) => {
-    dragActive = !!d;
-});
-
-function setIfChanged(wantIgnore) {
-    if (!mainWindow || wantIgnore === ignoreState) return;
-    ignoreState = wantIgnore;
-    transitions++;
-    try {
-        if (wantIgnore) {
-            mainWindow.setIgnoreMouseEvents(true, { forward: true });
-        } else {
-            mainWindow.setIgnoreMouseEvents(false);
-        }
-    } catch (e) {
-        console.log('[main] setIgnoreMouseEvents error:', e && e.message);
-    }
-    console.log(`[main] transition ${transitions}: setIgnoreMouseEvents(${wantIgnore})`);
+function r54DisabledStateMachineNote() {
+    /* original R54 code removed intentionally — see commit 7cd8c4d */
 }
-
-function step() {
-    if (!mainWindow) return;
-    if (dragActive) { setIfChanged(false); return; }
-    const cursor = screen.getCursorScreenPoint();  // DIP
-    const wb = mainWindow.getBounds();              // DIP (electron returns DIP for non-scaling)
-    if (!wb) return;
-    const insideWindow =
-        cursor.x >= wb.x && cursor.x < wb.x + wb.width &&
-        cursor.y >= wb.y && cursor.y < wb.y + wb.height;
-    if (!insideWindow) {
-        // User left BrowserWindow. Keep ignore=false so the re-enter
-        // event lands back in this window.
-        setIfChanged(false);
-        return;
-    }
-    let insideSprite = false;
-    if (spriteBounds) {
-        insideSprite =
-            cursor.x >= spriteBounds.x &&
-            cursor.x <  spriteBounds.x + spriteBounds.width &&
-            cursor.y >= spriteBounds.y &&
-            cursor.y <  spriteBounds.y + spriteBounds.height;
-    }
-    setIfChanged(!insideSprite);
-}
-
-setInterval(step, 50);  // 20 Hz
-console.log('[main] R54 passthrough state machine started (20 Hz)');
-
-// Diagnostic: expose transition count and current state to renderer for the
-// GUI perf overlay (kept lightweight — no per-tick log to syslog).
-ipcMain.handle('passthrough-stats', () => {
-    return {
-        transitions: transitions,
-        ignore: ignoreState,
-        bounds: mainWindow ? mainWindow.getBounds() : null,
-    };
-});

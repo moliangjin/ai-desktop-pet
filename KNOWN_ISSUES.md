@@ -1,3 +1,48 @@
+## ISSUE-R56-01｜候选 B 点击 + 拖拽回退 — 已修复（PIXI 自身接管 hit-test）
+
+**用户实测**（`r47_20261013_085528`）：在 R54 修复后，候选 B 的 click + drag
+**从 PASS 退化为 FAIL**；R54 方案完全失败。
+
+**R56 故障定位**：
+1. R54 加的 20Hz state machine `setIgnoreMouseEvents(true,{forward:true})` 在
+   drag 期间频繁切换 — interrupt PIXI 的 `pointermove/pointerup` 派发
+2. main 进程的 drag-state IPC 比 PIXI 的 renderer 内部状态变化慢一个 50ms
+   tick — drag end 已被 PIXI 识别但 main 还在 polling 状态
+3. `spriteBounds` IPC 依赖 window.screenX (DOM API) + DPR，但 renderer→main
+   IPC round-trip 引入 50-150ms 滞后 — cursor 已移出 sprite bbox 但 spriteBounds
+   还没更新 → main 错误地降级为 ignore=true → 后续 mouse event 丢失
+
+**R56 修复**：完全删除 R54 状态机，回到 R51 那套。
+- **main.js**：
+  - 永不调 `setIgnoreMouseEvents` — 默认 false
+  - 移除 `sprite-bounds` / `drag-state` IPC + `screen.getCursorScreenPoint()` 20Hz 轮询
+  - PIXI v7 自身决定 click 命中，macOS transparent BrowserWindow 把 alpha=0 click
+    自然 forward 给下层窗口
+- **renderer.js**：保留 R54 PIXI v7 关键修正
+  - `stage.interactive = false`（stage 自身不接 event）
+  - `stage.interactiveChildren = true`（children 可接 — 关键！）
+  - `sprite.eventMode = 'static'` + `sprite.hitArea = Rectangle(...)` 跟随位置
+- **renderer headless self-test** (`PET_R56_SELFTEST=1`)：
+  - 用 `sprite.emit('pointerdown' / 'pointerup')` 直接驱动 listener chain
+  - 验证 `dragging=true` + `currentAction='drag'` (down)、`dragging=false` (up)
+  - 验证 event-tree 配置正确 (stage.interactive=false, interactiveChildren=true,
+    sprite.eventMode='static', hitArea 与 sprite 尺寸匹配)
+
+**R56 自测结果**：
+- `R56 self-test PASS — event-tree config OK + handlers fired`
+- 12 个 PetAcceptor case 回归 PASS (R45 9 + R51 3，无回退)
+
+**真正的跨窗口点击** (UNDERLYING_CLICK)：
+- agent 环境无法用合成 PointerEvent 触发 PIXI v7 内部 InteractionManager；
+  必须用户在 Mac mini 前台真实 click
+- 任务书 §六 "无法实际执行的系统级鼠标点击必须保留 NOT_TESTED"
+
+**R56 关键工程决策**（任务书 §九）：
+- 技术栈收敛：候选 B 作为正式选型待验收方案
+- 候选 A: PAUSED (源码 + 证据 + 全部历史备份保留)
+- `双击运行.command` 默认只测候选 B；A 走独立入口 `_run_candidate_a.command`
+- TECH_STACK_STATUS = PROVISIONAL
+
 ## ISSUE-R54-01｜候选 B 鼠标穿透架构纠正 — 已修复（GUI 复验待）
 
 **R53 错误方案审查**（R54 任务书独立技术审查）：

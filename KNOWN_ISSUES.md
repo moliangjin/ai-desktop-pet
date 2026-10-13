@@ -1,4 +1,61 @@
-## ISSUE-R67-01｜穿透 PoC 完整故障排查 + 自主 macOS GUI 测试尝试
+## ISSUE-R68-01｜macOS GUI 自动化环境诚实停止条件 — 不再无意义尝试
+
+**R68 §二 环境诊断结果**:
+- 自动化宿主进程: mavis shell (PID 10273) → 启动 osascript (PID 10288)
+- mavis shell 不是已授权的 GUI 应用
+- osascript 子进程在 macOS TCC 上下文 = 进程无 Accessibility 权限
+- `osascript ... set mouse position` 报 `-25211 'osascript 不允许辅助访问'`
+- `osascript ... click at` 同样报 `-25211`
+- `cliclick` 在 mavis shell sandbox 下被 SIGKILL (exit 137)
+- 即使勾选 Terminal.app, Terminal 启动的子 osascript 才有权限;
+  mavis shell 启动的 osascript 不继承 Terminal 的权限上下文
+
+**R68 §三 评估过的可执行方案**:
+- `osascript + System Events` ❌ TCC 拒绝 (agent 进程无权限)
+- `cliclick` ❌ sandbox SIGKILL
+- `Swift + Quartz CGEvent` 未测试 (也会要求 Input Monitoring 权限)
+- `AppleScript .scpt 文件` ❌ 在 mavis 沙箱下同样 -25211
+
+**R68 §五 严格停止条件触发**:
+- 不能在无 GUI 自动化能力时反复修改算法
+- 不再修改代码 (按 §五 第 4 条)
+- 直接报告: `GUI_AUTOMATION_STATUS = BLOCKED`
+- `BLOCKER_TYPE = SANDBOX + TCC`
+- `AUTOMATION_HOST_PROCESS = osascript (由 mavis shell 启动, PID 10288)`
+- `ACCESSIBILITY_PERMISSION = DENIED (对 mavis shell 子进程)`
+- `SANDBOX_RESTRICTION = YES`
+- `REAL_SYSTEM_CLICK_INJECTED = false`
+
+**R68 §六 根因修正 (R67 的 ROOT_CAUSE 是 ROOT_CAUSE_PARTIAL, 不是 CONFIRMED)**:
+- R67 报告: 控制面板+金球不响应 = Mode B 整窗 ignore=true 导致
+- **R68 修正**: 仅基于 R67 代码逻辑推断, **未证明**:
+  - 用户跑 R64 时实际处于哪种 mode (A/B/C1/C2)
+  - 控制面板是否被 test window 遮挡 (3 窗口架构是 R67 后才加的)
+  - 是否存在窗口焦点问题
+  - 是否测试期间 osascript 已运行
+- **R68 ROOT_CAUSE = ROOT_CAUSE_PARTIAL** (待用户前台复验)
+- 任务书 §六明确"不得把推测写为事实"
+
+**R68 给用户的 .scpt 资源 (R68 不再修改主代码, 只补交付)**:
+- `tools/passthrough_poc/r67_automated_test.scpt`
+  AppleScript 包装: 用户在 Script Editor 打开 + 跑 (按 ⌘R)
+  或 Terminal.app: `osascript r67_automated_test.scpt`
+  前置: 系统设置 → 隐私与安全 → 辅助功能 → 允许 Terminal.app (或 Script Editor)
+
+**R68 诚实结论**:
+- agent (mavis shell) 不能独立完成真实 macOS GUI click 测试
+- 用户亲自在 Mac 前台点控制面板 + test + probe 仍是最直接路径
+- 候选 B 正式桌宠 (R60 输入基线) 已通过用户真机测试 → 输入功能冻结保护
+- 透明穿透穿透 PoC 仍需用户在 Mac 前台人工验证, R67/R68 已提供所有必要的工程基础
+
+**R68 重要边界**:
+- 不再修改 PoC 代码
+- 不再尝试其他 GUI 自动化方法 (R68 §五 严格停止)
+- 不再要求用户重复执行已证失败的测试
+- V0.0 不宣布封版 (REAL_MAC_GUI_VERIFIED = false, OVERALL_PROGRESS = 0%)
+- 严禁进入 V0.1
+
+
 
 **用户 R64 实测反馈**：「C1 和金球都点不动，没一点反应。」
 **根因（R67 任务书 §二 排查）**：

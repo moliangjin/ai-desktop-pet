@@ -30,6 +30,7 @@ static NSString *const kStatusPass      = @"PASS";
 static NSString *const kStatusFail      = @"FAIL";
 static NSString *const kStatusNotTested = @"NOT_TESTED";
 static NSString *const kStatusDisabled  = @"DISABLED_SINGLE_DISPLAY";
+static NSString *const kStatusIncomplete = @"INCOMPLETE";  // R51: 与 NOT_TESTED 区分
 
 static NSString *const kLaunchPass = @"LAUNCH_PASS";
 static NSString *const kLaunchFail = @"LAUNCH_FAIL";
@@ -293,7 +294,50 @@ static NSString *nowISO(void) {
     [self refreshView];
 }
 - (void)onEnd:(id)s {
-    [self logLife:@"onEnd: USER_CLICKED_END"];
+    // R51: 用户点■ 结束测试时,如果有未完成项,先弹 NSAlert 让用户确认
+    NSUInteger not_answered = 0;
+    NSMutableArray *missing = [NSMutableArray new];
+    for (NSUInteger i = 0; i < kItemsCount; i++) {
+        TestItem ti = kItems[i];
+        if ([ti.key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
+        NSString *s = self.answers[ti.key];
+        if (!s || [s isEqualToString:kStatusNotTested]) {
+            not_answered++;
+            [missing addObject:ti.label ?: ti.key];
+        }
+    }
+    if (not_answered > 0) {
+        [self logLife:[NSString stringWithFormat:@"onEnd: %lu 项未完成，弹 NSAlert", (unsigned long)not_answered]];
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = [NSString stringWithFormat:@"还有 %lu 项未测试，是否提前结束？", (unsigned long)not_answered];
+        alert.informativeText = [NSString stringWithFormat:@"未完成项：%@\n提前结束后，overall 会记为 INCOMPLETE（绝不伪造 PASS）。", [missing componentsJoinedByString:@"、"]];
+        alert.alertStyle = NSWarningAlertStyle;
+        [alert addButtonWithTitle:@"■ 提前结束 (INCOMPLETE)"];
+        [alert addButtonWithTitle:@"◀ 返回继续测试"];
+        NSModalResponse r = [alert runModal];
+        if (r != NSAlertFirstButtonReturn && r != NSAlertSecondButtonReturn) {
+            // 用户按了 Esc 或 ⌘. — 也视为取消
+            [self logLife:@"onEnd: 用户取消 (Esc) — 继续"];
+            return;
+        }
+        if (r == NSAlertSecondButtonReturn) {
+            // 继续
+            [self logLife:@"onEnd: 用户选择继续测试"];
+            // 高亮第一个 missing 项目
+            for (NSUInteger i = 0; i < kItemsCount; i++) {
+                TestItem ti = kItems[i];
+                if ([ti.key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
+                NSString *s = self.answers[ti.key];
+                if (!s || [s isEqualToString:kStatusNotTested]) {
+                    self.currentIndex = i;
+                    [self refreshView];
+                    break;
+                }
+            }
+            return;
+        }
+        [self logLife:@"onEnd: 用户确认提前结束"];
+    }
     self.terminationReason = kTermUserClickedEnd;
     [self writeResultAndExit:0];
 }
@@ -322,9 +366,21 @@ static NSString *nowISO(void) {
             @"notes": self.notes[ti.key] ?: @"",
         }];
     }
-    NSString *overall = kStatusPass;
-    if (hasFail) overall = kStatusFail;
-    else if (pass == 0) overall = kStatusNotTested;
+    // V0.0 R51 overall 聚合规则：
+    //   - 任一必测项 FAIL → overall=FAIL (必须)
+    //   - 所有必测项 (非 DISABLED) 都 PASS → overall=PASS
+    //   - 否则 (有 NOT_TESTED 或无答案) → overall=INCOMPLETE (≠ NOT_TESTED)
+    // DISABLED 单屏不算必测通过也不算失败 — 仅作 indicator
+    // 启动 PASS 不能替代显示/动画/点击/拖拽/穿透的 GUI 验收
+    NSUInteger required_pass = kItemsCount - dis;  // 必测项 = 排除 DISABLED
+    NSString *overall = kStatusIncomplete;
+    if (hasFail) {
+        overall = kStatusFail;
+    } else if (pass >= required_pass && required_pass > 0 && nt == 0) {
+        overall = kStatusPass;
+    }
+    // 否则保持 INCOMPLETE
+    // nt=0 是关键 — 必须所有必测项都答了 PASS 才能 PASS
 
     // launch_ok 独立于 GUI 反馈：来自外部 launch_status（ps 检测）
     BOOL launch_ok = [self.launchStatus isEqualToString:kLaunchPass];
@@ -498,6 +554,28 @@ static NSString *nowISO(void) {
             self.answers[kItems[i].key] = kStatusPass;
         }
         [self writeResultAndExit:0];
+    } else if ([caseName isEqualToString:@"r51_incomplete_launch_only"]) {
+        // R51: 用户实测特征 — 仅 launch=PASS,其它 NOT_TESTED
+        // 旧逻辑 bug 误判 PASS → 新逻辑必须 INCOMPLETE
+        self.answers[@"launch"] = kStatusPass;
+        NSArray *keys = @[@"display", @"animation", @"click", @"drag", @"transparent", @"window_focus"];
+        for (NSString *k in keys) self.answers[k] = kStatusNotTested;
+        [self writeResultAndExit:2];
+    } else if ([caseName isEqualToString:@"r51_all_pass_complete"]) {
+        // 全部必测 PASS + 1 项 DISABLED → PASS (DISABLED 不计必测)
+        for (NSUInteger i = 0; i < kItemsCount; i++) {
+            if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
+            self.answers[kItems[i].key] = kStatusPass;
+        }
+        [self writeResultAndExit:0];
+    } else if ([caseName isEqualToString:@"r51_fail_dominates"]) {
+        // 6 PASS + 1 FAIL + 1 DISABLED → FAIL
+        for (NSUInteger i = 0; i < kItemsCount; i++) {
+            if ([kItems[i].key isEqualToString:@"multidisplay"] && !self.enableMultidisplay) continue;
+            self.answers[kItems[i].key] = kStatusPass;
+        }
+        self.answers[@"animation"] = kStatusFail;
+        [self writeResultAndExit:1];
     } else if ([caseName isEqualToString:@"wait_120s"]) {
         // R47: 启动后不退出，仅 NSLog；外部脚本 120s 后 kill 验证无自动结束
         for (NSUInteger i = 0; i < kItemsCount; i++) {

@@ -1,3 +1,37 @@
+## ISSUE-R51-01｜overall 聚合逻辑误判 + 缺少提前结束提示 — 已修复 ✅
+
+**用户实测**（来自 `r47_20261013_074739` 真实运行记录）：
+- 候选 A 仅 launch=PASS，display/animation/click/drag/transparent/window_focus 全部 NOT_TESTED
+- 旧 overall 聚合逻辑：`hasFail=NO, pass=1, pass!=0 → overall=PASS` ❌
+- 用户提前点击■结束测试 → 未完成项目不应该被算 PASS
+
+**根因**：`buildResultDict` 旧逻辑只在 `pass==0` 时返回 NOT_TESTED，
+其余只要有 PASS 就给 PASS。不区分"有 PASS 但仍有未完成项"的中间态。
+
+**修复（V0.0 R51）**：
+1. `buildResultDict` 改为：
+   - 任一必测项 FAIL → overall=FAIL
+   - 所有必测项（非 DISABLED）都 PASS 且 nt==0 → overall=PASS
+   - 否则 → overall=**INCOMPLETE**（与 NOT_TESTED 区分）
+2. 新枚举 `INCOMPLETE` 加入 `VALID_STATUSES` 和 `e2e_runner.ALLOWED`
+3. `onEnd:` 弹 NSAlert（如有未完成项）：
+   - 显示"还有 N 项未测试：x、y、z"
+   - 提供"■ 提前结束 (INCOMPLETE)"和"◀ 返回继续测试"两按钮
+   - 按 Esc/⌘. → 视为取消返回继续
+   - 用户选"返回继续"→自动跳到第一个 missing 项
+4. csv_builder VALID_STATUSES 加 INCOMPLETE；overall 字段必须 ∈ {PASS/FAIL/NOT_TESTED/INCOMPLETE}
+5. **永久回归测试**（针对 r47 实测特征）：
+   - `r51_incomplete_launch_only` case：launch=PASS, 其它 NOT_TESTED → expect INCOMPLETE
+   - `r51_all_pass_complete` case：7 PASS + 1 DISABLED → expect PASS
+   - `r51_fail_dominates` case：6 PASS + 1 FAIL → expect FAIL
+   - `e2e_r51_incomplete` scenario：用真实 r47 风格 JSON 校验 CSV 行 overall=INCOMPLETE
+
+**自测结果**：
+- 9 case R45 回归 PASS（无回退）
+- 3 case R51 新增 PASS（new overall 规则全部命中）
+- 7 e2e scenario PASS（含 R51 新增）
+- 业务校验 R51 BUSINESS CHECK OK — overall=INCOMPLETE 与 r47 实测一致
+
 ## ISSUE-R47-01｜PetAcceptor 14-15 秒自动退出 — 已修复 ✅
 
 **用户报告**（R45 跑后）：点击 `双击运行.command` 后两个候选都在 ~14-15 秒

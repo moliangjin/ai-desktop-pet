@@ -93,8 +93,40 @@ JSON
             python3 "$DST/one_click_test/csv_builder.py" "$LOG_DIR/candidate_a_${cand_launch}.json" "$CSV" > /dev/null
         done
         ;;
+    e2e_r51_incomplete)
+        # R51: 模拟 r47_20261013_074739 实测 — 仅 launch=PASS, 其它 NOT_TESTED
+        # 旧逻辑: PASS (bug);新逻辑: INCOMPLETE
+        NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        cat > "$LOG_DIR/candidate_a_r51_incomplete.json" <<JSON
+{
+  "candidate": "candidate_a","version":"V0.0","commit":"$GIT_COMMIT","bundle_id":"com.test.petA",
+  "tested_at":"$NOW","overall":"INCOMPLETE","launch_status":"LAUNCH_PASS","launch_ok":true,
+  "termination_reason":"USER_CLICKED_END",
+  "counts_pass":1,"counts_fail":0,"counts_not_tested":6,"counts_disabled":1,
+  "items":[
+    {"key":"launch","label":"1/8","status":"PASS","notes":"启动验证"},
+    {"key":"display","label":"2/8","status":"NOT_TESTED","notes":""},
+    {"key":"animation","label":"3/8","status":"NOT_TESTED","notes":""},
+    {"key":"click","label":"4/8","status":"NOT_TESTED","notes":""},
+    {"key":"drag","label":"5/8","status":"NOT_TESTED","notes":""},
+    {"key":"transparent","label":"6/8","status":"NOT_TESTED","notes":""},
+    {"key":"window_focus","label":"7/8","status":"NOT_TESTED","notes":""},
+    {"key":"multidisplay","label":"8/8","status":"DISABLED_SINGLE_DISPLAY","notes":""}
+  ]
+}
+JSON
+        python3 "$DST/one_click_test/csv_builder.py" "$LOG_DIR/candidate_a_r51_incomplete.json" "$CSV" > /dev/null
+        # 业务校验：CSV 这一行 overall == INCOMPLETE
+        RC=0
+        python3 "$DST/test_window/PetAcceptor/build/e2e_r51_check.py" "$CSV" "$LOG_DIR/candidate_a_r51_incomplete.json" >> "$TXT" 2>&1 || RC=$?
+        if [ $RC -eq 0 ]; then
+            echo "e2e_r51_incomplete: BUSINESS CHECK OK — overall=INCOMPLETE 实测特征一致" | tee -a "$TXT"
+        else
+            echo "e2e_r51_incomplete: BUSINESS CHECK FAIL (rc=$RC)" | tee -a "$TXT"
+        fi
+        ;;
     *)
-        echo "usage: e2e_runner.sh [e2e_normal|e2e_a_fail|e2e_csv_audit|e2e_double_run|e2e_abort_user_closed|e2e_launch_status_mapping]"
+        echo "usage: e2e_runner.sh [e2e_normal|e2e_a_fail|e2e_csv_audit|e2e_double_run|e2e_abort_user_closed|e2e_launch_status_mapping|e2e_r51_incomplete]"
         exit 2
         ;;
 esac
@@ -125,8 +157,9 @@ EXPECTED = 20
 print(f"header cols: {len(rows[0])} (expected {EXPECTED}) {'OK' if len(rows[0])==EXPECTED else 'FAIL'}")
 print(f"data rows: {len(rows)-1}")
 all_ok = True
-ALLOWED = {'PASS','FAIL','NOT_TESTED','DISABLED_SINGLE_DISPLAY','true','false'}
+ALLOWED = {'PASS','FAIL','NOT_TESTED','DISABLED_SINGLE_DISPLAY','INCOMPLETE','true','false'}
 ALLOWED_LAUNCH = {'LAUNCH_PASS','LAUNCH_FAIL','GUI_NOT_TESTED'}
+ALLOWED_OVERALL = {'PASS','FAIL','NOT_TESTED','INCOMPLETE',''}
 for i, row in enumerate(rows[1:], start=2):
     if len(row) != EXPECTED:
         print(f"  row {i}: {len(row)} cols FAIL")
@@ -144,9 +177,13 @@ for i, row in enumerate(rows[1:], start=2):
     if row[6] not in ('true','false',''):
         print(f"  row {i} launch_ok={row[6]!r} NOT 'true'/'false'")
         all_ok = False
-    # overall + 8 项 (col 7..15)
-    for col_i, field_name in enumerate(['overall','launch','display','animation','click','drag','transparent','window_focus','multidisplay']):
-        v = row[col_i + 7]
+    # overall (col 7) — R51 加 INCOMPLETE 枚举校验
+    if row[7] not in ALLOWED_OVERALL:
+        print(f"  row {i} overall={row[7]!r} NOT IN ENUM")
+        all_ok = False
+    # 8 项 (col 8..15)
+    for col_i, field_name in enumerate(['launch','display','animation','click','drag','transparent','window_focus','multidisplay']):
+        v = row[col_i + 8]
         if v not in ALLOWED and v != '':
             print(f"  row {i} col[{field_name}]={v!r} NOT IN ENUM")
             all_ok = False

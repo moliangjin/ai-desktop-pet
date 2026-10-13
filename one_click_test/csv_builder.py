@@ -33,8 +33,9 @@ STABLE_FIELDS = [
 ITEM_KEYS = ["launch", "display", "animation", "click", "drag",
              "transparent", "window_focus", "multidisplay"]
 
-VALID_STATUSES = {"PASS", "FAIL", "NOT_TESTED", "DISABLED_SINGLE_DISPLAY"}
+VALID_STATUSES = {"PASS", "FAIL", "NOT_TESTED", "DISABLED_SINGLE_DISPLAY", "INCOMPLETE"}
 VALID_LAUNCH_STATUSES = {"LAUNCH_PASS", "LAUNCH_FAIL", "GUI_NOT_TESTED"}
+VALID_OVERALL = {"PASS", "FAIL", "NOT_TESTED", "INCOMPLETE"}
 
 
 def build_row(result_path):
@@ -53,6 +54,9 @@ def build_row(result_path):
     out["launch_status"] = d.get("launch_status", "GUI_NOT_TESTED")
     if out["launch_status"] not in VALID_LAUNCH_STATUSES:
         raise ValueError(f"bad launch_status {out['launch_status']}")
+    # R51: overall 必须是已知枚举
+    if out["overall"] not in VALID_OVERALL and out["overall"] != "":
+        raise ValueError(f"bad overall {out['overall']}")
 
     # items[].status 按 key 取
     items_by_key = {it["key"]: it for it in d.get("items", [])}

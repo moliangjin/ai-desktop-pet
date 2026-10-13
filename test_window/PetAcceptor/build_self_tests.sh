@@ -30,6 +30,9 @@ declare -a CASES=(
     launch_fail_b
     csv_schema
     switch_a_to_b
+    r51_incomplete_launch_only
+    r51_all_pass_complete
+    r51_fail_dominates
 )
 
 # R47: wait_120s 任务书 §六 强制要求；默认包含；用 --skip-wait 跳过
@@ -141,6 +144,10 @@ except Exception as e:
         launch_fail_a|launch_fail_b) case_expected="FAIL";;
         csv_schema)            case_expected="PASS";;
         switch_a_to_b)         case_expected="PASS";;
+        # R51: 新逻辑
+        r51_incomplete_launch_only)  case_expected="INCOMPLETE";;
+        r51_all_pass_complete)      case_expected="PASS";;
+        r51_fail_dominates)         case_expected="FAIL";;
         *)                     case_expected="?";;
     esac
     if [ "$case_overall" = "$case_expected" ]; then

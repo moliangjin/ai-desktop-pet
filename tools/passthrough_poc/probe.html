@@ -1,32 +1,42 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Underlay — click counter</title>
+<head><meta charset="utf-8"><title>R67 Underlay Probe</title>
 <style>
-  body { margin: 0; padding: 8px; font: 13px monospace; background: white; }
+  body { margin: 0; padding: 12px; font: 13px monospace; background: white; }
   h3 { margin: 4px 0; }
-  #counter { font-size: 36px; font-weight: bold; color: blue; margin: 12px 0; }
-  #log { font-size: 11px; max-height: 100px; overflow-y: auto; border: 1px solid #ccc; padding: 4px; }
+  #counter { font-size: 30px; font-weight: bold; color: blue; margin: 8px 0; }
+  button {
+    background: #1a73e8; color: white; border: 0; border-radius: 4px;
+    padding: 10px 20px; cursor: pointer; font: 14px monospace; font-weight: bold;
+  }
+  #log { font-size: 11px; max-height: 70px; overflow-y: auto; border: 1px solid #ccc; padding: 4px; }
 </style>
 </head>
 <body>
-<h3>Underlay (under the transparent top window)</h3>
-<p style="margin: 4px 0">Click events that forward through the top window
-will be counted here. The current mode of the top window is shown in its
-own button bar.</p>
+<h3>R67 Probe (underlay)</h3>
+<p style="margin: 4px 0; color: #555">Clicks forwarded through the transparent top window increment this counter.</p>
 <div id="counter">Clicks: 0</div>
+<button id="probe-btn">Probe Button (click directly)</button>
 <div id="log"></div>
 <script>
   let n = 0;
-  document.addEventListener('click', (ev) => {
+  function bump(x, y) {
     n++;
     document.getElementById('counter').textContent = 'Clicks: ' + n;
-    document.title = `under: under-clicks=${n}`;
+    document.title = 'probe: under-clicks=' + n;
     const row = document.createElement('div');
-    row.textContent = `#${n} at (${Math.round(ev.clientX)},${Math.round(ev.clientY)})`;
+    row.textContent = '#' + n + ' at (' + Math.round(x) + ',' + Math.round(y) + ')';
     document.getElementById('log').appendChild(row);
-    if (window.electron && window.electron.ipcRenderer) {
-      window.electron.ipcRenderer.send('under-click', { x: ev.clientX, y: ev.clientY });
+    if (window.electron?.ipcRenderer) {
+      window.electron.ipcRenderer.send('under-click', { x, y });
     }
+  }
+  document.getElementById('probe-btn').addEventListener('click', (ev) => {
+    const r = ev.target.getBoundingClientRect();
+    bump(ev.clientX, ev.clientY);
+  });
+  document.addEventListener('click', (ev) => {
+    bump(ev.clientX, ev.clientY);
   });
 </script>
 </body>

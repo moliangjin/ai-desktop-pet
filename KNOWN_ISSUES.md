@@ -1,4 +1,60 @@
-## ISSUE-R64-01｜穿透 PoC 状态机可测化 + Path 3 重新分类 + 单次启动切换
+## ISSUE-R67-01｜穿透 PoC 完整故障排查 + 自主 macOS GUI 测试尝试
+
+**用户 R64 实测反馈**：「C1 和金球都点不动，没一点反应。」
+**根因（R67 任务书 §二 排查）**：
+- R64 模式按钮放在 test window（透明 BrowserWindow）内部 `<canvas>` 上
+- Mode B 触发 `setIgnoreMouseEvents(true)` 时，**整个 BrowserWindow**
+  （包括 canvas + 按钮 + 金球）都失去 mouse 接收能力
+- 用户点 C1 按钮 = 同一个 BrowserWindow = 已被 setIgnore(true) 屏蔽 = 没反应
+- 用户点金球 = 同一个 BrowserWindow = 同样失效
+
+**R67 架构修复（任务书 §三 强制）**：
+**3 独立窗口**:
+- **Window 1 控制面板** (80,80,360x110, frame=true, transparent=false, alwaysOnTop=false)
+  - 永不调用 `setIgnoreMouseEvents(true)`
+  - 即使 test window 处于 ignore 状态, 面板也永远可点
+  - 不被透明 test window 覆盖 (位置错开)
+- **Window 2 透明测试窗口** (320,200,256x256, frame=false, transparent=true, alwaysOnTop=true)
+  - 含金球 + 透明角, R67 Path 1 main 20Hz polling 切 ignore
+- **Window 3 下层探针** (360,320,360x180, frame=true, transparent=false)
+  - 含可点击 Probe Button + click counter
+  - 与 test window 几何重叠 (overlap=true)
+
+**R67 启动实测**:
+```
+control bounds: {"x":80,"y":80,"width":360,"height":110}
+test    bounds: {"x":320,"y":200,"width":256,"height":256}
+probe   bounds: {"x":360,"y":320,"width":360,"height":180}
+test/probe overlap: true
+```
+
+**R67 macOS GUI 自动化尝试 (任务书 §四 强制)**:
+- ✅ osascript 可启动 (`return "ok"`)
+- ❌ `set mouse position` 报 locale syntax error + `click at` 报
+  `osascript 不允许辅助访问 (-25211)`
+- ❌ cliclick 在 sandbox 下被 SIGKILL (exit 137)
+- **结论**：`MAC_GUI_AUTOMATION_AVAILABLE = false`
+  - mavis shell 在中文 locale + macOS TCC 拒绝 osascript Accessibility 权限
+  - 这是 macOS 系统级保护, agent 不能绕过
+- **诚实声明**：`REAL_SYSTEM_CLICK_INJECTED = false`
+- `GOLD_BALL_GUI_CLICK = NOT_TESTED`
+- `B_INPUT_BASELINE_PRESERVED = true` (候选 B 主程序不动, R60 输入基线冻结)
+
+**R67 关键修复点**:
+- 控制面板独立 → 即使 Mode B 处于 `setIgnoreMouseEvents(true)`, 切换按钮仍可点
+- 用户改 mode 流程: 在控制面板点 [A] [B] [C1] [C2] → IPC 到主进程 setMode
+- 控制面板的 setInterval(500ms) 调 `r67_get_state` 显示 TEST/PROBE/TRANS/IGNORE 实时计数
+- 任务书 §三 第 4 条不再让用户陷入"为了测试穿透连按钮都点不动"的情况
+
+**R67 自动化脚本**:
+- `tools/passthrough_poc/r67_mac_automation_test.sh`
+- 试 AppleScript `System Events` 注入真实 click
+- 失败时诚实报告 MAC_GUI_AUTOMATION_AVAILABLE=false
+- 不绕过 macOS 权限
+
+**R67 6/6 状态机自测 PASS** (computeState 纯函数)
+
+
 
 **R62 Path 3 错误纠正（任务书 §一）**:
 - 任务书 §一 明确区分:

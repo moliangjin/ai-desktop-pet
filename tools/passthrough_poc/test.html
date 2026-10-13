@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>R67 Transparent Test Window</title>
+<style>
+  body { margin: 0; padding: 0; }
+  canvas { position: absolute; top: 0; left: 0; width: 256px; height: 256px; pointer-events: auto; }
+  .label {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    font: 11px monospace; color: rgba(0,0,0,0.4); pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<div class="label">R67 Test Window</div>
+<script>
+  const ctx = document.getElementById('stage').getContext('2d');
+  const W = 256, H = 256;
+  // R67: gold ball centre, lime TL, red BR — 3 distinguishable test points.
+  function drawFrame() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = 'gold';
+    ctx.beginPath(); ctx.arc(W/2, H/2, 50, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'lime'; ctx.fillRect(10, 10, 40, 40);
+    ctx.fillStyle = 'red';  ctx.fillRect(W-50, H-50, 40, 40);
+    ctx.font = '11px monospace'; ctx.fillStyle = 'black';
+    ctx.fillText('test', 8, H-8);
+  }
+  drawFrame();
+
+  function where(x, y) {
+    if (x < 50 && y < 50) return 'lime-TL';
+    if (x > W-50 && y > H-50) return 'red-BR';
+    const dx = x - W/2, dy = y - H/2;
+    if (dx*dx + dy*dy < 50*50) return 'gold-center';
+    return 'transparent';
+  }
+
+  document.getElementById('stage').addEventListener('click', (ev) => {
+    const x = ev.offsetX, y = ev.offsetY;
+    const w = where(x, y);
+    document.title = `test: click (${x},${y}) [${w}]`;
+    if (window.electron?.ipcRenderer) {
+      window.electron.ipcRenderer.send('top-click', { x, y, where: w });
+    }
+  });
+
+  // drag-state broadcast (R67 Path 1 lock)
+  let dragging = false;
+  const c = document.getElementById('stage');
+  c.addEventListener('mousedown', () => { dragging = true;  if (window.electron?.ipcRenderer) window.electron.ipcRenderer.send('drag-state', true); });
+  window.addEventListener('mouseup', () => { if (dragging) { dragging = false; if (window.electron?.ipcRenderer) window.electron.ipcRenderer.send('drag-state', false); } });
+</script>
+</body>
+</html>

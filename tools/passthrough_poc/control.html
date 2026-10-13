@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>R67 Control Panel</title>
+<style>
+  body { margin: 0; padding: 12px; font: 13px monospace; background: #f5f5f5; }
+  h3 { margin: 4px 0; }
+  .row { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
+  button {
+    background: #2960c4; color: white; border: 0; border-radius: 4px;
+    padding: 8px 14px; cursor: pointer; font: 13px monospace; font-weight: bold;
+  }
+  button.active { background: #ffd24a; color: black; }
+  .status { font: 12px monospace; background: #1a1a1a; color: #d0d0d0; padding: 8px; border-radius: 4px; }
+  .status .ok  { color: #6ee787; }
+  .status .bad { color: #ff6b6b; }
+</style>
+</head>
+<body>
+<h3>R67 Control Panel (永不进入 ignore=true)</h3>
+<div class="row">
+  <button data-mode="A">A — intercept</button>
+  <button data-mode="B">B — full passthrough</button>
+  <button data-mode="C1">C1 — Path 1 (main polling)</button>
+  <button data-mode="C2">C2 — Path 3 compact window</button>
+</div>
+<div class="status" id="status">READY — click a mode button to switch</div>
+<div class="status" id="counters">TEST: 0   PROBE: 0   TRANS: 0   IGNORE: false</div>
+<script>
+  const status = document.getElementById('status');
+  const counters = document.getElementById('counters');
+  function setMode(m) {
+    if (window.electron && window.electron.ipcRenderer) {
+      window.electron.ipcRenderer.send('set-mode', m);
+    }
+  }
+  document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      setMode(btn.dataset.mode);
+    });
+  });
+  if (window.electron?.ipcRenderer) {
+    window.electron.ipcRenderer.on('mode-changed', (_e, info) => {
+      document.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.dataset.mode === info.mode);
+      });
+      status.innerHTML = `Mode: <span class="${info.ignore ? 'bad' : 'ok'}">${info.mode}</span>  testWindow.ignore=${info.ignore}`;
+    });
+    setInterval(() => {
+      window.electron.ipcRenderer.invoke('r67_get_state').then(s => {
+        counters.textContent = `TEST: ${s.top_clicks}   PROBE: ${s.under_clicks}   TRANS: ${s.transitions}   IGNORE: ${s.ignore}`;
+      });
+    }, 500);
+  }
+</script>
+</body>
+</html>

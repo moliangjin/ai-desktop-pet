@@ -1,72 +1,59 @@
 #!/bin/bash
 # tools/passthrough_poc/自动验收.command
 #
-# V0.0 R78 一键入口 (任务书 §四)
-#
-# 用户在 Mac 前台双击即可完成:
-#   1. 检查编译器 (clang)
-#   2. 编译 m78 Objective-C 测试器
-#   3. 提示最少必要授权
-#   4. 跑测试器
-#   5. 输出 TXT/JSON/CSV 结果
-#
-# 不需要用户输入多条命令。
+# V0.0 R79 一键入口 (重写)
+#   1. 检查本地原生测试器是否存在
+#   2. 必要时自动构建 (clang)
+#   3. 构建失败立即停止并显示首个关键错误
+#   4. 检查 Accessibility 授权
+#   5. 未授权时给出最少必要申请说明
+#   6. 授权后启动 Node.js orchestrator (调原生 click + 解析 PoC stdout tick)
+#   7. 中途异常 / 超时立即停止
+#   8. 生成独立 run_id 的 TXT / JSON / CSV 结果
 
 set +e
-DST="$(cd "$(dirname "$0")/../.." && git rev-parse --show-toplevel)"
-cd "$DST/tools/passthrough_poc"
+cd "$(dirname "$0")"
 
 clear
 echo "=========================================="
-echo " R78 一键自动验收 (Objective-C 路线)"
+echo " R79 一键自动验收"
 echo "=========================================="
-echo ""
 
-# 1) 检查编译器
-echo "[1/4] 检查编译器 (clang)..."
-if ! command -v clang >/dev/null 2>&1; then
-    echo "  ✗ clang 不在 PATH"
-    echo "  修复: xcode-select --install"
-    echo "  (这是 macOS 自带的命令行工具)"
-    exit 2
+# Step 1: 检查 + 构建
+if [ ! -x ./build/m79_native_click ]; then
+    echo "[1/5] 编译原生测试器 (clang)..."
+    bash ./m79_build.sh
+    if [ ! -x ./build/m79_native_click ]; then
+        echo "  FAILED. 检查 m79_build.log"
+        exit 2
+    fi
 fi
-CLANG_VER=$(clang --version | head -1)
-echo "  ✓ $CLANG_VER"
+echo "[1/5] OK: ./build/m79_native_click 存在"
 
-# 2) 编译测试器
+# Step 2: 自检
 echo ""
-echo "[2/4] 编译 Objective-C 测试器..."
-bash ./m78_build.sh 2>&1 | tail -8
-if [ ! -x ./build/m78_gui_test_runner ]; then
+echo "[2/5] 自检 (非 GUI, 只检查 AX 权限)..."
+SELF=$(./build/m79_native_click --self-test)
+echo "  $SELF"
+
+# Step 3: AX 权限检查
+if ! echo "$SELF" | grep -q '"accessibility_granted":true'; then
     echo ""
-    echo "  ✗ 编译失败, 无法继续"
-    echo "  完整编译错误已存到 tools/passthrough_poc/m78_build.log"
+    echo "[3/5] Accessibility 权限不足"
+    echo "  修复: 系统设置 -> 隐私与安全 -> 辅助功能"
+    echo "  勾选 Terminal.app (或你用来跑这个 .command 的宿主应用)"
+    echo "  勾选后请重新双击本 .command"
     exit 3
 fi
-echo "  ✓ ./build/m78_gui_test_runner 就绪"
+echo "[3/5] OK: Accessibility granted"
 
-# 3) 提示最少必要授权
+# Step 4: 启动 orchestrator
 echo ""
-echo "[3/4] 准备授权 (本次运行前需要):"
-echo "  - 系统设置 → 隐私与安全 → 辅助功能 → 勾选 Terminal.app"
-echo "  - (CGEventPost 鼠标事件, 不需要 Input Monitoring)"
-echo "  - 若已经授权, 直接回车继续; 若未授权, 先去授权再回来"
-read -r -p "  按回车继续: "
-
-# 4) 跑测试器
-echo ""
-echo "[4/4] 启动测试 (R78 真实系统 mouse, 3 窗口 PoC, 3 cycles, 自动写结果)..."
-echo "  预计 30-60 秒, 中间会把 PoC 跑起来并发送 6+ 次真实 click"
-echo "  按 ⌘C 可中止"
-echo ""
-./build/m78_gui_test_runner
+echo "[4/5] 启动 Node.js orchestrator..."
+node ./m79_orchestrator.js
 RC=$?
-
 echo ""
-echo "=========================================="
-echo " R78 完成 (exit=$RC)"
-echo " 结果文件在 /tmp/m78_<run_id>.{txt,json,csv,log}"
-ls -la /tmp/m78_*.{txt,json,csv,log} 2>/dev/null | head -5
-echo "=========================================="
-echo ""
-echo "请回传 m78_<run_id>.{txt,json,csv} 给 MiniMax 即可。"
+echo "[5/5] orchestrator exit=$RC"
+echo "  结果在 /tmp/m79_<run_id>.{txt,json,csv}"
+ls -la /tmp/m79_*.{txt,json,csv} 2>/dev/null | head -3
+exit $RC

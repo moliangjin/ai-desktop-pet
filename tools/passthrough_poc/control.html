@@ -48,13 +48,15 @@
     });
     status.innerHTML = `Mode: <span class="${info.ignore ? 'bad' : 'ok'}">${info.mode}</span>  ignore=${info.ignore}`;
   });
+  ipcRenderer.on('r67_get_state', (_e, s) => {
+    counters.textContent = `TEST: ${s.top_clicks}  PROBE: ${s.under_clicks}  TRANS: ${s.transitions}  IGNORE: ${s.ignore}`;
+  });
   setInterval(() => {
-    ipcRenderer.invoke('r67_get_state').then(s => {
-      counters.textContent = `TEST: ${s.top_clicks}  PROBE: ${s.under_clicks}  TRANS: ${s.transitions}  IGNORE: ${s.ignore}`;
-    });
+    // R86: 'send' + 'on' (renderer 主动, main 接收) — 替代 invoke (需 'handle')
+    ipcRenderer.send('r67_get_state_request', Date.now());
   }, 500);
 
-  // R81/R82: 上报控制面板 4 个按钮的真实屏幕矩形
+  // R81/R82: 上报控制面板 4 个按钮的真实屏幕矩形 (小写键名, 与 orchestrator 一致)
   function reportControlButtons() {
     const sx = window.screenX || 0, sy = window.screenY || 0;
     const map = {};

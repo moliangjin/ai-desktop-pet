@@ -21,30 +21,36 @@
 #import <string.h>
 #import <math.h>
 
-static int out_json(const char *s) {
+// R86: exit codes — 0 only for real OK, non-zero for FAIL/BLOCKED/etc.
+static int out_json_ok(const char *s) {
     printf("%s\n", s);
     fflush(stdout);
     return 0;
 }
+static int out_json_with_code(const char *s, int code) {
+    printf("%s\n", s);
+    fflush(stdout);
+    return code;
+}
 static int out_fail(const char *reason) {
     char buf[512];
     snprintf(buf, sizeof buf, "{\"result\":\"FAIL\",\"reason\":\"%s\"}", reason);
-    return out_json(buf);
+    return out_json_with_code(buf, 10);
 }
 static int out_blocked(const char *reason) {
     char buf[512];
     snprintf(buf, sizeof buf, "{\"result\":\"BLOCKED\",\"reason\":\"%s\"}", reason);
-    return out_json(buf);
+    return out_json_with_code(buf, 11);
 }
 static int out_ok(const char *kind) {
     char buf[256];
     snprintf(buf, sizeof buf, "{\"result\":\"OK\",\"event\":\"%s\",\"note\":\"event_posted_not_target_received\"}", kind);
-    return out_json(buf);
+    return out_json_ok(buf);
 }
 
 static int ax_check(void) {
     BOOL ok = AXIsProcessTrusted();
-    if (ok) return out_json("{\"result\":\"OK\",\"accessibility_granted\":true}");
+    if (ok) return out_json_ok("{\"result\":\"OK\",\"accessibility_granted\":true}");
     return out_blocked("Accessibility not granted; user must enable in System Settings -> Privacy & Security -> Accessibility");
 }
 
@@ -65,7 +71,7 @@ static int self_test(void) {
     // 验证 CGEventPost 函数指针存在 (链接检查)
     void *pfn = (void *)CGEventPost;
     if (pfn == NULL) return out_fail("CGEventPost symbol missing");
-    return out_json("{\"result\":\"SELFTEST_OK\",\"accessibility_granted\":true,\"event_post_fn\":\"linked\",\"no_event_dispatched\":true}");
+    return out_json_ok("{\"result\":\"SELFTEST_OK\",\"accessibility_granted\":true,\"event_post_fn\":\"linked\",\"no_event_dispatched\":true}");
 }
 
 static int parse_double(const char *s, double *out, const char *name) {
@@ -113,13 +119,13 @@ int main(int argc, const char *argv[]) {
     if (argc < 2) {
         printf("usage:\n  %s --ax-check\n  %s --self-test\n  %s --move x y\n  %s x1 y1 [x2 y2 ...]\n",
                argv[0], argv[0], argv[0], argv[0]);
-        return 64;
+        return 64;  // usage = non-zero
     }
     if (strcmp(argv[1], "--ax-check") == 0) {
-        return ax_check() != 0 ? 2 : 0;
+        return ax_check();  // 0 OK, 11 BLOCKED
     }
     if (strcmp(argv[1], "--self-test") == 0) {
-        return self_test();
+        return self_test();  // 0 SELFTEST_OK, 10 FAIL
     }
     if (strcmp(argv[1], "--move") == 0) {
         if (argc < 4) return out_fail("--move requires x y");
@@ -136,7 +142,6 @@ int main(int argc, const char *argv[]) {
         CFRelease(ev);
         return out_ok("MOVE_POSTED");
     }
-    // default: pairs of x y
     if (((argc - 1) % 2) != 0) return out_fail("x y must be in pairs");
     if (!AXIsProcessTrusted()) return out_blocked("Accessibility not granted");
     int n = 0;
@@ -150,5 +155,5 @@ int main(int argc, const char *argv[]) {
     }
     char buf[128];
     snprintf(buf, sizeof buf, "{\"result\":\"OK\",\"clicked\":%d,\"note\":\"event_posted_not_target_received\"}", n);
-    return out_json(buf);
+    return out_json_ok(buf);
 }

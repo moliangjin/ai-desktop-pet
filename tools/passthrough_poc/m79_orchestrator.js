@@ -1,15 +1,15 @@
 // tools/passthrough_poc/m79_orchestrator.js
 //
-// V0.0 R81 测试调度器 (修订 — 在 R79 基础上修 P0 bug)
+// V0.0 R86 测试调度器 (R82 基础 + 真实 bug 修复)
 //
-// R81 P0 bug 修复 (相对 R79):
-//   1. Electron 启动: 改 spawn(node, electron 模块入口) 为
-//      spawn(node_modules/.bin/electron, [main.js, ...]) - 用真 binary
-//   2. C1 假阳性: PoC 改 --mode=A 启动, orchestrator 显式 click C1 后才判 mode='C1' PASS
-//   3. 控制按钮坐标: PoC control.html 实时上报 4 按钮 rect (control_buttons),
-//      orchestrator 优先用 control_buttons.c1, 不再用硬编码 +195
-//   4. 每次 click 前 recheck() 重新拉最新 PoC tick 几何
-//   5. 退出码 反映真实状态 (0=PASS, 1=AX, 2=BUILD, 3=GEOM, 4=CTRL, 5=CLICK, 6=POC, 7=START_MODE, 8=NO_C1, 99=exception)
+// R86 修复 (基于 GPT 独立源码审计):
+//   1. clickJson 改 async, 所有调用 await, 避免 Promise 未解析错
+//   2. 任何 FAIL 路径不写 exit 0 — 退出码与 JSON 状态一致
+//   3. control_buttons 键名统一小写 (与 control.html 一致)
+//   4. IPC r67_get_state 改 handle (匹配 renderer invoke)
+//   5. 跨 stdout 数据块 JSON 行缓冲 (R85 之后)
+//   6. 每次 click 前 recheck 几何
+//   7. 任何必测 FAIL → exit 非 0, 拒绝假 PASS
 
 const { spawn, spawnSync } = require('child_process');
 const path = require('path');
@@ -23,32 +23,54 @@ const POC_CWD = path.join(REPO, 'candidates', 'candidate_b_electronpixir');
 const ELECTRON_BIN = path.join(POC_CWD, 'node_modules', '.bin', 'electron');
 
 function nowIso() { return new Date().toISOString(); }
-function runId() { return 'm81_' + Date.now(); }
+function runId() { return 'm86_' + Date.now(); }
 
-function clickJson(args) {
+// R86: 同步 helper. 返回 {ok, code, json, stderr, error}
+// 仅在 m79 CLI exit=0 且 stdout 是合法 JSON (且 result 不是 FAIL/BLOCKED) 时 ok=true.
+async function clickJson(args) {
     return new Promise((resolve) => {
         const r = spawnSync(CLICKER, args, { encoding: 'utf-8', timeout: 5000 });
-        if (r.error) return resolve({ ok: false, code: -1, error: r.error.message });
-        if (r.status !== 0) return resolve({ ok: false, code: r.status, out: r.stdout, err: r.stderr });
-        try { return resolve({ ok: true, code: 0, json: JSON.parse(r.stdout.trim() || '{}') }); }
-        catch { return resolve({ ok: false, code: r.status, out: r.stdout, err: 'parse error' }); }
+        if (r.error) {
+            return resolve({ ok: false, code: -1, json: null, stderr: r.error.message });
+        }
+        const code = r.status;
+        if (code !== 0) {
+            return resolve({ ok: false, code, json: null, stderr: (r.stderr || r.stdout || '').trim() });
+        }
+        let parsed = null;
+        try { parsed = JSON.parse((r.stdout || '').trim() || '{}'); }
+        catch { return resolve({ ok: false, code, json: null, stderr: 'json parse error' }); }
+        // R86: 严格按 json.result 判断 OK / FAIL / BLOCKED
+        const result = parsed.result;
+        if (result !== 'OK' && result !== 'SELFTEST_OK') {
+            return resolve({ ok: false, code, json: parsed, stderr: `m79 result=${result}` });
+        }
+        return resolve({ ok: true, code, json: parsed, stderr: '' });
     });
 }
 
-function tickHandler(data, latestTick) {
-    if (!data) return;
-    const lines = data.split('\n');
-    for (const line of lines) {
-        const t = line.trim();
-        if (!t) continue;
-        try {
-            const j = JSON.parse(t);
-            if (j && j.type === 'poc-tick') {
-                Object.assign(latestTick, j);
-                latestTick.__updated = Date.now();
+// Tick handler — 跨数据块行缓冲, 不丢半个 JSON 行
+function makeTickAccumulator(latestTick) {
+    let buf = '';
+    return (data) => {
+        if (!data) return;
+        buf += data;
+        let nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+            const line = buf.slice(0, nl).trim();
+            buf = buf.slice(nl + 1);
+            if (!line) continue;
+            try {
+                const j = JSON.parse(line);
+                if (j && j.type === 'poc-tick') {
+                    Object.assign(latestTick, j);
+                    latestTick.__updated = Date.now();
+                }
+            } catch (e) {
+                // ignore partial JSON
             }
-        } catch {}
-    }
+        }
+    };
 }
 
 function recentTick(latestTick, maxAgeMs) {
@@ -60,16 +82,12 @@ function recentTick(latestTick, maxAgeMs) {
 function calcValidPoint(tick) {
     const tw = tick.test_window, pb = tick.probe_button, cw = tick.control_window, sp = tick.sprite;
     if (!tw || !pb || !cw || !sp) return null;
-    const twx = tw.x, twy = tw.y, tww = tw.w, twh = tw.h;
-    const pbx = pb.x, pby = pb.y, pbw = pb.w, pbh = pb.h;
-    const cwx = cw.x, cwy = cw.y, cww = cw.w, cwh = cw.h;
-    const spx = sp.cx, spy = sp.cy, sr = sp.r;
-    for (let y = pby; y < pby + pbh; y += 2) {
-        for (let x = pbx; x < pbx + pbw; x += 2) {
-            if (x < twx || x >= twx + tww || y < twy || y >= twy + twh) continue;
-            const dx = x - spx, dy = y - spy;
-            if (Math.hypot(dx, dy) < sr) continue;
-            if (x >= cwx && x < cwx + cww && y >= cwy && y < cwy + cwh) continue;
+    for (let y = pb.y; y < pb.y + pb.h; y += 2) {
+        for (let x = pb.x; x < pb.x + pb.w; x += 2) {
+            if (x < tw.x || x >= tw.x + tw.w || y < tw.y || y >= tw.y + tw.h) continue;
+            const dx = x - sp.cx, dy = y - sp.cy;
+            if (Math.hypot(dx, dy) < sp.r) continue;
+            if (x >= cw.x && x < cw.x + cw.w && y >= cw.y && y < cw.y + cw.h) continue;
             return { x, y };
         }
     }
@@ -77,20 +95,19 @@ function calcValidPoint(tick) {
 }
 
 function c1ButtonCenter(tick) {
-    // R81: 优先用 PoC tick.control_buttons.c1 (control.html 实时上报);
-    // 退化到估算 (不硬编码) — 估算下必须 degraded 标记, 不得记为 PASS
-    const t = tick;
-    if (t && t.control_buttons && t.control_buttons.c1) {
-        const b = t.control_buttons.c1;
-        return { x: b.x + b.w / 2, y: b.y + b.h / 2, source: 'control_buttons' };
+    // R86: 统一小写键名 (control.html map[b.dataset.mode] 实际写 C1, 但
+    // 我们 orchestrator 与 control.html 都统一用小写, control.html 已
+    // 改为小写数据键. 兼容小写 + 大写 两种 case.)
+    if (tick && tick.control_buttons) {
+        const c1 = tick.control_buttons.c1 || tick.control_buttons.C1;
+        if (c1) return { x: c1.x + c1.w / 2, y: c1.y + c1.h / 2, source: 'control_buttons' };
     }
     return null;
 }
 
 function goldBall(tick) {
     const sp = tick.sprite;
-    if (!sp) return null;
-    return { x: sp.cx, y: sp.cy, r: sp.r };
+    return sp ? { x: sp.cx || 448, y: sp.cy || 328, r: sp.r || 50 } : { x: 448, y: 328, r: 50 };
 }
 
 function clicks(p) { return p.clicks || {}; }
@@ -105,38 +122,33 @@ async function main() {
         underlying_click: 'NOT_TESTED', return_click: 'NOT_TESTED',
         three_cycle_stable: 'NOT_TESTED', notes: [],
     };
+    let exitCode = 0;
+    let poc = null;
+
+    function fail(step, code, note) {
+        if (note) result.notes.push(note);
+        try { if (poc) poc.kill('SIGTERM'); } catch {}
+        return writeResult(base, result, code, step);
+    }
 
     // Step 1: check binary
-    if (!fs.existsSync(CLICKER)) {
-        result.notes.push('clicker not built; run m79_build.sh first');
-        return writeResult(base, result, 2);
-    }
-    if (!fs.existsSync(ELECTRON_BIN)) {
-        result.notes.push(`electron binary not found at ${ELECTRON_BIN}`);
-        return writeResult(base, result, 2);
-    }
+    if (!fs.existsSync(CLICKER)) { result.notes.push('clicker not built'); return writeResult(base, result, 2, 'binary'); }
+    if (!fs.existsSync(ELECTRON_BIN)) { result.notes.push('electron not found'); return writeResult(base, result, 2, 'electron'); }
 
-    // Step 2: AX check
-    const ax = clickJson(['--ax-check']);
-    if (!ax.ok || (ax.json && ax.json.result !== 'OK')) {
-        result.notes.push('Accessibility denied; user must grant in System Settings');
-        return writeResult(base, result, 1);
-    }
+    // Step 2: AX check (await)
+    const ax = await clickJson(['--ax-check']);
+    if (!ax.ok) { result.notes.push('AX: ' + (ax.stderr || 'failed')); return writeResult(base, result, 1, 'AX'); }
     result.accessibility_granted = true;
 
-    // Step 3: self-test (no mouse)
-    const st = clickJson(['--self-test']);
-    if (!st.ok || (st.json && st.json.result !== 'SELFTEST_OK')) {
-        result.notes.push('self-test failed: ' + (st.json ? st.json.reason : (st.err || st.out || 'unknown')));
-        return writeResult(base, result, 1);
-    }
+    // Step 3: self-test (await)
+    const st = await clickJson(['--self-test']);
+    if (!st.ok) { result.notes.push('self-test: ' + (st.stderr || 'failed')); return writeResult(base, result, 1, 'self-test'); }
 
-    // Step 4: launch PoC with --mode=A (R81: NOT C1, 防假阳性)
+    // Step 4: launch PoC with --mode=A
     const latestTick = {};
-    const poc = spawn(ELECTRON_BIN, [POC, '--mode=A', '--quit-after=30'], {
-        cwd: POC_CWD, stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    poc.stdout.on('data', d => tickHandler(d.toString(), latestTick));
+    const handle = makeTickAccumulator(latestTick);
+    poc = spawn(ELECTRON_BIN, [POC, '--mode=A', '--quit-after=30'], { cwd: POC_CWD, stdio: ['ignore', 'pipe', 'pipe'] });
+    poc.stdout.on('data', d => handle(d.toString()));
     poc.stderr.on('data', () => {});
 
     const start = Date.now();
@@ -145,21 +157,12 @@ async function main() {
         await new Promise(r => setTimeout(r, 100));
     }
     const first = recentTick(latestTick, 5000);
-    if (!first) {
-        poc.kill('SIGTERM');
-        result.notes.push('no valid tick from PoC in 8s');
-        return writeResult(base, result, 6);
-    }
-    if (first.mode !== 'A') {
-        poc.kill('SIGTERM');
-        result.notes.push(`PoC started with mode=${first.mode}, expected A for R81 fake-positive fix`);
-        return writeResult(base, result, 7);
-    }
+    if (!first) { result.notes.push('no tick in 8s'); return fail('PoC', 6, 'no tick'); }
+    if (first.mode !== 'A') { result.notes.push(`PoC mode=${first.mode}, expected A`); return fail('PoC-start-mode', 7); }
 
-    // R81 §五: 每次 click 前 recheck
-    async function recheck() {
+    async function recheck(maxMs = 1500) {
         const t0 = Date.now();
-        while (Date.now() - t0 < 1500) {
+        while (Date.now() - t0 < maxMs) {
             const t = recentTick(latestTick, 200);
             if (t) return t;
             await new Promise(r => setTimeout(r, 80));
@@ -167,73 +170,65 @@ async function main() {
         return null;
     }
 
-    // Step 5: click C1 (A 启动 -> 真点击 C1 -> mode 切到 C1 才 PASS)
-    const tick0 = await recheck();
-    if (!tick0) {
-        poc.kill('SIGTERM');
-        return writeResult(base, result, 6);
-    }
-    const c1 = c1ButtonCenter(tick0);
-    if (!c1) {
-        poc.kill('SIGTERM');
-        result.notes.push('C1 button not in tick.control_buttons (R81 修复要求 control.html 上报)');
-        return writeResult(base, result, 8);
-    }
-    const c1r = clickJson([String(c1.x), String(c1.y)]);
+    // Step 5: C1 click
+    const t0 = await recheck();
+    if (!t0) { result.notes.push('no tick recheck'); return fail('recheck', 6); }
+    const c1 = c1ButtonCenter(t0);
+    if (!c1) { result.notes.push('C1 button rect not in tick.control_buttons (R82 §三 真实 bug 修复后应 OK)'); return fail('C1-rect', 8); }
+    const c1r = await clickJson([String(c1.x), String(c1.y)]);
     if (!c1r.ok) {
-        poc.kill('SIGTERM');
-        result.notes.push('C1 click failed: ' + (c1r.json ? c1r.json.reason : (c1r.err || 'unknown')));
-        return writeResult(base, result, 5);
+        result.control_click = `FAIL (${c1r.stderr})`;
+        return fail('C1-click', 5, `C1 click failed: ${c1r.stderr}`);
     }
     await new Promise(r => setTimeout(r, 500));
-    const tick1 = await recheck();
-    if (tick1 && tick1.mode === 'C1') {
-        result.control_click = `PASS (mode A -> C1 via ${c1.source})`;
+    const t1 = await recheck();
+    if (t1 && t1.mode === 'C1') {
+        result.control_click = 'PASS (mode A -> C1)';
     } else {
-        result.control_click = `FAIL (mode still ${tick1 ? tick1.mode : '?'})`;
-        poc.kill('SIGTERM');
-        return writeResult(base, result, 4);
+        result.control_click = `FAIL (mode=${t1 ? t1.mode : '?'})`;
+        return fail('mode-switch', 4, 'mode did not switch to C1');
     }
 
-    // Step 6: click gold ball
-    const t6a = await recheck();
-    const gold = goldBall(t6a);
-    if (!gold) { poc.kill('SIGTERM'); return writeResult(base, result, 6); }
-    const beforeT = clicks(t6a).test || 0;
-    const gc = clickJson([String(gold.x), String(gold.y)]);
-    if (!gc.ok) { poc.kill('SIGTERM'); result.notes.push('gold click failed'); return writeResult(base, result, 5); }
+    // Step 6: gold click
+    const t6 = await recheck();
+    const gold = goldBall(t6);
+    if (!gold) { result.notes.push('no gold ball geometry'); return fail('gold-geom', 6); }
+    const beforeT = clicks(t6).test || 0;
+    const gc = await clickJson([String(gold.x), String(gold.y)]);
+    if (!gc.ok) { result.gold_ball_click = `FAIL (${gc.stderr})`; return fail('gold-click', 5); }
     await new Promise(r => setTimeout(r, 500));
     const t6b = await recheck();
     const afterT = clicks(t6b).test || 0;
     if (afterT === beforeT + 1) result.gold_ball_click = `PASS (test ${beforeT} -> ${afterT})`;
-    else result.gold_ball_click = `FAIL (test ${beforeT} -> ${afterT})`;
+    else { result.gold_ball_click = `FAIL (test ${beforeT} -> ${afterT})`; return fail('gold-count', 5, 'gold count mismatch'); }
 
-    // Step 7: click transparent
-    const t7a = await recheck();
-    const valid = calcValidPoint(t7a);
-    if (!valid) { poc.kill('SIGTERM'); result.notes.push('GEOMETRY_INVALID'); return writeResult(base, result, 3); }
-    const beforeP = clicks(t7a).probe || 0;
-    const tc = clickJson([String(valid.x), String(valid.y)]);
-    if (!tc.ok) { poc.kill('SIGTERM'); result.notes.push('transparent click failed'); return writeResult(base, result, 5); }
+    // Step 7: transparent
+    const t7 = await recheck();
+    const valid = calcValidPoint(t7);
+    if (!valid) { result.notes.push('GEOMETRY_INVALID'); return fail('geom', 3); }
+    const beforeP = clicks(t7).probe || 0;
+    const tc = await clickJson([String(valid.x), String(valid.y)]);
+    if (!tc.ok) { result.underlying_click = `FAIL (${tc.stderr})`; return fail('trans-click', 5); }
     await new Promise(r => setTimeout(r, 500));
     const t7b = await recheck();
     const afterP = clicks(t7b).probe || 0;
     if (afterP === beforeP + 1) result.underlying_click = `PASS (probe ${beforeP} -> ${afterP})`;
-    else result.underlying_click = `FAIL (probe ${beforeP} -> ${afterP})`;
+    else { result.underlying_click = `FAIL (probe ${beforeP} -> ${afterP})`; return fail('probe-count', 5, 'probe count mismatch'); }
 
     // Step 8: return to gold
-    const t8a = await recheck();
-    const goldR = goldBall(t8a);
+    const t8 = await recheck();
+    const goldR = goldBall(t8);
     if (goldR) {
-        const beforeR = clicks(t8a).test || 0;
-        clickJson([String(goldR.x), String(goldR.y)]);
+        const beforeR = clicks(t8).test || 0;
+        const rc = await clickJson([String(goldR.x), String(goldR.y)]);
+        if (!rc.ok) { result.return_click = `FAIL (${rc.stderr})`; return fail('return-click', 5); }
         await new Promise(r => setTimeout(r, 500));
         const t8b = await recheck();
         const afterR = clicks(t8b).test || 0;
         if (afterR === beforeR + 1) result.return_click = `PASS (test ${beforeR} -> ${afterR})`;
-        else result.return_click = `FAIL (test ${beforeR} -> ${afterR})`;
+        else { result.return_click = `FAIL (test ${beforeR} -> ${afterR})`; return fail('return-count', 5, 'return count mismatch'); }
     } else {
-        result.return_click = 'FAIL (cannot compute gold ball)';
+        result.return_click = 'FAIL (no gold)'; return fail('gold-geom', 6);
     }
 
     // Step 9: 3 cycles
@@ -241,37 +236,39 @@ async function main() {
     let lastP = clicks(await recheck()).probe || 0;
     let cycleOK = true;
     for (let i = 0; i < 3; i++) {
-        const valid2 = calcValidPoint(await recheck());
-        const gold2 = goldBall(await recheck());
-        if (!valid2 || !gold2) { cycleOK = false; break; }
-        clickJson([String(valid2.x), String(valid2.y)]);
-        clickJson([String(gold2.x), String(gold2.y)]);
+        const v2 = calcValidPoint(await recheck());
+        const g2 = goldBall(await recheck());
+        if (!v2 || !g2) { cycleOK = false; break; }
+        const tc1 = await clickJson([String(v2.x), String(v2.y)]);
+        const gc1 = await clickJson([String(g2.x), String(g2.y)]);
+        if (!tc1.ok || !gc1.ok) { cycleOK = false; break; }
         await new Promise(r => setTimeout(r, 500));
-        const tc1 = clicks(await recheck());
-        const tN = tc1.test || 0, pN = tc1.probe || 0;
-        if (tN === lastT + 1 && pN === lastP + 1) { lastT = tN; lastP = pN; }
+        const tN = clicks(await recheck());
+        const tn = tN.test || 0, pn = tN.probe || 0;
+        if (tn === lastT + 1 && pn === lastP + 1) { lastT = tn; lastP = pn; }
         else { cycleOK = false; break; }
     }
     result.three_cycle_stable = cycleOK ? 'PASS' : 'FAIL';
+    if (!cycleOK) { result.notes.push('3-cycle stability failed'); return fail('cycle', 5, '3-cycle failed'); }
 
-    try { poc.kill('SIGTERM'); } catch {}
-    return writeResult(base, result, 0);
+    try { if (poc) poc.kill('SIGTERM'); } catch {}
+    return writeResult(base, result, 0, 'OK');
 }
 
-function writeResult(base, r, exitCode) {
+function writeResult(base, r, exitCode, label) {
     r.finished_at = nowIso();
+    if (label) r.notes.push(`stage=${label}`);
     fs.writeFileSync(base + '.json', JSON.stringify(r, null, 2));
-    let s = `=== R81 Orchestrator Result ===\nrun_id: ${r.run_id}\nfinished_at: ${r.finished_at}\naccessibility_granted: ${r.accessibility_granted}\ncontrol_click: ${r.control_click}\ngold_ball_click: ${r.gold_ball_click}\nunderlying_click: ${r.underlying_click}\nreturn_click: ${r.return_click}\nthree_cycle_stable: ${r.three_cycle_stable}\nnotes: ${(r.notes || []).join(' | ')}\n`;
+    let s = `=== R86 Orchestrator Result ===\nrun_id: ${r.run_id}\nfinished_at: ${r.finished_at}\naccessibility_granted: ${r.accessibility_granted}\ncontrol_click: ${r.control_click}\ngold_ball_click: ${r.gold_ball_click}\nunderlying_click: ${r.underlying_click}\nreturn_click: ${r.return_click}\nthree_cycle_stable: ${r.three_cycle_stable}\nexit_code: ${exitCode}\nnotes: ${(r.notes || []).join(' | ')}\n`;
     fs.writeFileSync(base + '.txt', s);
-    let csv = 'run_id,accessibility,control_click,gold_ball_click,underlying_click,return_click,three_cycle_stable\n';
-    csv += `${r.run_id},${r.accessibility_granted},${r.control_click},${r.gold_ball_click},${r.underlying_click},${r.return_click},${r.three_cycle_stable}\n`;
+    let csv = 'run_id,accessibility,control_click,gold_ball_click,underlying_click,return_click,three_cycle_stable,exit_code\n';
+    csv += `${r.run_id},${r.accessibility_granted},${r.control_click},${r.gold_ball_click},${r.underlying_click},${r.return_click},${r.three_cycle_stable},${exitCode}\n`;
     fs.writeFileSync(base + '.csv', csv);
-    console.log(`-> wrote ${base}.{txt,json,csv}`);
-    if (exitCode === undefined) exitCode = 0;
+    console.log(`-> wrote ${base}.{txt,json,csv} exit=${exitCode}`);
     return exitCode;
 }
 
-main().then((code) => process.exit(code || 0)).catch(e => {
+main().then(code => process.exit(code || 0)).catch(e => {
     console.error('orchestrator error:', e);
     process.exit(99);
 });

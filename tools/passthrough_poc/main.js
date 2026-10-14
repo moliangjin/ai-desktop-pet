@@ -235,7 +235,7 @@ ipcMain.on('under-click', (_e, info) => {
 ipcMain.on('drag-state', (_e, d) => {
     dragActive = !!d;
 });
-ipcMain.on('r67_get_state', (e) => {
+ipcMain.on('r67_get_state_request', (e) => {
     e.sender.send('r67_state', {
         run_id: RUN_ID,
         mode: currentMode,
@@ -336,7 +336,12 @@ function emitStdoutTick() {
             test_window: { x: Math.round(tb.x), y: Math.round(tb.y), w: Math.round(tb.width), h: Math.round(tb.height) },
             probe_window: { x: Math.round(ub.x), y: Math.round(ub.y), w: Math.round(ub.width), h: Math.round(ub.height) },
             control_window: { x: Math.round(cb.x), y: Math.round(cb.y), w: Math.round(cb.width), h: Math.round(cb.height) },
-            control_buttons: controlButtons,
+            control_buttons: controlButtons ? {
+                a: controlButtons.a || controlButtons.A,
+                b: controlButtons.b || controlButtons.B,
+                c1: controlButtons.c1 || controlButtons.C1,
+                c2: controlButtons.c2 || controlButtons.C2,
+            } : null,
             sprite: { cx: SPRITE_CX, cy: SPRITE_CY, r: SPRITE_R },
             probe_button: probeButtonScreen,
             clicks: { test: topClicks, probe: underClicks },

@@ -35,10 +35,11 @@
     ipcRenderer.send('under-click', { x, y });
   }
   document.getElementById('probe-btn').addEventListener('click', (ev) => {
+    ev.stopPropagation();
     bump(ev.clientX, ev.clientY);
   });
   document.addEventListener('click', (ev) => {
-    bump(ev.clientX, ev.clientY);
+    if (ev.target.id !== 'probe-btn') bump(ev.clientX, ev.clientY);
   });
 
   // R71: report probe button screen rect to main so the Swift runner

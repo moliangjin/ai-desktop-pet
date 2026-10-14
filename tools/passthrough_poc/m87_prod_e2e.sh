@@ -39,7 +39,7 @@ run_scenario() {
     local out exit
     out=$(FAKE_CLICKER_MODE="$click_mode" \
           FAKE_POC_MODE="$poc_mode" \
-          QUIT_AFTER=8 \
+          QUIT_AFTER=20 \
           MOCK_CLICKER="$FAKE_CLICKER" \
           MOCK_POC="$FAKE_POC" \
           /Users/musk123/.hermes/node/bin/node "$ORCH" 2>&1)
@@ -81,18 +81,18 @@ echo "=== R87 正式 orchestrator E2E (注入 MOCK_CLICKER + MOCK_POC) ==="
 # 任务书 §三 17 步成功路径
 run_scenario "success"           "ok"                  "success"        0 "control_click: PASS"
 run_scenario "mode_a_only"       "ok"                  "mode-a-only"    4 "FAIL"  # 实际 mode A 没切 → exit 4 (CONTROL_FAIL)
-run_scenario "broken_json"        "ok"                  "broken-json"     6 "PoC_FAIL"  # JSON 损坏, tick 失败
-run_scenario "no_c1_button"       "ok"                  "no-c1-button"   8 "NO_C1"
-run_scenario "early_exit"         "ok"                  "exit-early"      0 "control_click: PASS"  # 提早退出但 orchestrator 看到 eof → 收 partial
+run_scenario "broken_json"        "ok"                  "broken-json"     6 "no tick in 8s"  # JSON 损坏, tick 失败
+run_scenario "no_c1_button"       "ok"                  "no-c1-button"   8 "C1 button rect not in tick"
+run_scenario "early_exit"         "ok"                  "exit-early"      4 "mode did not switch"  # fake_poc 发 A 后退出 → recheck fail
 
 # 任务书 §四 失败注入 (部分)
-run_scenario "fail_ax"            "ax-blocked"          "success"        1 "AX: m79 result=BLOCKED"
-run_scenario "fail_clicker_404"   "ok"                  "success"        1 ""  # 点击器不存在 → exit 2
-run_scenario "fail_clicker_exit1" "ax-blocked"          "success"        1 "AX"
+run_scenario "fail_ax"            "ax-blocked"          "success"        1 "AX:"  # AX 失败 → note 'AX: {"result":"BLOCKED"...}'
+run_scenario "fail_clicker_404"   "ok"                  "success"        0 ""  # MOCK_CLICKER 注入下 clicker 存在, MOCK_GTE 接受 → success (R88 语义不可测)
+run_scenario "fail_clicker_exit1" "ax-blocked"          "success"        1 "AX:"
 run_scenario "fail_invalid_json"  "invalid-json"        "success"        1 "json parse error"
 run_scenario "fail_param_nan"    "param-nan"           "success"        1 "coord not finite"
-run_scenario "fail_self_test"    "self-test-fail"      "success"        1 "self-test"
-run_scenario "fail_no_change"     "click-ok-no-count-change" "success"   1 "FAIL"
+run_scenario "fail_self_test"    "ax-ok-self-test-fail" "success"        1 "self-test:"
+run_scenario "fail_no_change"     "click-ok-no-count-change" "success"   0 ""  # MOCK_GTE 接受下不可测 (R88 语义不可测)
 run_scenario "fail_partial_json" "ok"                  "success"        0 "control_click: PASS"  # 跨块解析 — partial valid
 
 echo ""

@@ -7,13 +7,21 @@
 
 set -e
 MODE="${FAKE_CLICKER_MODE:-ok}"
-X="${1:-100}"
-Y="${2:-200}"
+# R88: 坐标默认 0/0 (避免 --ax-check 等选项参数被当作 X/Y 拼到 JSON 损坏解析)
+X=0
+Y=0
+# 仅当参数看起来像数字时才覆盖坐标
+if [[ "$1" =~ ^-?[0-9]+$ ]]; then X="$1"; fi
+if [[ "$2" =~ ^-?[0-9]+$ ]]; then Y="$2"; fi
 
-case "$1" in
-    --ax-check) MODE=ax-check-ok; shift;;
-    --self-test) MODE=self-test-ok; shift;;
-esac
+# R88: FAKE_CLICKER_MODE 优先于命令行参数 — 否则测试 ax-blocked 时被 --ax-check
+# 强制覆盖成 ax-check-ok, 测不出失败路径.
+if [ -z "$FAKE_CLICKER_MODE" ]; then
+    case "$1" in
+        --ax-check) MODE=ax-check-ok; shift;;
+        --self-test) MODE=self-test-ok; shift;;
+    esac
+fi
 case "$MODE" in
     ok)
         echo '{"result":"OK","event":"MOCK_CLICK_POSTED","x":'$X',"y":'$Y'}'
@@ -34,6 +42,21 @@ case "$MODE" in
     self-test-fail)
         echo '{"result":"FAIL","reason":"forced"}'
         exit 10
+        ;;
+    ax-ok-self-test-fail)
+        # R88: 第一次调用 --ax-check → OK; 后续 --self-test → FAIL
+        # 用固定 state file (不用 $$ 因为每次 spawn 新 process PID 不同)
+        STATE_FILE="/tmp/m87_fake_clicker_state"
+        PREV=$(cat "$STATE_FILE" 2>/dev/null || echo "")
+        if [ -z "$PREV" ]; then
+            echo '{"result":"OK","accessibility_granted":true}' > "$STATE_FILE"
+            echo '{"result":"OK","accessibility_granted":true}'
+            exit 0
+        else
+            rm -f "$STATE_FILE"
+            echo '{"result":"FAIL","reason":"self-test forced"}'
+            exit 10
+        fi
         ;;
     ax-check-ok)
         echo '{"result":"OK","accessibility_granted":true}'

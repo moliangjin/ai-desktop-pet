@@ -52,7 +52,7 @@ let lastTransitionLog = [];
 const TEST_X = 320, TEST_Y = 200, TEST_W = 256, TEST_H = 256;
 const SPRITE_CX = TEST_X + 128, SPRITE_CY = TEST_Y + 128, SPRITE_R = 50;
 const PROBE_X = 360, PROBE_Y = 320, PROBE_W = 360, PROBE_H = 180;
-const CONTROL_X = 80, CONTROL_Y = 80, CONTROL_W = 360, CONTROL_H = 110;
+const CONTROL_X = 80, CONTROL_Y = 80, CONTROL_W = 360, CONTROL_H = 220;
 
 // Pure state machine function (testable; no Electron deps).
 function computeState({ cursor, winBounds, spriteBounds, dragging }) {

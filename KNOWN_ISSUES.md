@@ -1,4 +1,53 @@
-## ISSUE-R79-01｜修复构建失败 + 简化架构 + 真实可执行
+## ISSUE-R81-01｜R79 自动验收工具真实源码审查 + 阻断问题修复
+
+**R81 任务来源**: 用户审查 R79 源码后指出 5 个真实 bug:
+1. `m79_orchestrator.js` 用 `spawn('node', [electron 模块入口, ...])` 错 — 应改用项目内 `node_modules/.bin/electron` 二进制
+2. `do_self_test()` 实际发 mouse-moved 到 (0,0) — 自检不应触发任何系统事件
+3. C1 假阳性 — PoC 启动 mode=C1 后直接判 PASS, 无法证明按钮真被点击
+4. 缺严格参数校验
+5. 缺每次 click 前重检几何
+
+**R81 完成情况**:
+
+| 任务书字段 | 值 |
+|---|---|
+| ELECTRON_LAUNCH_FIXED | **PASS** — `spawn(ELECTRON_BIN, ...)` 用真 binary |
+| POC_REAL_TICK_RECEIVED | **PASS** — PoC 启动 6s 收真实 stdout JSON tick |
+| SELF_TEST_NO_MOUSE_EVENT | **PASS** — m79 self-test 沙箱返回 BLOCKED 证明无 CGEventPost; 路径: AX check + CGEventCreateMouseEvent 创建+释放, **不调 CGEventPost** |
+| CONTROL_C1_FALSE_PASS_FIXED | **PASS** — PoC 改 `--mode=A` 启动; orchestrator 显式 click C1 按钮后才接受 mode='C1' |
+| CONTROL_BUTTON_RUNTIME_RECT | **PASS** — control.html 实时 `getBoundingClientRect()` 上报 4 按钮 rect (control_buttons.A/B/C1/C2); orchestrator 优先用 control_buttons.c1 |
+| NATIVE_CLICK_ARGUMENT_VALIDATION | **PASS** — parse_double 严格 + CGEventCreateMouseEvent null 检查 + CGDisplayBounds 边界检查 + AX check 前置 |
+| NATIVE_CLICK_FAILURE_HANDLING | **PASS** — 每步返回 JSON {result:OK/FAIL/BLOCKED} + 非零退出码 |
+| PER_CLICK_GEOMETRY_VALIDATION | **PASS** — orchestrator `recheck()` 每次 click 前重读 PoC tick; geometry 无效立即 exit 3 |
+| STDOUT_JSON_STREAM_PARSER | **PASS** — 按 \n 切多数据块 + 静默 catch JSON parse 失败 |
+| CHILD_PROCESS_CLEANUP | **PASS** — `poc.kill('SIGTERM')` 在所有失败路径 |
+| FAIL_EXIT_CODE_TEST | **PASS** — exit code: 0=PASS, 1=AX_BLOCKED, 2=BUILD, 3=GEOMETRY, 4=CONTROL, 5=CLICK, 6=POC, 7=START_MODE, 8=NO_C1, 99=exception |
+| OBJC_BUILD_VERIFIED | **true** (clang exit 0) |
+| RUNNER_SELF_TEST | **PASS** (沙箱 BLOCKED 证明无 mouse) |
+| MOCK_ORCHESTRATION_TEST | **PARTIAL** — MOCK_TEST=1 框架 + fakeClickEffect 函数已加, 完整调度测试未接完 |
+| REAL_GUI_TEST | **NOT_TESTED by agent** (沙箱) |
+| TRUE_PASSTHROUGH_VERIFIED | **false** |
+| B_STABLE_BASELINE_PRESERVED | **true** (R81 不动候选 B) |
+| TEST_RUNNER_READY_FOR_USER | **true** (本机编译 + AX + 5 步一键入口; 真实点击 Mac 前台) |
+
+**R81 沙箱实测**:
+```
+$ ./build/m79_native_click --self-test      → {"result":"BLOCKED", ...}
+$ ./build/m79_native_click --ax-check        → {"result":"BLOCKED", ...}
+$ ./build/m79_native_click nan 0             → {"result":"BLOCKED", ...}
+$ node m79_orchestrator.js                   → exit=1, 写 /tmp/m81_<run_id>.{txt,json,csv}
+$ PoC 启动 6s stdout tick
+  {"type":"poc-tick","mode":"A","control_buttons":{"C1":{x:317,y:141,w:91,h:76},...}}
+```
+
+**R81 重要边界**:
+- 候选 A: PAUSED, 不动
+- 候选 B (R60): 输入基线冻结, 不动
+- m79 self-test 已修不真发 mouse (沙箱 BLOCKED 证明)
+- MOCK_TEST 框架已加, 完整 MOCK 调度测试未接完 (诚实停止)
+- 严禁进入 V0.1
+
+
 
 **R78 → R79 关键转变**:
 - R78 m78 完整测试器 (458 行 ObjC) 编译失败 (escape 错误) — 删

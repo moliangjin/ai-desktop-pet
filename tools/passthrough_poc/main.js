@@ -38,6 +38,7 @@ const DEFAULT_MODE = _modeArg.toUpperCase();  // initial mode
 
 // State.
 let controlWindow = null;
+let controlButtons = null;
 let testWindow = null;
 let probeWindow = null;
 let currentMode = DEFAULT_MODE;
@@ -318,6 +319,7 @@ ipcMain.on('probe-button-rect', (_e, b) => {
     console.log(`[R67 PoC] probe button screen rect: ${JSON.stringify(b)} (ip #${probeButtonIpCount})`);
 });
 ipcMain.on('probe-ready', () => { console.log('[R67 PoC] probe ready'); });
+ipcMain.on('control-buttons', (_e, m) => { if (m && typeof m === 'object') controlButtons = m; });
 
 let stdoutTickHandle = null;
 function emitStdoutTick() {
@@ -334,6 +336,7 @@ function emitStdoutTick() {
             test_window: { x: Math.round(tb.x), y: Math.round(tb.y), w: Math.round(tb.width), h: Math.round(tb.height) },
             probe_window: { x: Math.round(ub.x), y: Math.round(ub.y), w: Math.round(ub.width), h: Math.round(ub.height) },
             control_window: { x: Math.round(cb.x), y: Math.round(cb.y), w: Math.round(cb.width), h: Math.round(cb.height) },
+            control_buttons: controlButtons,
             sprite: { cx: SPRITE_CX, cy: SPRITE_CY, r: SPRITE_R },
             probe_button: probeButtonScreen,
             clicks: { test: topClicks, probe: underClicks },

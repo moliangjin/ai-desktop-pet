@@ -47,6 +47,26 @@
     });
     status.innerHTML = `Mode: <span class="${info.ignore ? 'bad' : 'ok'}">${info.mode}</span>  testWindow.ignore=${info.ignore}`;
   });
+
+  // R81: 上报控制面板 4 个按钮的真实屏幕矩形
+  function reportControlButtons() {
+    const sx = window.screenX || 0, sy = window.screenY || 0;
+    const map = {};
+    document.querySelectorAll('button[data-mode]').forEach(b => {
+      const r = b.getBoundingClientRect();
+      map[b.dataset.mode] = {
+        x: Math.round(sx + r.left),
+        y: Math.round(sy + r.top),
+        w: Math.round(r.width),
+        h: Math.round(r.height),
+      };
+    });
+    ipcRenderer.send('control-buttons', map);
+  }
+  setTimeout(reportControlButtons, 200);
+  setTimeout(reportControlButtons, 800);
+  setInterval(reportControlButtons, 500);
+  window.addEventListener('resize', reportControlButtons);
   setInterval(() => {
     ipcRenderer.invoke('r67_get_state').then(s => {
       counters.textContent = `TEST: ${s.top_clicks}   PROBE: ${s.under_clicks}   TRANS: ${s.transitions}   IGNORE: ${s.ignore}`;

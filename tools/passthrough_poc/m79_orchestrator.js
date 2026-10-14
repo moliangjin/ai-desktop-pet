@@ -22,14 +22,22 @@ const CLICKER = path.join(HERE, 'build', 'm79_native_click');
 const POC_CWD = path.join(REPO, 'candidates', 'candidate_b_electronpixir');
 const ELECTRON_BIN = path.join(POC_CWD, 'node_modules', '.bin', 'electron');
 
+// R87: MOCK 依赖注入. 当 MOCK_CLICKER 环境变量存在时, 用其作为 clicker
+// (文件路径). 当 MOCK_POC 存在时, 用其作为 PoC subprocess (但 MOCK_POC 是
+// shell 脚本, spawn 时作为 argv[0]). 默认 prod 模式用真实 binary.
+const MOCK_CLICKER = process.env.MOCK_CLICKER || null;
+const MOCK_POC = process.env.MOCK_POC || null;
+
 function nowIso() { return new Date().toISOString(); }
-function runId() { return 'm86_' + Date.now(); }
+function runId() { return 'm87_' + Date.now(); }
 
 // R86: 同步 helper. 返回 {ok, code, json, stderr, error}
 // 仅在 m79 CLI exit=0 且 stdout 是合法 JSON (且 result 不是 FAIL/BLOCKED) 时 ok=true.
 async function clickJson(args) {
     return new Promise((resolve) => {
-        const r = spawnSync(CLICKER, args, { encoding: 'utf-8', timeout: 5000 });
+        // R87: MOCK_CLICKER 注入时直接 spawnSync 那个二进制 (它必须存在并能跑)
+        const bin = MOCK_CLICKER || CLICKER;
+        const r = spawnSync(bin, args, { encoding: 'utf-8', timeout: 5000 });
         if (r.error) {
             return resolve({ ok: false, code: -1, json: null, stderr: r.error.message });
         }
@@ -147,7 +155,13 @@ async function main() {
     // Step 4: launch PoC with --mode=A
     const latestTick = {};
     const handle = makeTickAccumulator(latestTick);
-    poc = spawn(ELECTRON_BIN, [POC, '--mode=A', '--quit-after=30'], { cwd: POC_CWD, stdio: ['ignore', 'pipe', 'pipe'] });
+    // R87: MOCK_POC 注入 — argv[0] 是 MOCK_POC 脚本, 后续是 PoC 路径
+    const pocArgs = MOCK_POC
+        ? [MOCK_POC, POC, '--mode=A', '--quit-after=30']
+        : [POC, '--mode=A', '--quit-after=30'];
+    const pocBin = MOCK_POC ? MOCK_POC : ELECTRON_BIN;
+    const pocCwd = MOCK_POC ? HERE : POC_CWD;
+    poc = spawn(pocBin, pocArgs, { cwd: pocCwd, stdio: ['ignore', 'pipe', 'pipe'] });
     poc.stdout.on('data', d => handle(d.toString()));
     poc.stderr.on('data', () => {});
 

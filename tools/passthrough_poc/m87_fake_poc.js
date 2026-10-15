@@ -126,7 +126,7 @@ function runMode(pocMode, m) {
         setTimeout(() => { dbg('[no-tick end]'); process.exit(0); }, QUIT_AFTER_S);
         return;
     }
-    if (pocMode === 'early-exit') {
+    if (pocMode === 'exit-early' || pocMode === 'early-exit') {
         // 发几个 tick 后立即退出 — 测 orchestrator 处理 partial
         emitTick('A', 0, 0, false, false);
         emitTick('A', 0, 0, false, false);

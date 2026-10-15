@@ -66,7 +66,14 @@ run_scenario() {
     if [ "$exit" = "$want_exit" ]; then
         if [ -n "$want_substr" ]; then
             if grep -qF "$want_substr" "$base.out" 2>/dev/null || grep -qF "$want_substr" "$base.txt" 2>/dev/null; then
-                echo "[PASS] $name (exit=$exit, contains '$want_substr')"
+                # R90: 阶段断言 — 从 JSON 报告读 actual_stage, expected stage 是 want_substr 提示
+                local actual_stage
+                if [ -f "$base.json" ]; then
+                    actual_stage=$(python3 -c "import json; d=json.load(open('$base.json')); print(d.get('notes', ['?'])[-1] if d.get('notes') else '?')" 2>/dev/null || echo "parse_err")
+                else
+                    actual_stage="no_json"
+                fi
+                echo "[PASS] $name (exit=$exit, contains '$want_substr', stage=$actual_stage)"
                 PASS=$((PASS+1))
                 return 0
             else
@@ -116,7 +123,7 @@ echo "--- §三 异常场景 ---"
 run_scenario "mode_a_only"      "ok"  "mode-a-only" 4 "FAIL"  # C1 click 不切模式
 run_scenario "broken_json"      "ok"  "broken-json" 6 "no tick in 8s"
 run_scenario "no_c1_button"     "ok"  "no-c1-button" 8 "C1 button rect not in tick"
-run_scenario "early_exit"       "ok"  "exit-early" 0 "control_click: PASS"  # fake_poc 死前已切 C1 + 计数 OK
+run_scenario "early_exit"       "ok"  "exit-early" 4 "mode did not switch"  # R90: fake_poc 提前退出 → orchestrator 收不到 C1 tick → mode-switch FAIL
 run_scenario "ignore_clicks"    "ok"  "ignore-clicks" 5 "FAIL"  # 切 C1 但不 +1 → gold-count FAIL
 
 # ============================================================

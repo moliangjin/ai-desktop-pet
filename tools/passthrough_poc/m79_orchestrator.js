@@ -204,6 +204,14 @@ async function main() {
                 }
             }
         });
+        // R90: 监听 PoC 提前退出 — 必须立即识别并中止后续
+        poc.on('exit', (code, sig) => {
+            if (orchDebugLog) { try { require('fs').appendFileSync(orchDebugLog, `[poc exit] code=${code} sig=${sig} t=${Date.now()}\n`); } catch {} }
+            if (!result.poc_early_exit) {
+                result.poc_early_exit = true;
+                result.notes.push(`POC_EARLY_EXIT code=${code} sig=${sig}`);
+            }
+        });
         // 启动 fake_poc (startupDelay 让 orchestrator 先 AX check + 拿到 firstTick 时间)
         setTimeout(() => {
             try { poc.send({ type: 'start', mode: process.env.FAKE_POC_MODE || 'success', startupDelay: 1000 }); } catch (e) {}
@@ -216,6 +224,14 @@ async function main() {
         });
         poc.stderr.on('data', (d) => {
             if (orchDebugLog) { try { require('fs').appendFileSync(orchDebugLog, '[stderr] ' + d.toString().trim() + '\n'); } catch {} }
+        });
+        // R90: bash spawn 模式同样监听 exit
+        poc.on('exit', (code, sig) => {
+            if (orchDebugLog) { try { require('fs').appendFileSync(orchDebugLog, `[poc exit] code=${code} sig=${sig} t=${Date.now()}\n`); } catch {} }
+            if (!result.poc_early_exit) {
+                result.poc_early_exit = true;
+                result.notes.push(`POC_EARLY_EXIT code=${code} sig=${sig}`);
+            }
         });
     }
     let firstTickSeen = false;  // R89: fork 模式需要 firstTick 跟踪

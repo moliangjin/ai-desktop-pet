@@ -35,6 +35,13 @@ function runId() { return 'm87_' + Date.now(); }
 // 仅在 m79 CLI exit=0 且 stdout 是合法 JSON (且 result 不是 FAIL/BLOCKED) 时 ok=true.
 // R89: ENOENT 显式识别为 CLICKER_NOT_FOUND (不让 spawn ENOENT 漏进 m79 result=FAIL 路径)
 async function clickJson(args) {
+    // R92 §一: PoC 死亡后禁止 clickJson
+    if (__aborted__ || __poc_alive__ === false) {
+        const err = new Error('POC_NOT_ALIVE');
+        err.code = 'POC_NOT_ALIVE';
+        throw err;
+    }
+    __click_count__++;
     return new Promise((resolve) => {
         const bin = MOCK_CLICKER || CLICKER;
         const r = spawnSync(bin, args, { encoding: 'utf-8', timeout: 5000 });
@@ -101,14 +108,25 @@ function makeTickAccumulator(latestTick, firstTick) {
 }
 
 function recentTick(latestTick, maxAgeMs) {
-    if (!latestTick.__updated) return null;
+    if (!latestTick || !latestTick.__updated) return null;
     if (Date.now() - latestTick.__updated > maxAgeMs) return null;
     return latestTick;
 }
 
+// R92 §一: 模块级 PoC 存活状态 + 计数. clickJson 拒绝 PoC 死亡后调用
+let __poc_alive__ = true;
+let __aborted__ = false;
+let __click_count__ = 0;
+let __result_ref__ = null;  // main() 注入 result 用于 abort 时 push note
+
 function calcValidPoint(tick) {
+    // R92: 禁止空值 fallback
+    if (!tick) return null;
     const tw = tick.test_window, pb = tick.probe_button, cw = tick.control_window, sp = tick.sprite;
     if (!tw || !pb || !cw || !sp) return null;
+    if (typeof tw.x !== 'number' || typeof tw.y !== 'number' || typeof tw.w !== 'number' || typeof tw.h !== 'number') return null;
+    if (typeof pb.x !== 'number' || typeof pb.y !== 'number' || typeof pb.w !== 'number' || typeof pb.h !== 'number') return null;
+    if (typeof sp.cx !== 'number' || typeof sp.cy !== 'number' || typeof sp.r !== 'number') return null;
     for (let y = pb.y; y < pb.y + pb.h; y += 2) {
         for (let x = pb.x; x < pb.x + pb.w; x += 2) {
             if (x < tw.x || x >= tw.x + tw.w || y < tw.y || y >= tw.y + tw.h) continue;
@@ -133,8 +151,11 @@ function c1ButtonCenter(tick) {
 }
 
 function goldBall(tick) {
+    // R92: 删硬编码回退
+    if (!tick || !tick.sprite) return null;
     const sp = tick.sprite;
-    return sp ? { x: sp.cx || 448, y: sp.cy || 328, r: sp.r || 50 } : { x: 448, y: 328, r: 50 };
+    if (typeof sp.cx !== 'number' || typeof sp.cy !== 'number' || typeof sp.r !== 'number') return null;
+    return { x: sp.cx, y: sp.cy, r: sp.r };
 }
 
 function clicks(p) { return p.clicks || {}; }
@@ -148,7 +169,19 @@ async function main() {
         control_click: 'NOT_TESTED', gold_ball_click: 'NOT_TESTED',
         underlying_click: 'NOT_TESTED', return_click: 'NOT_TESTED',
         three_cycle_stable: 'NOT_TESTED', notes: [],
+        // R92 §三 窗口身份
+        window_identity_gate: 'NOT_VERIFIED',
+        window_occlusion_check: 'NOT_VERIFIED',
+        window_identity_reason: 'mavis sandbox 无 Screen Recording 权限, CGWindowListCopyWindowInfo 不可用; 不绕过 macOS TCC',
+        // R92 §一
+        click_count: 0,
+        poc_early_exit: false,
     };
+    // R92: 注入 result 引用到 module-level, 让 clickJson 能写 note
+    __result_ref__ = result;
+    __aborted__ = false;
+    __click_count__ = 0;
+    __poc_alive__ = true;
     let exitCode = 0;
     let poc = null;
 
@@ -157,7 +190,8 @@ async function main() {
         if (process.env.MOCK_ORCH_DEBUG_LOG) {
             try { require('fs').appendFileSync(process.env.MOCK_ORCH_DEBUG_LOG, `[fail] step=${step} code=${code} note=${note} t=${Date.now()}\n`); } catch {}
         }
-        try { if (poc) poc.kill('SIGTERM'); } catch {}
+        // R92: 统一清理 (失败路径也清理子进程)
+        try { if (poc && __poc_alive__ !== false) poc.kill('SIGTERM'); } catch (e) {}
         return writeResult(base, result, code, step);
     }
 
@@ -204,10 +238,12 @@ async function main() {
                 }
             }
         });
-        // R90: 监听 PoC 提前退出 — 必须立即识别并中止后续
+        // R90/R92: 监听 PoC 提前退出 — 立即标记死亡 + 中止
         poc.on('exit', (code, sig) => {
             if (orchDebugLog) { try { require('fs').appendFileSync(orchDebugLog, `[poc exit] code=${code} sig=${sig} t=${Date.now()}\n`); } catch {} }
-            if (!result.poc_early_exit) {
+            __poc_alive__ = false;
+            __aborted__ = true;
+            if (result && !result.poc_early_exit) {
                 result.poc_early_exit = true;
                 result.notes.push(`POC_EARLY_EXIT code=${code} sig=${sig}`);
             }
@@ -225,10 +261,12 @@ async function main() {
         poc.stderr.on('data', (d) => {
             if (orchDebugLog) { try { require('fs').appendFileSync(orchDebugLog, '[stderr] ' + d.toString().trim() + '\n'); } catch {} }
         });
-        // R90: bash spawn 模式同样监听 exit
+        // R90/R92: bash spawn 模式同样监听 exit
         poc.on('exit', (code, sig) => {
             if (orchDebugLog) { try { require('fs').appendFileSync(orchDebugLog, `[poc exit] code=${code} sig=${sig} t=${Date.now()}\n`); } catch {} }
-            if (!result.poc_early_exit) {
+            __poc_alive__ = false;
+            __aborted__ = true;
+            if (result && !result.poc_early_exit) {
                 result.poc_early_exit = true;
                 result.notes.push(`POC_EARLY_EXIT code=${code} sig=${sig}`);
             }
@@ -248,8 +286,10 @@ async function main() {
     if (startMode !== 'A') { result.notes.push(`PoC start mode=${startMode}, expected A`); return fail('PoC-start-mode', 7); }
 
     async function recheck(maxMs = 1500) {
+        // R92: recheck 必须检查 PoC 存活状态
         const t0 = Date.now();
         while (Date.now() - t0 < maxMs) {
+            if (__aborted__ || __poc_alive__ === false) return null;
             const t = recentTick(latestTick, 200);
             if (t) return t;
             await new Promise(r => setTimeout(r, 80));
@@ -356,7 +396,9 @@ async function main() {
     result.three_cycle_stable = cycleOK ? 'PASS' : 'FAIL';
     if (!cycleOK) { result.notes.push('3-cycle stability failed'); return fail('cycle', 5, '3-cycle failed'); }
 
-    try { if (poc) poc.kill('SIGTERM'); } catch {}
+    // R92 §四: 统一清理 + click_count 记录
+    try { if (poc) poc.kill('SIGTERM'); } catch (e) {}
+    result.click_count = __click_count__;
     return writeResult(base, result, 0, 'OK');
 }
 
@@ -373,7 +415,27 @@ function writeResult(base, r, exitCode, label) {
     return exitCode;
 }
 
+// R92 §四: 顶层 uncaughtException / unhandledRejection 兜底
+process.on('uncaughtException', (e) => {
+    console.error('orchestrator uncaughtException:', e?.message || e);
+    process.exit(98);
+});
+process.on('unhandledRejection', (e) => {
+    console.error('orchestrator unhandledRejection:', e?.message || e);
+    process.exit(97);
+});
+process.on('SIGINT', () => {
+    console.error('orchestrator SIGINT');
+    if (__result_ref__) __result_ref__.notes.push('SIGNAL_SIGINT');
+    process.exit(95);
+});
+process.on('SIGTERM', () => {
+    console.error('orchestrator SIGTERM');
+    if (__result_ref__) __result_ref__.notes.push('SIGNAL_SIGTERM');
+    process.exit(94);
+});
+
 main().then(code => process.exit(code || 0)).catch(e => {
-    console.error('orchestrator error:', e);
+    console.error('orchestrator error:', e?.message || e);
     process.exit(99);
 });

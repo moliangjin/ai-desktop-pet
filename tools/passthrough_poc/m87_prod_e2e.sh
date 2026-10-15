@@ -29,16 +29,18 @@ get_out() {
 
 # 跑一种 scenario.
 # 参数: $1=name $2=fake_clicker_mode $3=fake_poc_mode $4=expected_exit $5=expected_status_substr
-#       $6=optional MOCK_CLICKER_PATH (默认 = FAKE_CLICKER)
-#       $7=optional extra_env (如 MOCK_POC_NO_MODE_SWITCH=true)
+#       $6=optional expected_stage (R92 §五 严格断言: 实际 stage 来自 JSON notes 末尾)
+#       $7=optional MOCK_CLICKER_PATH (默认 = FAKE_CLICKER)
+#       $8=optional extra_env (如 MOCK_POC_NO_MODE_SWITCH=true)
 run_scenario() {
     local name="$1"
     local click_mode="$2"
     local poc_mode="$3"
     local want_exit="$4"
     local want_substr="$5"
-    local clicker_path="${6:-$FAKE_CLICKER}"
-    local extra_env="$7"
+    local want_stage="${6:-}"
+    local clicker_path="${7:-$FAKE_CLICKER}"
+    local extra_env="$8"
 
     TOTAL=$((TOTAL+1))
     local ts=$(date +%s)
@@ -64,15 +66,17 @@ run_scenario() {
     fi
 
     if [ "$exit" = "$want_exit" ]; then
+        # R92 §五: 严格 stage 断言
+        if [ -f "$base.json" ]; then
+            local actual_stage=$(python3 -c "import json; d=json.load(open('$base.json')); notes=d.get('notes', []); print(notes[-1] if notes else '?')" 2>/dev/null || echo "parse_err")
+            if [ -n "$want_stage" ] && [ "$actual_stage" != "$want_stage" ]; then
+                echo "[FAIL] $name (exit=$exit OK, but stage mismatch: expected='$want_stage' actual='$actual_stage')"
+                FAIL=$((FAIL+1))
+                return 1
+            fi
+        fi
         if [ -n "$want_substr" ]; then
             if grep -qF "$want_substr" "$base.out" 2>/dev/null || grep -qF "$want_substr" "$base.txt" 2>/dev/null; then
-                # R90: 阶段断言 — 从 JSON 报告读 actual_stage, expected stage 是 want_substr 提示
-                local actual_stage
-                if [ -f "$base.json" ]; then
-                    actual_stage=$(python3 -c "import json; d=json.load(open('$base.json')); print(d.get('notes', ['?'])[-1] if d.get('notes') else '?')" 2>/dev/null || echo "parse_err")
-                else
-                    actual_stage="no_json"
-                fi
                 echo "[PASS] $name (exit=$exit, contains '$want_substr', stage=$actual_stage)"
                 PASS=$((PASS+1))
                 return 0
@@ -82,7 +86,7 @@ run_scenario() {
                 return 1
             fi
         else
-            echo "[PASS] $name (exit=$exit)"
+            echo "[PASS] $name (exit=$exit, stage=$actual_stage)"
             PASS=$((PASS+1))
             return 0
         fi
@@ -100,43 +104,43 @@ echo ""
 # §三 17 步成功路径 (R89 P1-1)
 # ============================================================
 echo "--- §三 17 步成功路径 ---"
-run_scenario "success"          "ok"  "success"  0 "control_click: PASS"
+run_scenario "success"          "ok"  "success"  0 "control_click: PASS" "stage=OK"
 # 真实失败路径 (R89 P0-1): 点击器文件不存在 → 任何阶段 clickJson ENOENT 都报 CLICKER_NOT_FOUND
-run_scenario "fail_clicker_404" "ok"  "success" 1 "CLICKER_NOT_FOUND" "/tmp/m87_no_such_clicker_$$_$(date +%N)"
+run_scenario "fail_clicker_404" "ok"  "success" 1 "CLICKER_NOT_FOUND" "stage=AX" "/tmp/m87_no_such_clicker_$$_$(date +%N)"
 # 真实失败路径 (R89 P0-2): click OK 但 PoC 计数不变 (clicker 不写 sentinel)
 # click-ok-no-count-change 不写 sentinel → fake_poc success 模式不切 C1 → mode-switch FAIL exit=4
 # (想测 gold-count 失败需要切 C1, 改用 ignore-clicks 模式让 fake_poc 切 C1 但不 +1)
-run_scenario "fail_no_change"   "click-ok-no-count-change" "success" 4 "FAIL"
+run_scenario "fail_no_change"   "click-ok-no-count-change" "success" 4 "FAIL" "stage=mode-switch"
 # 真实失败路径 (R89 P1-4 情形 E): click 到错目标 (fake_poc 收 sentinel 但几何判定 none → 计数不变)
 # click_mode=ok 让 clicker 写真实坐标 (切 C1), fake_poc wrong-target 模式故意 +1 到 probe (错) → gold count FAIL exit=5
-run_scenario "wrong_target"     "ok"  "wrong-target" 5 "FAIL"
+run_scenario "wrong_target"     "ok"  "wrong-target" 5 "FAIL" "stage=gold-count"
 # 真实失败路径 (R89 P1-4 情形 D): click 执行器返回 FAIL
-run_scenario "click_fail"       "click-fail" "success" 5 "FAIL"
+run_scenario "click_fail"       "click-fail" "success" 5 "FAIL" "stage=C1-click"
 # R89 P0-2 完整测试: click-signal-no-count + ignore-clicks → 切 C1 但 +0 → gold-count FAIL exit=5
-run_scenario "no_count_after_switch" "click-signal-no-count" "ignore-clicks" 5 "FAIL"
+run_scenario "no_count_after_switch" "click-signal-no-count" "ignore-clicks" 5 "FAIL" "stage=gold-count"
 
 # ============================================================
 # §三 异常场景
 # ============================================================
 echo ""
 echo "--- §三 异常场景 ---"
-run_scenario "mode_a_only"      "ok"  "mode-a-only" 4 "FAIL"  # C1 click 不切模式
-run_scenario "broken_json"      "ok"  "broken-json" 6 "no tick in 8s"
-run_scenario "no_c1_button"     "ok"  "no-c1-button" 8 "C1 button rect not in tick"
-run_scenario "early_exit"       "ok"  "exit-early" 4 "mode did not switch"  # R90: fake_poc 提前退出 → orchestrator 收不到 C1 tick → mode-switch FAIL
-run_scenario "ignore_clicks"    "ok"  "ignore-clicks" 5 "FAIL"  # 切 C1 但不 +1 → gold-count FAIL
+run_scenario "mode_a_only"      "ok"  "mode-a-only" 4 "FAIL" "stage=mode-switch"
+run_scenario "broken_json"      "ok"  "broken-json" 6 "no tick in 8s" "stage=PoC"
+run_scenario "no_c1_button"     "ok"  "no-c1-button" 8 "C1 button rect not in tick" "stage=C1-rect"
+run_scenario "early_exit"       "ok"  "exit-early" 4 "mode did not switch" "stage=mode-switch"  # R90: fake_poc 提前退出 → orchestrator 收不到 C1 tick → mode-switch FAIL
+run_scenario "ignore_clicks"    "ok"  "ignore-clicks" 5 "FAIL" "stage=gold-count"
 
 # ============================================================
 # §四 失败注入 (R89 P1-2)
 # ============================================================
 echo ""
 echo "--- §四 失败注入 ---"
-run_scenario "fail_ax"            "ax-blocked"          "success"        1 "AX:"
-run_scenario "fail_clicker_exit1" "ax-blocked"          "success"        1 "AX:"
-run_scenario "fail_invalid_json"  "invalid-json"        "success"        1 "json parse error"
-run_scenario "fail_param_nan"     "param-nan"           "success"        1 "coord not finite"
-run_scenario "fail_self_test"     "ax-ok-self-test-fail" "success"        1 "self-test:"
-run_scenario "fail_crash"         "crash"               "success"        1 "AX:"  # crash 在 AX 阶段 exit=99 → orchestrator 报 AX fail
+run_scenario "fail_ax"            "ax-blocked"          "success"        1 "AX:" "stage=AX"
+run_scenario "fail_clicker_exit1" "ax-blocked"          "success"        1 "AX:" "stage=AX"
+run_scenario "fail_invalid_json"  "invalid-json"        "success"        1 "json parse error" "stage=AX"
+run_scenario "fail_param_nan"     "param-nan"           "success"        1 "coord not finite" "stage=AX"
+run_scenario "fail_self_test"     "ax-ok-self-test-fail" "success"        1 "self-test:" "stage=self-test"
+run_scenario "fail_crash"         "crash"               "success"        1 "AX:" "stage=AX"  # crash 在 AX 阶段 exit=99 → orchestrator 报 AX fail
 
 echo ""
 echo "=== R89 E2E Summary ==="

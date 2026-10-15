@@ -14,9 +14,14 @@
 set +e
 cd "$(dirname "$0")"
 
+# R89: 明确清空 MOCK 注入 — 一键入口默认走真实生产路径 (真 binary + 真 PoC)
+# 测试工具 (m87_prod_e2e.sh) 才设 MOCK_CLICKER / MOCK_POC
+unset MOCK_CLICKER MOCK_POC FAKE_CLICKER_MODE FAKE_POC_MODE
+export MOCK_CLICKER="" MOCK_POC=""
+
 clear
 echo "=========================================="
-echo " R79 一键自动验收"
+echo " R79 一键自动验收 (R89: 默认真实生产路径, MOCK 关闭)"
 echo "=========================================="
 
 # Step 1: 检查 + 构建

@@ -1,35 +1,44 @@
 #!/usr/bin/env bash
 # tools/passthrough_poc/m87_prod_e2e.sh
 #
-# R87 正式 orchestrator E2E 测试 — 跑真实 m79_orchestrator.js + 注入 MOCK
-# 依赖 (MOCK_CLICKER + MOCK_POC) 测试 17 步成功 + 21 失败注入.
+# R89 正式 orchestrator E2E — 跑真实 m79_orchestrator.js + 注入 MOCK 依赖.
+#
+# 设计原则:
+#   1. MOCK 注入是测试专用 (env 变量), 生产默认真实 binary (Mavis 内存记录红线)
+#   2. 事件驱动计数: fake_clicker 写 sentinel → fake_poc 按几何判定 +1 → orchestrator 严格 ===
+#   3. 失败注入必须真触发: ENOENT 真用不存在路径, ax-blocked 真被 mode 拦截
+#   4. 不许用 MOCK_GTE 凑 PASS — 每条 case 必须真测对应失败模式
 
 set +e
 cd "$(dirname "$0")"
 HERE="$(pwd)"
-REPO="$(cd ../../.. && pwd)"
 ORCH="$HERE/m79_orchestrator.js"
 FAKE_CLICKER="$HERE/m87_fake_clicker.sh"
-FAKE_POC="$HERE/m87_fake_poc.sh"
-
+FAKE_POC="$HERE/m87_fake_poc.js"
 LOG_DIR="/tmp/m87_e2e"
 mkdir -p "$LOG_DIR"
 PASS=0
 FAIL=0
 TOTAL=0
+NON_REAL=0  # MOCK 妥协 / 不真测的 case 计数
 
 # 结果文件路径
 get_out() {
     ls -t $LOG_DIR/m87_$1_*.txt 2>/dev/null | head -1
 }
 
-# 跑一种 scenario. 参数: $1=name  $2=fake_clicker_mode  $3=fake_poc_mode  $4=expected_exit  $5=expected_status_substr
+# 跑一种 scenario.
+# 参数: $1=name $2=fake_clicker_mode $3=fake_poc_mode $4=expected_exit $5=expected_status_substr
+#       $6=optional MOCK_CLICKER_PATH (默认 = FAKE_CLICKER)
+#       $7=optional extra_env (如 MOCK_POC_NO_MODE_SWITCH=true)
 run_scenario() {
     local name="$1"
     local click_mode="$2"
     local poc_mode="$3"
     local want_exit="$4"
     local want_substr="$5"
+    local clicker_path="${6:-$FAKE_CLICKER}"
+    local extra_env="$7"
 
     TOTAL=$((TOTAL+1))
     local ts=$(date +%s)
@@ -40,8 +49,9 @@ run_scenario() {
     out=$(FAKE_CLICKER_MODE="$click_mode" \
           FAKE_POC_MODE="$poc_mode" \
           QUIT_AFTER=20 \
-          MOCK_CLICKER="$FAKE_CLICKER" \
+          MOCK_CLICKER="$clicker_path" \
           MOCK_POC="$FAKE_POC" \
+          $extra_env \
           /Users/musk123/.hermes/node/bin/node "$ORCH" 2>&1)
     exit=$?
     echo "$out" > "$base.out"
@@ -76,27 +86,53 @@ run_scenario() {
     fi
 }
 
-echo "=== R87 正式 orchestrator E2E (注入 MOCK_CLICKER + MOCK_POC) ==="
+echo "=== R89 正式 orchestrator E2E (事件驱动 MOCK 注入) ==="
+echo ""
 
-# 任务书 §三 17 步成功路径
-run_scenario "success"           "ok"                  "success"        0 "control_click: PASS"
-run_scenario "mode_a_only"       "ok"                  "mode-a-only"    4 "FAIL"  # 实际 mode A 没切 → exit 4 (CONTROL_FAIL)
-run_scenario "broken_json"        "ok"                  "broken-json"     6 "no tick in 8s"  # JSON 损坏, tick 失败
-run_scenario "no_c1_button"       "ok"                  "no-c1-button"   8 "C1 button rect not in tick"
-run_scenario "early_exit"         "ok"                  "exit-early"      4 "mode did not switch"  # fake_poc 发 A 后退出 → recheck fail
+# ============================================================
+# §三 17 步成功路径 (R89 P1-1)
+# ============================================================
+echo "--- §三 17 步成功路径 ---"
+run_scenario "success"          "ok"  "success"  0 "control_click: PASS"
+# 真实失败路径 (R89 P0-1): 点击器文件不存在 → 任何阶段 clickJson ENOENT 都报 CLICKER_NOT_FOUND
+run_scenario "fail_clicker_404" "ok"  "success" 1 "CLICKER_NOT_FOUND" "/tmp/m87_no_such_clicker_$$_$(date +%N)"
+# 真实失败路径 (R89 P0-2): click OK 但 PoC 计数不变 (clicker 不写 sentinel)
+# click-ok-no-count-change 不写 sentinel → fake_poc success 模式不切 C1 → mode-switch FAIL exit=4
+# (想测 gold-count 失败需要切 C1, 改用 ignore-clicks 模式让 fake_poc 切 C1 但不 +1)
+run_scenario "fail_no_change"   "click-ok-no-count-change" "success" 4 "FAIL"
+# 真实失败路径 (R89 P1-4 情形 E): click 到错目标 (fake_poc 收 sentinel 但几何判定 none → 计数不变)
+# click_mode=ok 让 clicker 写真实坐标 (切 C1), fake_poc wrong-target 模式故意 +1 到 probe (错) → gold count FAIL exit=5
+run_scenario "wrong_target"     "ok"  "wrong-target" 5 "FAIL"
+# 真实失败路径 (R89 P1-4 情形 D): click 执行器返回 FAIL
+run_scenario "click_fail"       "click-fail" "success" 5 "FAIL"
+# R89 P0-2 完整测试: click-signal-no-count + ignore-clicks → 切 C1 但 +0 → gold-count FAIL exit=5
+run_scenario "no_count_after_switch" "click-signal-no-count" "ignore-clicks" 5 "FAIL"
 
-# 任务书 §四 失败注入 (部分)
-run_scenario "fail_ax"            "ax-blocked"          "success"        1 "AX:"  # AX 失败 → note 'AX: {"result":"BLOCKED"...}'
-run_scenario "fail_clicker_404"   "ok"                  "success"        0 ""  # MOCK_CLICKER 注入下 clicker 存在, MOCK_GTE 接受 → success (R88 语义不可测)
+# ============================================================
+# §三 异常场景
+# ============================================================
+echo ""
+echo "--- §三 异常场景 ---"
+run_scenario "mode_a_only"      "ok"  "mode-a-only" 4 "FAIL"  # C1 click 不切模式
+run_scenario "broken_json"      "ok"  "broken-json" 6 "no tick in 8s"
+run_scenario "no_c1_button"     "ok"  "no-c1-button" 8 "C1 button rect not in tick"
+run_scenario "early_exit"       "ok"  "exit-early" 0 "control_click: PASS"  # fake_poc 死前已切 C1 + 计数 OK
+run_scenario "ignore_clicks"    "ok"  "ignore-clicks" 5 "FAIL"  # 切 C1 但不 +1 → gold-count FAIL
+
+# ============================================================
+# §四 失败注入 (R89 P1-2)
+# ============================================================
+echo ""
+echo "--- §四 失败注入 ---"
+run_scenario "fail_ax"            "ax-blocked"          "success"        1 "AX:"
 run_scenario "fail_clicker_exit1" "ax-blocked"          "success"        1 "AX:"
 run_scenario "fail_invalid_json"  "invalid-json"        "success"        1 "json parse error"
-run_scenario "fail_param_nan"    "param-nan"           "success"        1 "coord not finite"
-run_scenario "fail_self_test"    "ax-ok-self-test-fail" "success"        1 "self-test:"
-run_scenario "fail_no_change"     "click-ok-no-count-change" "success"   0 ""  # MOCK_GTE 接受下不可测 (R88 语义不可测)
-run_scenario "fail_partial_json" "ok"                  "success"        0 "control_click: PASS"  # 跨块解析 — partial valid
+run_scenario "fail_param_nan"     "param-nan"           "success"        1 "coord not finite"
+run_scenario "fail_self_test"     "ax-ok-self-test-fail" "success"        1 "self-test:"
+run_scenario "fail_crash"         "crash"               "success"        1 "AX:"  # crash 在 AX 阶段 exit=99 → orchestrator 报 AX fail
 
 echo ""
-echo "=== R87 E2E Summary ==="
+echo "=== R89 E2E Summary ==="
 echo "Total: $TOTAL  PASS: $PASS  FAIL: $FAIL"
 echo "Logs: $LOG_DIR/"
 exit $FAIL

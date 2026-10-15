@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # tools/passthrough_poc/m87_fake_clicker.sh
 #
-# R87 E2E 模拟点击器 (MOCK_CLICKER) — 模拟不同失败/成功场景.
-# 通过 FAKE_CLICKER_MODE 环境变量控制行为.
-# 不发送任何真实 mouse event.
+# R89 事件驱动 MOCK clicker — 每次 click 写 sentinel /tmp/m87_mock_click_signal,
+# 让 fake_poc 按几何判定 +1. 没 click = 没 sentinel = fake_poc 计数不变.
+# 通过 FAKE_CLICKER_MODE 控制行为. 不发送任何真实 mouse event.
 
 set -e
 MODE="${FAKE_CLICKER_MODE:-ok}"
@@ -22,8 +22,22 @@ if [ -z "$FAKE_CLICKER_MODE" ]; then
         --self-test) MODE=self-test-ok; shift;;
     esac
 fi
+
+# R89: 写 click signal sentinel — fake_poc 用它判定 +1
+# 仅当 click 实际"发生"时写. AX-check / self-test 不写 signal (因为没真 click).
+# R89b: 每个 click 写独立文件 (避免连续 click 覆盖), fake_poc glob 消费所有
+SIGNAL_DIR="${MOCK_CLICK_SIGNAL_DIR:-/tmp/m87_click_signals}"
+mkdir -p "$SIGNAL_DIR"
+write_signal() {
+    # 用 PID + ns + x + y 命名, 永不冲突
+    local fn="${SIGNAL_DIR}/click_${$}_$(date +%s)}_${X}_${Y}"
+    printf '{"x":%d,"y":%d,"ts":%d}\n' "$X" "$Y" "$(date +%s)" > "$fn"
+}
+
 case "$MODE" in
     ok)
+        # R89: 真 click → 写 sentinel
+        write_signal
         echo '{"result":"OK","event":"MOCK_CLICK_POSTED","x":'$X',"y":'$Y'}'
         exit 0
         ;;
@@ -44,8 +58,6 @@ case "$MODE" in
         exit 10
         ;;
     ax-ok-self-test-fail)
-        # R88: 第一次调用 --ax-check → OK; 后续 --self-test → FAIL
-        # 用固定 state file (不用 $$ 因为每次 spawn 新 process PID 不同)
         STATE_FILE="/tmp/m87_fake_clicker_state"
         PREV=$(cat "$STATE_FILE" 2>/dev/null || echo "")
         if [ -z "$PREV" ]; then
@@ -53,7 +65,7 @@ case "$MODE" in
             echo '{"result":"OK","accessibility_granted":true}'
             exit 0
         else
-            rm -f "$STATE_FILE"
+            /bin/rm -f "$STATE_FILE"
             echo '{"result":"FAIL","reason":"self-test forced"}'
             exit 10
         fi
@@ -71,9 +83,34 @@ case "$MODE" in
         exit 10
         ;;
     click-ok-no-count-change)
-        # 返回 OK 但 click count 不会变 (test 可验证 orchestrator 是否判 FAIL)
+        # R89: 故意不写 sentinel — click OK 但 fake_poc 不响应 (测 orchestrator mode-switch FAIL)
         echo '{"result":"OK","event":"MOCK_CLICK_POSTED_NO_CHANGE","x":'$X',"y":'$Y'}'
         exit 0
+        ;;
+    click-signal-no-count)
+        # R89b: 写 sentinel 让 fake_poc 切 C1 (响应), 但 fake_poc 模式 ignore-clicks 不 +1 → gold-count FAIL
+        write_signal
+        echo '{"result":"OK","event":"MOCK_CLICK_SIGNAL_NO_COUNT","x":'$X',"y":'$Y'}'
+        exit 0
+        ;;
+    wrong-target)
+        # R89b: 写独立信号文件但 x/y 故意偏移到错误目标 (999,999)
+        WT_FN="${SIGNAL_DIR}/click_${$}_$(date +%s)_999_999"
+        printf '{"x":999,"y":999,"ts":%d}\n' "$(date +%s)" > "$WT_FN"
+        echo '{"result":"OK","event":"MOCK_CLICK_WRONG_TARGET","x":'$X',"y":'$Y'}'
+        exit 0
+        ;;
+    click-fail)
+        # R89: --ax-check / --self-test 走 OK, 普通 click 返 FAIL
+        if [ "$1" = "--ax-check" ]; then
+            echo '{"result":"OK","accessibility_granted":true}'
+            exit 0
+        elif [ "$1" = "--self-test" ]; then
+            echo '{"result":"SELFTEST_OK","accessibility_granted":true}'
+            exit 0
+        fi
+        echo '{"result":"FAIL","reason":"forced click fail"}'
+        exit 10
         ;;
     crash)
         exit 99

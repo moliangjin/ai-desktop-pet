@@ -33,13 +33,21 @@ function runId() { return 'm87_' + Date.now(); }
 
 // R86: 同步 helper. 返回 {ok, code, json, stderr, error}
 // 仅在 m79 CLI exit=0 且 stdout 是合法 JSON (且 result 不是 FAIL/BLOCKED) 时 ok=true.
+// R89: ENOENT 显式识别为 CLICKER_NOT_FOUND (不让 spawn ENOENT 漏进 m79 result=FAIL 路径)
 async function clickJson(args) {
     return new Promise((resolve) => {
-        // R87: MOCK_CLICKER 注入时直接 spawnSync 那个二进制 (它必须存在并能跑)
         const bin = MOCK_CLICKER || CLICKER;
         const r = spawnSync(bin, args, { encoding: 'utf-8', timeout: 5000 });
         if (r.error) {
-            return resolve({ ok: false, code: -1, json: null, stderr: r.error.message });
+            const isENOENT = r.error.code === 'ENOENT';
+            return resolve({
+                ok: false,
+                code: -1,
+                json: null,
+                stderr: isENOENT ? 'CLICKER_NOT_FOUND' : r.error.message,
+                enoent: isENOENT,
+                missingPath: isENOENT ? bin : null,
+            });
         }
         const code = r.status;
         if (code !== 0) {
@@ -48,7 +56,6 @@ async function clickJson(args) {
         let parsed = null;
         try { parsed = JSON.parse((r.stdout || '').trim() || '{}'); }
         catch { return resolve({ ok: false, code, json: null, stderr: 'json parse error' }); }
-        // R86: 严格按 json.result 判断 OK / FAIL / BLOCKED
         const result = parsed.result;
         if (result !== 'OK' && result !== 'SELFTEST_OK') {
             return resolve({ ok: false, code, json: parsed, stderr: `m79 result=${result}` });
@@ -81,6 +88,9 @@ function makeTickAccumulator(latestTick, firstTick) {
                         Object.assign(firstTick, j);
                         firstTick.__updated = Date.now();
                         seenFirst = true;
+                    }
+                    if (process.env.MOCK_ORCH_DEBUG_LOG) {
+                        try { require('fs').appendFileSync(process.env.MOCK_ORCH_DEBUG_LOG, `[tick] mode=${j.mode} test=${j.clicks?.test} probe=${j.clicks?.probe} firstTick.mode=${firstTick.mode}\n`); } catch {}
                     }
                 }
             } catch (e) {
@@ -144,6 +154,9 @@ async function main() {
 
     function fail(step, code, note) {
         if (note) result.notes.push(note);
+        if (process.env.MOCK_ORCH_DEBUG_LOG) {
+            try { require('fs').appendFileSync(process.env.MOCK_ORCH_DEBUG_LOG, `[fail] step=${step} code=${code} note=${note} t=${Date.now()}\n`); } catch {}
+        }
         try { if (poc) poc.kill('SIGTERM'); } catch {}
         return writeResult(base, result, code, step);
     }
@@ -165,15 +178,47 @@ async function main() {
     const latestTick = {};
     const firstTick = {};  // R88: 首次收到的 tick, 不被后续 Object.assign 覆盖
     const handle = makeTickAccumulator(latestTick, firstTick);
-    // R87: MOCK_POC 注入 — argv[0] 是 MOCK_POC 脚本, 后续是 PoC 路径
+    // R89 debug
+    const orchDebugLog = process.env.MOCK_ORCH_DEBUG_LOG || null;
+    const orchLog = (msg) => { if (orchDebugLog) { require('fs').appendFileSync(orchDebugLog, msg + '\n'); } };
+    // R89: 检测 MOCK_POC 扩展名 — .js 用 fork() + IPC, bash 用 spawn + pipe
+    const MOCK_POC_IS_JS = MOCK_POC && MOCK_POC.endsWith('.js');
     const pocArgs = MOCK_POC
-        ? [MOCK_POC, POC, '--mode=A', '--quit-after=30']
+        ? (MOCK_POC_IS_JS ? [] : [MOCK_POC, POC, '--mode=A', '--quit-after=30'])
         : [POC, '--mode=A', '--quit-after=30'];
     const pocBin = MOCK_POC ? MOCK_POC : ELECTRON_BIN;
     const pocCwd = MOCK_POC ? HERE : POC_CWD;
-    poc = spawn(pocBin, pocArgs, { cwd: pocCwd, stdio: ['ignore', 'pipe', 'pipe'] });
-    poc.stdout.on('data', d => handle(d.toString()));
-    poc.stderr.on('data', () => {});
+    if (MOCK_POC_IS_JS) {
+        // Node fork + IPC: tick 通过 process.send 传, 不依赖 stdout pipe
+        const { fork } = require('child_process');
+        poc = fork(MOCK_POC, [], { cwd: pocCwd, env: process.env, silent: false });
+        poc.on('message', (m) => {
+            if (m && m.type === 'tick' && m.tick) {
+                const j = m.tick;
+                Object.assign(latestTick, j);
+                latestTick.__updated = Date.now();
+                if (!firstTickSeen) {
+                    Object.assign(firstTick, j);
+                    firstTick.__updated = Date.now();
+                    firstTickSeen = true;
+                }
+            }
+        });
+        // 启动 fake_poc (startupDelay 让 orchestrator 先 AX check + 拿到 firstTick 时间)
+        setTimeout(() => {
+            try { poc.send({ type: 'start', mode: process.env.FAKE_POC_MODE || 'success', startupDelay: 1000 }); } catch (e) {}
+        }, 300);
+    } else {
+        poc = spawn(pocBin, pocArgs, { cwd: pocCwd, stdio: ['ignore', 'pipe', 'pipe'] });
+        poc.stdout.on('data', d => {
+            if (orchDebugLog) { try { require('fs').appendFileSync(orchDebugLog, '[raw stdout] ' + d.toString().split('\n').filter(Boolean).join(' | ') + '\n'); } catch {} }
+            handle(d.toString());
+        });
+        poc.stderr.on('data', (d) => {
+            if (orchDebugLog) { try { require('fs').appendFileSync(orchDebugLog, '[stderr] ' + d.toString().trim() + '\n'); } catch {} }
+        });
+    }
+    let firstTickSeen = false;  // R89: fork 模式需要 firstTick 跟踪
 
     const start = Date.now();
     while (Date.now() - start < 8000) {
@@ -221,14 +266,17 @@ async function main() {
     if (!gold) { result.notes.push('no gold ball geometry'); return fail('gold-geom', 6); }
     const beforeT = clicks(t6).test || 0;
     const gc = await clickJson([String(gold.x), String(gold.y)]);
-    if (!gc.ok) { result.gold_ball_click = `FAIL (${gc.stderr})`; return fail('gold-click', 5); }
+    if (!gc.ok) {
+        result.gold_ball_click = `FAIL (${gc.stderr})`;
+        if (gc.enoent) { result.notes.push('CLICKER_NOT_FOUND: ' + gc.missingPath); return fail('CLICKER_NOT_FOUND', 12); }
+        return fail('gold-click', 5);
+    }
     await new Promise(r => setTimeout(r, 500));
     const t6b = await recheck();
     const afterT = clicks(t6b).test || 0;
-    // R88: MOCK 兼容 — fake_poc 持续 emit_tick 累积计数, 接受 afterT >= beforeT+1
-    // (真实 PoC 应 === beforeT+1; MOCK 模式无法精准对齐 click 时序)
-    if (afterT >= beforeT + 1) result.gold_ball_click = `PASS (test ${beforeT} -> ${afterT}, MOCK_GTE)`;
-    else { result.gold_ball_click = `FAIL (test ${beforeT} -> ${afterT})`; return fail('gold-count', 5, 'gold count mismatch'); }
+    // R89: 严格 === beforeT+1 — 事件驱动计数保证 click→+1, 不再 MOCK_GTE 凑 PASS
+    if (afterT === beforeT + 1) result.gold_ball_click = `PASS (test ${beforeT} -> ${afterT})`;
+    else { result.gold_ball_click = `FAIL (test ${beforeT} -> ${afterT}, expected ${beforeT + 1})`; return fail('gold-count', 5, 'gold count mismatch'); }
 
     // Step 7: transparent
     const t7 = await recheck();
@@ -236,12 +284,16 @@ async function main() {
     if (!valid) { result.notes.push('GEOMETRY_INVALID'); return fail('geom', 3); }
     const beforeP = clicks(t7).probe || 0;
     const tc = await clickJson([String(valid.x), String(valid.y)]);
-    if (!tc.ok) { result.underlying_click = `FAIL (${tc.stderr})`; return fail('trans-click', 5); }
+    if (!tc.ok) {
+        result.underlying_click = `FAIL (${tc.stderr})`;
+        if (tc.enoent) { result.notes.push('CLICKER_NOT_FOUND: ' + tc.missingPath); return fail('CLICKER_NOT_FOUND', 12); }
+        return fail('trans-click', 5);
+    }
     await new Promise(r => setTimeout(r, 500));
     const t7b = await recheck();
     const afterP = clicks(t7b).probe || 0;
-    if (afterP >= beforeP + 1) result.underlying_click = `PASS (probe ${beforeP} -> ${afterP}, MOCK_GTE)`;
-    else { result.underlying_click = `FAIL (probe ${beforeP} -> ${afterP})`; return fail('probe-count', 5, 'probe count mismatch'); }
+    if (afterP === beforeP + 1) result.underlying_click = `PASS (probe ${beforeP} -> ${afterP})`;
+    else { result.underlying_click = `FAIL (probe ${beforeP} -> ${afterP}, expected ${beforeP + 1})`; return fail('probe-count', 5, 'probe count mismatch'); }
 
     // Step 8: return to gold
     const t8 = await recheck();
@@ -249,17 +301,21 @@ async function main() {
     if (goldR) {
         const beforeR = clicks(t8).test || 0;
         const rc = await clickJson([String(goldR.x), String(goldR.y)]);
-        if (!rc.ok) { result.return_click = `FAIL (${rc.stderr})`; return fail('return-click', 5); }
+        if (!rc.ok) {
+            result.return_click = `FAIL (${rc.stderr})`;
+            if (rc.enoent) { result.notes.push('CLICKER_NOT_FOUND: ' + rc.missingPath); return fail('CLICKER_NOT_FOUND', 12); }
+            return fail('return-click', 5);
+        }
         await new Promise(r => setTimeout(r, 500));
         const t8b = await recheck();
         const afterR = clicks(t8b).test || 0;
-        if (afterR >= beforeR + 1) result.return_click = `PASS (test ${beforeR} -> ${afterR}, MOCK_GTE)`;
-        else { result.return_click = `FAIL (test ${beforeR} -> ${afterR})`; return fail('return-count', 5, 'return count mismatch'); }
+        if (afterR === beforeR + 1) result.return_click = `PASS (test ${beforeR} -> ${afterR})`;
+        else { result.return_click = `FAIL (test ${beforeR} -> ${afterR}, expected ${beforeR + 1})`; return fail('return-count', 5, 'return count mismatch'); }
     } else {
         result.return_click = 'FAIL (no gold)'; return fail('gold-geom', 6);
     }
 
-    // Step 9: 3 cycles — MOCK 兼容 (每轮 +1 接受)
+    // Step 9: 3 cycles — 严格 +1
     let lastT = clicks(await recheck()).test || 0;
     let lastP = clicks(await recheck()).probe || 0;
     let cycleOK = true;
@@ -269,11 +325,16 @@ async function main() {
         if (!v2 || !g2) { cycleOK = false; break; }
         const tc1 = await clickJson([String(v2.x), String(v2.y)]);
         const gc1 = await clickJson([String(g2.x), String(g2.y)]);
-        if (!tc1.ok || !gc1.ok) { cycleOK = false; break; }
-        await new Promise(r => setTimeout(r, 500));
+        if (!tc1.ok || !gc1.ok) {
+            cycleOK = false;
+            if (tc1.enoent || gc1.enoent) { result.notes.push('CLICKER_NOT_FOUND'); return fail('CLICKER_NOT_FOUND', 12); }
+            break;
+        }
+        // R89: 800ms 让 fake_poc emit_loop 至少跑 4 次 (200ms/次) 完全消费 signal
+        await new Promise(r => setTimeout(r, 800));
         const tN = clicks(await recheck());
         const tn = tN.test || 0, pn = tN.probe || 0;
-        if (tn >= lastT + 1 && pn >= lastP + 1) { lastT = tn; lastP = pn; }
+        if (tn === lastT + 1 && pn === lastP + 1) { lastT = tn; lastP = pn; }
         else { cycleOK = false; break; }
     }
     result.three_cycle_stable = cycleOK ? 'PASS' : 'FAIL';

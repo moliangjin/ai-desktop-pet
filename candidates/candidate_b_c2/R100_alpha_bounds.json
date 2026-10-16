@@ -1,0 +1,80 @@
+{
+  "total_frames": 26,
+  "expected_frames": 26,
+  "all_ok": true,
+  "union_bbox": {
+    "x": [
+      71,
+      184
+    ],
+    "y": [
+      24,
+      221
+    ]
+  },
+  "per_action": {
+    "idle": {
+      "count": 6,
+      "bbox": [
+        75,
+        56,
+        180,
+        219
+      ],
+      "visible": [
+        105,
+        163
+      ]
+    },
+    "walk": {
+      "count": 8,
+      "bbox": [
+        75,
+        53,
+        180,
+        217
+      ],
+      "visible": [
+        105,
+        164
+      ]
+    },
+    "jump": {
+      "count": 8,
+      "bbox": [
+        75,
+        24,
+        180,
+        217
+      ],
+      "visible": [
+        105,
+        193
+      ]
+    },
+    "drag": {
+      "count": 4,
+      "bbox": [
+        71,
+        54,
+        184,
+        221
+      ],
+      "visible": [
+        113,
+        167
+      ]
+    }
+  },
+  "recommended_window_sizes": {
+    "standard": {
+      "w": 256,
+      "h": 256
+    },
+    "compact": {
+      "w": 200,
+      "h": 240
+    }
+  },
+  "reasoning": "R100 alpha \u8fb9\u754c\u5206\u6790: union=[71,184]x[24,221] visible 113x197 (jump \u9876 24 \u662f\u8d77\u8df3\u6700\u9ad8\u70b9). \u9009 compact=200x240: sprite anchor(0.5, 0.9) y=240 \u2192 sprite \u9876 canvas y=9.6; alpha \u9876 24 \u2192 canvas y=33.6; alpha \u5e95 221 \u2192 canvas y=230.6. \u5b8c\u5168\u5728 canvas \u8303\u56f4\u5185. vs standard 256x256: \u6a2a\u5411\u51cf\u5c0f 22% (256\u2192200), \u7eb5\u5411 \u51cf\u5c0f 6% (256\u2192240), \u9762\u79ef\u51cf\u5c0f 27%."
+}

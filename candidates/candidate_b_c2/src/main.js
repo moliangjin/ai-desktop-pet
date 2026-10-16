@@ -43,25 +43,41 @@ if (!fs.existsSync(manifestPath)) {
     app.exit(3);
 }
 
-// R98: 紧凑模式尺寸档位 (默认 200x200, 比 256x256 减小 39% 遮挡面积)
+// R100 尺寸档位: 基于 26 帧 alpha 边界分析 (113x190 联合可见)
+//   选 200x240: 容纳 jump 顶部 (y=30 in 256 frame) + 必要 padding, 减小 27% 横向 + 6% 纵向
 const STANDARD_SIZE = parseInt(process.env.STANDARD_SIZE || '256', 10);
 const COMPACT_SIZE = parseInt(process.env.COMPACT_SIZE || '200', 10);
+const COMPACT_HEIGHT = parseInt(process.env.COMPACT_HEIGHT || '240', 10);
 
 let mainWindow = null;
 let currentMode = initialMode === 'compact' ? 'compact' : 'standard';
 
 function applyMode(mode) {
-    // R98: standard ↔ compact 模式切换, BrowserWindow + 通知 renderer 重置 canvas
+    // R100 P0-4 修复: 模式切换保持角色屏幕中心稳定
+    //   不再用固定 winX/winY, 而是用当前窗口中心算切换后位置
     currentMode = mode;
     if (!mainWindow) return;
-    const sz = mode === 'compact' ? COMPACT_SIZE : STANDARD_SIZE;
-    mainWindow.setBounds({ x: winX, y: winY, width: sz, height: sz });
-    // 保持可点击 (C2 紧凑窗口不穿透 — 全部事件走本窗口)
+    const w = mode === 'compact' ? COMPACT_SIZE : STANDARD_SIZE;
+    const h = mode === 'compact' ? COMPACT_HEIGHT : STANDARD_SIZE;
+    // R100 P0-4: 用当前实际 bounds 算中心, 保持角色视觉位置稳定
+    const oldBounds = mainWindow.getBounds();
+    const oldCenterX = oldBounds.x + oldBounds.width / 2;
+    const oldCenterY = oldBounds.y + oldBounds.height / 2;
+    const newX = Math.round(oldCenterX - w / 2);
+    const newY = Math.round(oldCenterY - h / 2);
+    mainWindow.setBounds({ x: newX, y: newY, width: w, height: h });
+    // 保持可点击
     mainWindow.setIgnoreMouseEvents(false);
+    // R100 P0-4: 传 centerX/centerY 给 renderer, 角色锚点对齐
     if (mainWindow.webContents) {
-        mainWindow.webContents.send('set-mode', { mode, size: sz });
+        mainWindow.webContents.send('set-mode', {
+            mode,
+            size: { w, h },
+            centerX: w / 2,
+            centerY: h,  // anchor 0.9 → sprite 中心 y = h
+        });
     }
-    console.log(`[main] mode=${mode} size=${sz} (R98 compact window)`);
+    console.log(`[main] R100 mode=${mode} bounds=(${newX},${newY},${w},${h}) center=(${oldCenterX},${oldCenterY}) preserved`);
 }
 
 function createWindow() {
@@ -117,8 +133,8 @@ function createWindow() {
             manifest: data,
             baseDir: manifestBase,
             initialMode: currentMode,
-            compactSize: COMPACT_SIZE,
-            standardSize: STANDARD_SIZE,
+            compactSize: { w: COMPACT_SIZE, h: COMPACT_HEIGHT },
+            standardSize: { w: STANDARD_SIZE, h: STANDARD_SIZE },
         });
     });
 
@@ -177,10 +193,57 @@ ipcMain.on('set-passthrough', (_evt, ignore) => {
     console.log(`[main] setIgnoreMouseEvents(${!!ignore}, forward=true) (R39 passthrough)`);
 });
 
-// R98: 模式切换 IPC (standard ↔ compact) — C2 紧凑窗口控制
-ipcMain.on('request-mode', (_evt, mode) => {
-    if (mode !== 'standard' && mode !== 'compact') return;
-    console.log(`[main] request-mode=${mode}`);
-    applyMode(mode);
+// R100 P0-2 修复: request-mode 走 ipcMain.handle (invoke 同步模式) 等 renderer ack
+//   协议: renderer.invoke('request-mode', {mode}) → main 调 applyMode → 发 set-mode IPC
+//   → renderer.applyModeToScene → 渲 renderer-mode-ready → main.resolve(invoke)
+//   不允许只改 canvas 不改 BrowserWindow (R98 漏洞)
+let pendingModeResolvers = new Map();
+ipcMain.handle('request-mode', async (_evt, payload) => {
+    const mode = payload && payload.mode;
+    if (mode !== 'standard' && mode !== 'compact') {
+        return { ok: false, error: 'invalid mode' };
+    }
+    console.log(`[main] R100 request-mode=${mode} (await renderer-mode-ready)`);
+    const requestId = `mode-${Date.now()}-${Math.random()}`;
+    return new Promise((resolve) => {
+        pendingModeResolvers.set(requestId, { mode, resolve, startTs: Date.now() });
+        applyMode(mode);
+        // 超时保护: 5s 未收到 renderer ack 视为失败
+        setTimeout(() => {
+            if (pendingModeResolvers.has(requestId)) {
+                const r = pendingModeResolvers.get(requestId);
+                pendingModeResolvers.delete(requestId);
+                console.warn(`[main] R100 request-mode=${mode} timeout (renderer-mode-ready not received)`);
+                r.resolve({ ok: false, error: 'timeout: renderer-mode-ready not received' });
+            }
+        }, 5000);
+    });
+});
+
+// R100 P0-2 修复: main 收 renderer-mode-ready 后 resolve invoke
+ipcMain.on('renderer-mode-ready', (_evt, ack) => {
+    // 找到最早的 pending resolver (只支持同时一个 mode 切换)
+    if (pendingModeResolvers.size === 0) {
+        console.warn(`[main] R100 unexpected renderer-mode-ready:`, ack);
+        return;
+    }
+    const [requestId, r] = pendingModeResolvers.entries().next().value;
+    pendingModeResolvers.delete(requestId);
+    // R100 P0-2 协议断言: BrowserWindow 实际尺寸 + Canvas 尺寸 + 中心
+    const actualBounds = mainWindow ? mainWindow.getBounds() : null;
+    const expectedSize = ack && ack.size;
+    const match = actualBounds && expectedSize &&
+        actualBounds.width === expectedSize.w &&
+        actualBounds.height === expectedSize.h;
+    console.log(`[main] R100 renderer-mode-ready mode=${ack?.mode} expected=${JSON.stringify(expectedSize)} actual=${JSON.stringify(actualBounds && {w: actualBounds.width, h: actualBounds.height})} match=${match}`);
+    r.resolve({
+        ok: ack && ack.ok && match,
+        mode: ack?.mode,
+        size: expectedSize,
+        actualBounds: actualBounds && { x: actualBounds.x, y: actualBounds.y, w: actualBounds.width, h: actualBounds.height },
+        centerX: ack?.centerX,
+        centerY: ack?.centerY,
+        protocolMatch: match,
+    });
 });
 

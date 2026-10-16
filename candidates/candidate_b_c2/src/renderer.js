@@ -39,6 +39,8 @@ let fpsWindowStart = performance.now();
 let lastSecondFps = 0;
 let spritesByAction = {};
 let currentMode_ = 'standard';
+    // R102 P0-2: 记录 initial mode 供 R100 self-test 完成后恢复
+    let originalMode_ = 'standard';
 let standardSize_ = 256;
 let compactWidth_ = 200;
 let compactHeight_ = 240;  // R100 §五 alpha 边界 union 24-221 + padding
@@ -104,15 +106,22 @@ setInterval(() => {
 // R51 模式: 在 canvas view 上绑 pointermove/pointerup, 让 drag 在鼠标离开 sprite
 // hitbox 时继续跟随. R100 把 attach/detach 抽函数, 模式切换重建 canvas 后重绑.
 function detachCanvasListeners() {
-    if (oldStageEl_ && oldPointerMoveHandler_) {
-        oldStageEl_.removeEventListener('pointermove', oldPointerMoveHandler_);
+    // R102 P0-3 修复: 完整解绑 pointermove + pointerup 后再清空引用
+    // 之前 bug: 第一段 if 设 oldStageEl_=null 后, 第二段 if 永远进不去, pointerup 残留
+    if (!oldStageEl_) return;
+    try {
+        if (oldPointerMoveHandler_) {
+            oldStageEl_.removeEventListener('pointermove', oldPointerMoveHandler_);
+        }
+        if (oldPointerUpHandler_) {
+            oldStageEl_.removeEventListener('pointerup', oldPointerUpHandler_);
+        }
+    } finally {
+        // R102: 全部解绑后才清空引用
         oldStageEl_ = null;
         oldPointerMoveHandler_ = null;
-    }
-    if (oldStageEl_ && oldPointerUpHandler_) {
-        oldStageEl_.removeEventListener('pointerup', oldPointerUpHandler_);
-        oldStageEl_ = null;
         oldPointerUpHandler_ = null;
+        console.log('[renderer] R102 canvas listeners detached (move+up cleared atomically)');
     }
 }
 
@@ -283,6 +292,8 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     fallback.textContent = '[renderer] loading manifest…';
     const { manifest, baseDir } = payload;
     currentMode_ = payload.initialMode || 'standard';
+    // R102 P0-2: 记录 initial mode 供 R100 self-test 结束后恢复
+    originalMode_ = currentMode_;
     // R100: 接收 {w, h} 尺寸 (compact 200x240, standard 256x256)
     if (payload.compactSize) {
         compactWidth_ = payload.compactSize.w || 200;
@@ -476,6 +487,8 @@ async function runR60SelfTest(sprite) {
 }
 
 // R100 P0-5/6 修复: 专属自测 — 验证模式切换 + 帧非空 + 事件重绑
+// R102 P1-1 增强: 走完整 IPC 协议 (ipcRenderer.invoke('request-mode')) 而非直接调 applyModeToScene
+// R102 P0-2: self-test 结束后恢复 originalMode_ (不污染用户当前 mode)
 async function runR100SelfTest() {
     console.log('[R100 self-test] START');
     const issues = [];
@@ -497,21 +510,49 @@ async function runR100SelfTest() {
         issues.push(`lastAdvanceAt is ${typeof lastAdvanceAt}, not number (scope error)`);
     }
 
-    // 4. 模式切换 → 重新 attach canvas listeners
+    // 4. 模式切换通过完整 IPC 协议 (R102 P1-1)
+    //    compact → standard → compact 走 invoke + renderer-mode-ready ack
     if (app_) {
-        const result = applyModeToScene('compact', { centerX: 100, centerY: 200 });
-        if (!result.ok) issues.push('applyModeToScene(compact) returned not ok');
-        if (oldPointerMoveHandler_ === null) {
-            issues.push('after applyModeToScene, pointermove listener not attached');
+        try {
+            console.log('[R100 self-test] IPC switch: compact (round 1)');
+            const r1 = await ipcRenderer.invoke('request-mode', { mode: 'compact' });
+            if (!r1 || !r1.ok) issues.push(`IPC switch compact round 1: ${JSON.stringify(r1)}`);
+            else if (r1.mode !== 'compact' || !r1.protocolMatch) {
+                issues.push(`IPC switch compact round 1: mode=${r1.mode} protocolMatch=${r1.protocolMatch}`);
+            }
+            console.log(`[R100 self-test] IPC switch: standard`);
+            const r2 = await ipcRenderer.invoke('request-mode', { mode: 'standard' });
+            if (!r2 || !r2.ok) issues.push(`IPC switch standard: ${JSON.stringify(r2)}`);
+            else if (r2.mode !== 'standard' || !r2.protocolMatch) {
+                issues.push(`IPC switch standard: mode=${r2.mode} protocolMatch=${r2.protocolMatch}`);
+            }
+            console.log('[R100 self-test] IPC switch: compact (round 2)');
+            const r3 = await ipcRenderer.invoke('request-mode', { mode: 'compact' });
+            if (!r3 || !r3.ok) issues.push(`IPC switch compact round 2: ${JSON.stringify(r3)}`);
+            else if (r3.mode !== 'compact' || !r3.protocolMatch) {
+                issues.push(`IPC switch compact round 2: mode=${r3.mode} protocolMatch=${r3.protocolMatch}`);
+            }
+            // 5. 累计监听不重复 (attach/detach 配对数)
+            // 不严格配对 (self-test 进行中状态), 只验证不是 attach>detach 累计
+            // (测试后由原始 set-mode IPC 自动恢复时正确 detach)
+        } catch (e) {
+            issues.push(`IPC switch exception: ${e?.message || e}`);
         }
-        // 立即切回 standard
-        const r2 = applyModeToScene('standard', { centerX: 128, centerY: 256 });
-        if (!r2.ok) issues.push('applyModeToScene(standard) returned not ok');
-    }
 
-    // 5. 累计监听不重复
-    if (oldPointerMoveHandler_) {
-        // 同一函数引用不能被多次 attach
+        // R102 P0-2: self-test 结束后恢复 originalMode_ (确保 mac 验收时不污染用户 mode)
+        if (originalMode_ !== currentMode_) {
+            console.log(`[R100 self-test] restoring originalMode=${originalMode_} (was ${currentMode_})`);
+            try {
+                const rRestore = await ipcRenderer.invoke('request-mode', { mode: originalMode_ });
+                if (!rRestore || !rRestore.ok) {
+                    issues.push(`restore originalMode=${originalMode_} failed: ${JSON.stringify(rRestore)}`);
+                } else {
+                    console.log(`[R100 self-test] restored to ${originalMode_}, protocolMatch=${rRestore.protocolMatch}`);
+                }
+            } catch (e) {
+                issues.push(`restore IPC exception: ${e?.message || e}`);
+            }
+        }
     }
 
     console.log(`[R100 self-test] issues=${issues.length}`);

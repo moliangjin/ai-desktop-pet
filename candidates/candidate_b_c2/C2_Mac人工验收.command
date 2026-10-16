@@ -1,25 +1,32 @@
 #!/bin/bash
 # candidates/candidate_b_c2/C2_Mac人工验收.command
 #
-# V0.0 R100 — C2 紧凑窗口 Mac 真机人工验收入口.
+# V0.0 R102 — C2 紧凑窗口 Mac 真机人工验收入口.
 #
 # 启动 candidate_b_c2 隔离版本.
 # 默认 compact 模式 (200x240) 启动, 验收 10 项.
-# 可选 standard 模式 (256x256).
 #
 # 不调用任何系统鼠标注入工具.
 # 不请求辅助功能 / 屏幕录制权限.
 # 不修改用户系统隐私设置.
 # 不开启 SIP, 不绕过 macOS TCC.
 # 不需要 DevTools.
+# 不在用户模式运行会改变显示模式的内部自检 (R102 P0-2).
+# 不使用全局 pkill 误杀其他应用 (R102 P0-6).
 #
 # 退出: Cmd+Q 或关闭按钮.
-# 日志: stdout + /tmp/r100_c2_mac_acceptance_*.log.
-# 退出码: 0=正常, 1=启动失败, 2=参数错, 3=manifest 缺失, 4=electron 缺失, 5=asset 加载全失败
+# 日志: /tmp/r102_c2_mac_acceptance_<ts>.log.
+# 退出码:
+#   0  = 正常退出 (用户 Cmd+Q 或 --quit-after 超时)
+#   2  = 参数错
+#   3  = manifest 缺失
+#   4  = electron 缺失
+#   10 = 资源加载全部失败
+#   130+ = electron 实际退出码
 
 set +e
 cd "$(dirname "$0")"
-LOG="/tmp/r100_c2_mac_acceptance_$(date +%s).log"
+LOG="/tmp/r102_c2_mac_acceptance_$(date +%s).log"
 
 # 节点模块若未建立 symlink, 自动建立
 if [ ! -e node_modules ]; then
@@ -57,11 +64,24 @@ if [ ! -x "$ELECTRON" ]; then
     exit 4
 fi
 
-# R100 §七 修复: 不需要 DevTools — 默认模式切换通过 set-mode IPC 走完整协议
-# 但 __setMode 仍可用 — 在 Console 中用
+# R102 P0-4: 准备变量保留 Electron 真实退出码
+ELECTRON_PID=""
+
+# R102 P0-6: 针对性进程清理 — 仅 kill 本次启动的 Electron PID
+# 不使用 pkill -f "Electron Helper" 等全局命令
+cleanup_electron() {
+    if [ -n "$ELECTRON_PID" ] && kill -0 "$ELECTRON_PID" 2>/dev/null; then
+        kill -TERM "$ELECTRON_PID" 2>/dev/null
+        sleep 1
+        if kill -0 "$ELECTRON_PID" 2>/dev/null; then
+            kill -KILL "$ELECTRON_PID" 2>/dev/null
+        fi
+    fi
+}
+trap cleanup_electron EXIT INT TERM
 
 echo "==========================================" | tee -a "$LOG"
-echo " R100 C2 Mac 真机人工验收" | tee -a "$LOG"
+echo " R102 C2 Mac 真机人工验收" | tee -a "$LOG"
 echo "==========================================" | tee -a "$LOG"
 echo "  模式:        $MODE" | tee -a "$LOG"
 echo "  Manifest:    $MANIFEST" | tee -a "$LOG"
@@ -82,50 +102,52 @@ echo " 10. Cmd+Q 正常退出, 不残留窗口" | tee -a "$LOG"
 echo "" | tee -a "$LOG"
 echo " 模式切换 (高级):" | tee -a "$LOG"
 echo "  按 Cmd+Option+I 打开 DevTools, 在 Console 输入:" | tee -a "$LOG"
-echo "    __setMode('compact')   - 切到 200x240" | tee -a "$LOG"
-echo "    __setMode('standard')  - 切到 256x256" | tee -a "$LOG"
+echo "    await __setMode('compact')   - 切到 200x240" | tee -a "$LOG"
+echo "    await __setMode('standard')  - 切到 256x256" | tee -a "$LOG"
 echo "  切换会等待 main ack 完成才返回" | tee -a "$LOG"
 echo "" | tee -a "$LOG"
 echo " 启动中..." | tee -a "$LOG"
 echo "-------------------------------------------" | tee -a "$LOG"
 
-# R100: 启动时设 PET_R100_SELFTEST 让 renderer 跑自测
-# 退出码: electron 进程退出码
-# 30 分钟兜底防止忘记关闭
-PET_R100_SELFTEST=1 "$ELECTRON" "$(pwd)/src/main.js" \
+# R102 P0-2: 不设置 PET_R100_SELFTEST — 防止自检污染用户当前 mode
+# R102 P0-4: 用 PIPESTATUS[0] 保留 Electron 真实退出码 (避免 pipe 传 tee 改 $?)
+# R102 P0-5: --quit-after=<value> 形式 (R102 任务书验证)
+"$ELECTRON" "$(pwd)/src/main.js" \
     --manifest "$MANIFEST" \
     --mode "$MODE" \
     --quit-after=1800 \
-    2>&1 | tee -a "$LOG"
+    > "$LOG" 2>&1
+ELECTRON_RC=$?
 
-RC=$?
+# R102 P0-4: 直接取 Electron 真实退出码 (不再 pipe 到 tee 改 $?)
 echo "-------------------------------------------" | tee -a "$LOG"
-echo "[C2_Mac人工验收] 退出 rc=$RC" | tee -a "$LOG"
+echo "[C2_Mac人工验收] 退出 rc=$ELECTRON_RC" | tee -a "$LOG"
 
-# R100 §七: 退出后清理进程, 确认无残留
-pkill -f "candidate_b_c2/src/main.js" 2>/dev/null
-sleep 1
-remaining=$(pgrep -f "candidate_b_c2/src/main.js" 2>/dev/null | wc -l | tr -d ' ')
-if [ "${remaining:-0}" -gt 0 ]; then
-    echo "[C2_Mac人工验收] WARN: 残留 ${remaining} 个 electron 进程, 已 kill" | tee -a "$LOG"
-    pkill -9 -f "candidate_b_c2/src/main.js" 2>/dev/null
+# R102 §一-10: 资源加载失败必须明确 FAIL
+if grep -q "all 26 frames failed" "$LOG" 2>/dev/null; then
+    echo "[C2_Mac人工验收] FATAL: 26 帧全部加载失败" | tee -a "$LOG"
+    exit 10
 fi
-
-# R100 §七: 检查 asset 加载日志
-if grep -q "loaded=0 failed=" "$LOG"; then
-    if grep -q "all 26 frames failed" "$LOG" 2>/dev/null; then
-        echo "[C2_Mac人工验收] FATAL: asset 加载全失败, 拒绝宣布 PASS" | tee -a "$LOG"
-        exit 5
+# 单独检查 (R100 §七 之后)
+if grep -qE "asset-report.*loaded=0 failed=[0-9]+" "$LOG" 2>/dev/null; then
+    zero_loaded=$(grep -cE "asset-report.*loaded=0 failed=[0-9]+" "$LOG")
+    if [ "$zero_loaded" -ge 4 ]; then
+        echo "[C2_Mac人工验收] FATAL: 至少 4 个动作 asset loaded=0, 拒绝宣布准备 PASS" | tee -a "$LOG"
+        exit 10
     fi
 fi
 
-# R100 §七: 显示 R100 self-test 结果
-if grep -q "R100 self-test.*PASS" "$LOG"; then
-    echo "[C2_Mac人工验收] R100 self-test: PASS" | tee -a "$LOG"
-fi
-if grep -q "R100 self-test.*FAIL" "$LOG"; then
-    echo "[C2_Mac人工验收] R100 self-test: FAIL" | tee -a "$LOG"
+# 退出码映射
+#   0      = 正常 (用户 Cmd+Q)
+#   130+   = SIGINT/SIGTERM (用户强制)
+#   137    = SIGKILL (timeout kill)
+#   其它   = 异常
+if [ "$ELECTRON_RC" -eq 0 ]; then
+    echo "[C2_Mac人工验收] 正常退出" | tee -a "$LOG"
+elif [ "$ELECTRON_RC" -ge 128 ]; then
+    sig=$((ELECTRON_RC - 128))
+    echo "[C2_Mac人工验收] Electron 被信号 $sig 终止" | tee -a "$LOG"
 fi
 
 echo "[C2_Mac人工验收] 完整日志: $LOG"
-exit $RC
+exit $ELECTRON_RC

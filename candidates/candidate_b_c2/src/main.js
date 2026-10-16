@@ -31,6 +31,8 @@ for (let i = 0; i < args.length; i++) {
     else if (a === '--x' && args[i+1]) winX = parseInt(args[++i], 10);
     else if (a === '--y' && args[i+1]) winY = parseInt(args[++i], 10);
     else if (a === '--quit-after' && args[i+1]) quitAfter = parseFloat(args[++i]);
+    // R102 P0-5: 兼容 --quit-after=<value> 形式 (e.g. --quit-after=1800)
+    else if (a.startsWith('--quit-after=')) quitAfter = parseFloat(a.split('=')[1], 10);
     else if (a === '--perf-out' && args[i+1]) perfOut = args[++i];
 }
 
@@ -55,10 +57,10 @@ let currentMode = initialMode === 'compact' ? 'compact' : 'standard';
 function applyMode(mode) {
     // R100 P0-4 修复: 模式切换保持角色屏幕中心稳定
     //   不再用固定 winX/winY, 而是用当前窗口中心算切换后位置
+    // R102 P0-1: 用统一 getModeSize (compact=200x240, standard=256x256)
     currentMode = mode;
     if (!mainWindow) return;
-    const w = mode === 'compact' ? COMPACT_SIZE : STANDARD_SIZE;
-    const h = mode === 'compact' ? COMPACT_HEIGHT : STANDARD_SIZE;
+    const { w, h } = getModeSize(mode);
     // R100 P0-4: 用当前实际 bounds 算中心, 保持角色视觉位置稳定
     const oldBounds = mainWindow.getBounds();
     const oldCenterX = oldBounds.x + oldBounds.width / 2;
@@ -80,11 +82,17 @@ function applyMode(mode) {
     console.log(`[main] R100 mode=${mode} bounds=(${newX},${newY},${w},${h}) center=(${oldCenterX},${oldCenterY}) preserved`);
 }
 
+// R102 P0-1: 统一用 size 对象 — compact=200x240, standard=256x256
+function getModeSize(mode) {
+    if (mode === 'compact') return { w: COMPACT_SIZE, h: COMPACT_HEIGHT };
+    return { w: STANDARD_SIZE, h: STANDARD_SIZE };
+}
+
 function createWindow() {
-    const startSize = currentMode === 'compact' ? COMPACT_SIZE : STANDARD_SIZE;
+    const startSize = getModeSize(currentMode);
     mainWindow = new BrowserWindow({
         x: winX, y: winY,
-        width: startSize, height: startSize,
+        width: startSize.w, height: startSize.h,
         frame: false,
         transparent: true,
         backgroundColor: '#00000000',

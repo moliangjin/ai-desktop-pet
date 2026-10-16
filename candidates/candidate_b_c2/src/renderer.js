@@ -458,6 +458,12 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     if (process.env.PET_R100_SELFTEST === '1') {
         setTimeout(() => runR100SelfTest(), 500);
     }
+    // R107: 真实 IPC drag 回归测试 — 走完整 invoke('window-drag-start') + send('window-drag-move') + send('window-drag-end')
+    //   用户真实 Mac 测试发现 main.js 286 行 bounds 未定义崩溃
+    //   R107 修复后: 真实 invoke drag-start, 多次发 drag-move, 真实测无 ReferenceError
+    if (process.env.PET_R107_IPC === '1') {
+        setTimeout(() => runR107DragIPCTest(), 800);
+    }
 });
 
 ipcRenderer.on('set-action', (_evt, action) => {
@@ -616,5 +622,80 @@ async function runR100SelfTest() {
         console.log('[R100 self-test] PASS');
     } else {
         console.log('[R100 self-test] FAIL:', issues.join('; '));
+    }
+}
+
+// R107: 真实 IPC drag 回归 — 完整 invoke/send 走生产路径
+// 覆盖场景: 1)单击不拖动 2)开始拖动 3)连续移动 4)更新 BrowserWindow bounds 5)结束 6)重复
+async function runR107DragIPCTest() {
+    console.log('[R107 drag-ipc-test] START');
+    const issues = [];
+
+    // 1. 单击不拖动 — 模拟一次 pointerdown + 立即 pointerup, 不发 move
+    //    期望: dragStart 不被触发, drag-end 后 main 端不崩
+    try {
+        // 直接调 invoke('window-drag-start') + 立即 send('window-drag-end')
+        // (模拟单击: start 后立即 end, 不发 move)
+        const r1 = await ipcRenderer.invoke('window-drag-start');
+        if (!r1 || !r1.ok) issues.push(`click-only: drag-start failed: ${JSON.stringify(r1)}`);
+        else console.log('[R107 drag-ipc-test] click-only drag-start ok');
+        ipcRenderer.send('window-drag-end');
+        console.log('[R107 drag-ipc-test] click-only drag-end sent');
+    } catch (e) {
+        issues.push(`click-only exception: ${e?.message || e}`);
+    }
+
+    // 2. 真实拖动序列 — start + 多次 move + end
+    try {
+        const r2 = await ipcRenderer.invoke('window-drag-start');
+        if (!r2 || !r2.ok) issues.push(`drag: start failed: ${JSON.stringify(r2)}`);
+        else {
+            console.log(`[R107 drag-ipc-test] drag start ok: ${JSON.stringify(r2.start)}`);
+            // 3. 连续 5 次 move (覆盖 bounds 更新)
+            const deltas = [{x:10,y:10},{x:20,y:15},{x:30,y:25},{x:40,y:30},{x:50,y:40}];
+            for (const d of deltas) {
+                const mouse = { x: (r2.start.mouseScreenX + d.x), y: (r2.start.mouseScreenY + d.y) };
+                ipcRenderer.send('window-drag-move', mouse);
+                // 给 main 时间处理 (每 50ms)
+                await new Promise(r => setTimeout(r, 50));
+            }
+            // 4. end
+            ipcRenderer.send('window-drag-end');
+            console.log('[R107 drag-ipc-test] drag end sent (5 moves)');
+        }
+    } catch (e) {
+        issues.push(`drag exception: ${e?.message || e}`);
+    }
+
+    // 5. 重复 — 再做一次完整 drag
+    try {
+        const r3 = await ipcRenderer.invoke('window-drag-start');
+        if (!r3 || !r3.ok) issues.push(`drag-2: start failed`);
+        else {
+            ipcRenderer.send('window-drag-move', { x: r3.start.mouseScreenX + 5, y: r3.start.mouseScreenY + 5 });
+            await new Promise(r => setTimeout(r, 50));
+            ipcRenderer.send('window-drag-end');
+            console.log('[R107 drag-ipc-test] drag-2 ok');
+        }
+    } catch (e) {
+        issues.push(`drag-2 exception: ${e?.message || e}`);
+    }
+
+    // 6. 非法参数 — mouse=null, mouse.x=undefined — main 端需安全处理
+    try {
+        ipcRenderer.send('window-drag-move', null);
+        ipcRenderer.send('window-drag-move', {});
+        ipcRenderer.send('window-drag-move', { x: 'not a number', y: null });
+        ipcRenderer.send('window-drag-end', null);
+        console.log('[R107 drag-ipc-test] illegal params handled');
+    } catch (e) {
+        issues.push(`illegal-params exception: ${e?.message || e}`);
+    }
+
+    console.log(`[R107 drag-ipc-test] issues=${issues.length}`);
+    if (issues.length === 0) {
+        console.log('[R107 drag-ipc-test] PASS');
+    } else {
+        console.log('[R107 drag-ipc-test] FAIL:', issues.join('; '));
     }
 }

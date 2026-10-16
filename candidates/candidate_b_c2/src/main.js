@@ -15,7 +15,7 @@
 //   --quit-after <sec>   (auto-quit after N seconds; useful for tests)
 //   --perf-out <path>    (write CSV perf samples here)
 
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -254,4 +254,59 @@ ipcMain.on('renderer-mode-ready', (_evt, ack) => {
         protocolMatch: match,
     });
 });
+
+// R104 P0-1: 真正 BrowserWindow 拖拽 — 鼠标按桌宠 → 整个 Electron 窗口跟随移动
+//   renderer drag-start: 记录 dragStart 时的窗口 bounds + 鼠标屏幕坐标
+//   renderer drag-move: 每次移动发 mouse 屏幕坐标, main 算 delta, setBounds 移动窗口
+//   renderer drag-end: 清理 dragStart
+//   使用 Electron 原生 BrowserWindow.setBounds (不需要 AX/Screen Recording)
+let dragStart = null;  // {winX, winY, mouseScreenX, mouseScreenY}
+ipcMain.handle('window-drag-start', (_evt) => {
+    if (!mainWindow) return { ok: false, error: 'no main window' };
+    const bounds = mainWindow.getBounds();
+    const mouse = screen.getCursorScreenPoint();
+    dragStart = {
+        winX: bounds.x,
+        winY: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+        mouseScreenX: mouse.x,
+        mouseScreenY: mouse.y,
+    };
+    console.log(`[main] R104 window-drag-start bounds=(${bounds.x},${bounds.y},${bounds.width},${bounds.height}) mouse=(${mouse.x},${mouse.y})`);
+    return { ok: true, start: dragStart };
+});
+ipcMain.on('window-drag-move', (_evt, mouse) => {
+    if (!mainWindow || !dragStart || !mouse) return;
+    const dx = (mouse.x || 0) - dragStart.mouseScreenX;
+    const dy = (mouse.y || 0) - dragStart.mouseScreenY;
+    const newX = Math.round(dragStart.winX + dx);
+    const newY = Math.round(dragStart.winY + dy);
+    // R104: 限定在当前 display 工作区, 避免拖出屏幕
+    const display = screen.getDisplayMatching(bounds);
+    const wa = display.workArea;
+    const clampedX = Math.max(wa.x, Math.min(newX, wa.x + wa.width - dragStart.width));
+    const clampedY = Math.max(wa.y, Math.min(newY, wa.y + wa.height - dragStart.height));
+    mainWindow.setBounds({
+        x: clampedX, y: clampedY,
+        width: dragStart.width, height: dragStart.height,
+    });
+});
+ipcMain.on('window-drag-end', (_evt) => {
+    if (dragStart) {
+        const final = mainWindow ? mainWindow.getBounds() : null;
+        console.log(`[main] R104 window-drag-end final=(${final?.x},${final?.y})`);
+    }
+    dragStart = null;
+});
+
+// R104: 监听 window blur 强制结束拖拽 (避免拖到其他应用时卡住)
+if (typeof app !== 'undefined' && app.on) {
+    app.on('browser-window-blur', () => {
+        if (dragStart) {
+            console.log('[main] R104 window blur, clearing drag state');
+            dragStart = null;
+        }
+    });
+}
 

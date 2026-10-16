@@ -28,8 +28,11 @@ let sprite_ = null;
 let currentAction = 'idle';
 let frameIdx = 0;
 let dragging = false;
-let dragOffsetX = 0;
-let dragOffsetY = 0;
+// R104 P0-1: 真正 BrowserWindow 拖拽 — sprite 不再被 drag 移动, 拖动整个窗口
+let dragIsWindowDrag_ = false;  // 是否进入真正拖动 (vs 单击容忍)
+let dragMoved_ = 0;  // 鼠标移动计数 (3px 内仍算点击)
+let dragStartClientX_ = 0;
+let dragStartClientY_ = 0;
 let stageCssWidth = 0;
 let stageCssHeight = 0;
 let lastAdvanceAt = performance.now();  // R100 P0-1: module-scope, 共享
@@ -129,21 +132,39 @@ function attachCanvasListeners(stageEl) {
     // R100: 先 detach 旧 listener 避免累计
     detachCanvasListeners();
     if (!stageEl) return;
+    // R104 P0-1: 真正 BrowserWindow 拖拽 — 移动整个 Electron 窗口, 不是 sprite 在 canvas 内
+    //   鼠标 client 坐标 → IPC 给 main → main 用 screen.getCursorScreenPoint() 算 delta
+    //   → setBounds 移动窗口. sprite 位置固定在 canvas 中心, 不再被 drag 移动.
     const onMove = (ev) => {
         if (!dragging || !sprite_) return;
-        const rect = stageEl.getBoundingClientRect();
-        const x = ev.clientX - rect.left;
-        const y = ev.clientY - rect.top;
-        sprite_.x = x + dragOffsetX;
-        sprite_.y = y + dragOffsetY;
+        if (!dragIsWindowDrag_) {
+            // 区分点击 vs 拖动: 移动 > 3px 才算拖动
+            if (dragMoved_ < 3) {
+                const dx = Math.abs((ev.clientX || 0) - dragStartClientX_);
+                const dy = Math.abs((ev.clientY || 0) - dragStartClientY_);
+                if (dx * dx + dy * dy < 9) {
+                    dragMoved_++;
+                    return;  // 仍在 click 容忍范围
+                }
+            }
+            dragIsWindowDrag_ = true;
+            // 第一次进入真拖动 — 通知 main 记录 dragStart
+            ipcRenderer.invoke('window-drag-start').then((res) => {
+                if (res && res.ok) {
+                    console.log('[renderer] R104 window-drag-start ack');
+                }
+            }).catch((e) => console.error('[renderer] drag-start error:', e?.message));
+        }
+        // 发当前鼠标 client 坐标给 main
+        ipcRenderer.send('window-drag-move', { x: ev.clientX, y: ev.clientY });
     };
     const onUp = () => {
         if (dragging) {
-            console.log('[renderer] R100 global pointerup -> end drag');
-            dragging = false;
-            currentAction = 'idle';
-            frameIdx = 0;
-            fallback.textContent = 'idle';
+            console.log('[renderer] R104 global pointerup -> end drag');
+            if (dragIsWindowDrag_) {
+                ipcRenderer.send('window-drag-end');
+            }
+            endDrag();
         }
     };
     stageEl.addEventListener('pointermove', onMove);
@@ -152,21 +173,15 @@ function attachCanvasListeners(stageEl) {
     oldStageEl_ = stageEl;
     oldPointerMoveHandler_ = onMove;
     oldPointerUpHandler_ = onUp;
-    console.log(`[renderer] R100 canvas listeners attached to ${stageEl.tagName}#${stageEl.id || ''}`);
+    console.log(`[renderer] R104 canvas listeners attached to ${stageEl.tagName}#${stageEl.id || ''}`);
 }
 
 // ====== R100 P0-1 修复: tickerCallback 在 module-scope ======
 // 所有动画计时状态共享, 模式切换重建 canvas 后 tickerCallback 继续正常工作.
+// R104: sprite 不再被 drag 移动 (拖动整个 BrowserWindow, sprite 固定 canvas 中心)
 function tickerCallback() {
     tick();
-    if (dragging && sprite_ && app_) {
-        const root = app_.renderer.events.rootBoundary;
-        const ev = root && root._pointerEvent;
-        if (ev) {
-            sprite_.x = ev.global.x + dragOffsetX;
-            sprite_.y = ev.global.y + dragOffsetY;
-        }
-    }
+    // R104 P0-1: drag 期间 sprite 位置保持稳定 (BrowserWindow 移动, sprite 相对窗口位置不变)
     const meta = spritesByAction[currentAction];
     if (!meta || meta.frames.length === 0) {
         return;  // R100 P0-5: 无帧时 skip 切帧, 不假装
@@ -184,29 +199,67 @@ function tickerCallback() {
 function bindSpriteEvents() {
     if (!sprite_) return;
     sprite_.on('pointerdown', (ev) => {
-        console.log('[renderer] R100 pointerdown sprite at', ev.data.global.x, ev.data.global.y);
+        console.log('[renderer] R104 pointerdown sprite at', ev.data.global.x, ev.data.global.y);
         dragging = true;
-        dragOffsetX = sprite_.x - ev.data.global.x;
-        dragOffsetY = sprite_.y - ev.data.global.y;
+        // R104 P0-1: 真正 BrowserWindow 拖拽 — sprite 固定在 canvas 中心, 不再 sprite.x/y 移动
+        // dragIsWindowDrag_ 在 onMove > 3px 时设为 true, 区分单击 vs 拖动
+        dragIsWindowDrag_ = false;
+        dragMoved_ = 0;
+        dragStartClientX_ = (ev.clientX || 0);
+        dragStartClientY_ = (ev.clientY || 0);
         currentAction = 'drag';
         frameIdx = 0;
         fallback.textContent = 'drag';
     });
     sprite_.on('pointerup', () => {
-        console.log('[renderer] R100 pointerup sprite');
+        console.log('[renderer] R104 pointerup sprite');
+        if (dragIsWindowDrag_) ipcRenderer.send('window-drag-end');
         endDrag();
     });
     sprite_.on('pointerupoutside', () => {
-        console.log('[renderer] R100 pointerupoutside sprite');
+        console.log('[renderer] R104 pointerupoutside sprite');
+        if (dragIsWindowDrag_) ipcRenderer.send('window-drag-end');
         endDrag();
     });
 }
 
 function endDrag() {
     dragging = false;
+    dragIsWindowDrag_ = false;
     currentAction = 'idle';
     frameIdx = 0;
     fallback.textContent = 'idle';
+}
+
+// R104 P0-2: 动画预览 — 键盘 1-4 切 idle/walk/jump/drag
+//   用户无需打开 DevTools 即可验证 4 种动画
+//   keydown 在 BrowserWindow focus 时触发 (frameless alwaysOnTop 桌宠需先点击)
+function setupAnimationPreviewKeys() {
+    const actionMap = {
+        '1': 'idle',
+        '2': 'walk',
+        '3': 'jump',
+        '4': 'drag',
+    };
+    window.addEventListener('keydown', (ev) => {
+        // 数字键 (主键盘区 + 数字键盘区)
+        const key = ev.key;
+        if (actionMap[key]) {
+            const action = actionMap[key];
+            if (spritesByAction[action] && spritesByAction[action].frames.length > 0) {
+                currentAction = action;
+                frameIdx = 0;
+                lastAdvanceAt = performance.now();
+                fallback.textContent = `[R104 preview] ${action} (press 1=idle 2=walk 3=jump 4=drag)`;
+                console.log(`[renderer] R104 animation preview: ${action}`);
+            } else {
+                console.warn(`[renderer] R104 preview refused: ${action} has no frames`);
+                fallback.textContent = `[R104 preview] ${action} NOT loaded (asset failure)`;
+            }
+            ev.preventDefault();
+        }
+    });
+    console.log('[renderer] R104 animation preview ready (press 1/2/3/4 to switch idle/walk/jump/drag)');
 }
 
 // ====== R100 P0-2/3/4 修复: applyModeToScene 重写 ======
@@ -395,6 +448,9 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     app_.ticker.add(tickerCallback);
 
     fallback.textContent = `[renderer] R100 mode=${currentMode_} playing ${currentAction}`;
+
+    // R104 P0-2: 动画预览 — 用户无需 DevTools 即可切换 4 种动作
+    setupAnimationPreviewKeys();
 
     if (process.env.PET_R60_SELFTEST === '1') {
         setTimeout(() => runR60SelfTest(sprite_), 250);

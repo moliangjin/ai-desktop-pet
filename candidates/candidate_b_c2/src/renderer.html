@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    background: transparent !important;
+    -webkit-user-select: none;
+    user-select: none;
+    width: 100%; height: 100%;
+  }
+  #stage {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: transparent !important;
+  }
+  #fallback {
+    position: absolute;
+    bottom: 0; left: 0;
+    color: #6cf;
+    font: 11px monospace;
+    padding: 4px 6px;
+    background: rgba(0,0,0,0.5);
+    z-index: 9999;
+    pointer-events: none;
+  }
+  #debug-banner {
+    position: absolute;
+    top: 0; right: 0;
+    color: #fff;
+    font: 11px monospace;
+    padding: 4px 6px;
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="fallback"></div>
+<div id="debug-banner"></div>
+<script src="renderer.js"></script>
+</body>
+</html>

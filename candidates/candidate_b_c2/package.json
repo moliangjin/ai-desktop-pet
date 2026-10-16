@@ -1,0 +1,17 @@
+{
+  "name": "ai-pet-candidate-b",
+  "version": "0.0.1",
+  "description": "AI 智能陪伴桌宠 V0.0 候选 B：Electron + PixiJS",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron src/main.js",
+    "test:t09": "node tests/test_manifest.js",
+    "test:t10": "node tests/test_security.js",
+    "test:t08-loop": "node tests/test_loop.js"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "pixi.js": "^7.4.0"
+  }
+}

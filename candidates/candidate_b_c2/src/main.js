@@ -283,38 +283,45 @@ ipcMain.handle('window-drag-start', (_evt) => {
         mouseScreenX: mouse.x,
         mouseScreenY: mouse.y,
     };
-    console.log(`[main] R107 window-drag-start bounds=(${bounds.x},${bounds.y},${bounds.width},${bounds.height}) mouse=(${mouse.x},${mouse.y})`);
+    console.log(`[main] R108 window-drag-start bounds=(${bounds.x},${bounds.y},${bounds.width},${bounds.height}) mouse=(${mouse.x},${mouse.y})`);
     return { ok: true, start: dragStart };
 });
 ipcMain.on('window-drag-move', (_evt, mouse) => {
-    // R107 防护: 多重 null check, 单击不会触发 (dragStart 为 null)
+    // R108 防护: 多重 null check (单击不拖动 / drag-end 后 / window 失焦后)
     if (!mainWindow || !dragStart || !mouse || typeof mouse.x !== 'number' || typeof mouse.y !== 'number') return;
     try {
         const dx = mouse.x - dragStart.mouseScreenX;
         const dy = mouse.y - dragStart.mouseScreenY;
         const newX = Math.round(dragStart.winX + dx);
         const newY = Math.round(dragStart.winY + dy);
-        // R107 修复: 用 mainWindow 传 screen.getDisplayMatching (避免引用未定义 bounds)
-        const display = screen.getDisplayMatching(mainWindow);
+        // R108 修复: screen.getDisplayMatching 必须接收 Rectangle (非 BrowserWindow)
+        //   原 R107 传 mainWindow 是错的 Electron API 调用
+        const rect = mainWindow.getBounds();
+        const display = screen.getDisplayMatching(rect);
         const wa = display.workArea;
         const clampedX = Math.max(wa.x, Math.min(newX, wa.x + wa.width - dragStart.width));
         const clampedY = Math.max(wa.y, Math.min(newY, wa.y + wa.height - dragStart.height));
+        // R108: 记录 before bounds 用于 R108 测试断言
+        const beforeX = rect.x, beforeY = rect.y;
         mainWindow.setBounds({
             x: clampedX, y: clampedY,
             width: dragStart.width, height: dragStart.height,
         });
-        console.log(`[main] R107 window-drag-move dx=${dx}dy=${dy} new=(${clampedX},${clampedY})`);
+        // R108: 立即读 after bounds 断言实际变化 (避免 catch 吞掉 setBounds 异常)
+        const afterRect = mainWindow.getBounds();
+        console.log(`[main] R108 window-drag-move dx=${dx}dy=${dy} before=(${beforeX},${beforeY}) after=(${afterRect.x},${afterRect.y}) new=(${clampedX},${clampedY})`);
     } catch (e) {
-        // R107: 任何异常不抛到主进程, 记录后清理 drag 状态
-        console.error(`[main] R107 window-drag-move error: ${e?.message}; clearing drag`);
+        // R108: 异常必须 log (不能吞), 但 drag 状态清零避免后续误移动
+        console.error(`[main] R108 window-drag-move ERROR: ${e?.message}; drag state cleared`);
         dragStart = null;
     }
 });
 ipcMain.on('window-drag-end', (_evt) => {
     if (dragStart) {
         const final = mainWindow ? mainWindow.getBounds() : null;
-        console.log(`[main] R107 window-drag-end final=(${final?.x},${final?.y})`);
+        console.log(`[main] R108 window-drag-end final=(${final?.x},${final?.y}) boundsSize=${final?.width}x${final?.height}`);
     }
+    // R108: drag-end 后清理, 之后 send drag-move 不移动窗口
     dragStart = null;
 });
 

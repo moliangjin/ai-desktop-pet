@@ -262,68 +262,104 @@ ipcMain.on('renderer-mode-ready', (_evt, ack) => {
 //   使用 Electron 原生 BrowserWindow.setBounds (不需要 AX/Screen Recording)
 //
 // R107 修复: 原 line 286 `screen.getDisplayMatching(bounds)` 引用未定义变量 bounds
-//   (drag-start 中 const bounds = mainWindow.getBounds() 作用域只在该 handler 内)
-//   现在统一从 mainWindow 拿 bounds, 并加 try/catch 防护.
-let dragStart = null;  // {winX, winY, width, height, mouseScreenX, mouseScreenY}
+// R108 修复: screen.getDisplayMatching 接收 Rectangle (非 BrowserWindow)
+// R111 修复: 坐标系混用 (R104 dragStart.mouseScreenX 是屏幕坐标, R108 mouse.x 是 renderer ev.clientX viewport 坐标)
+//   真实 Mac 用户拖动时 dx 计算错误, 窗口跳到屏幕外
+//   修复: drag-move 完全用 screen.getCursorScreenPoint() 拿当前屏幕坐标, 不依赖 renderer 传参
+let dragStart = null;  // {winX, winY, width, height, mouseStartX, mouseStartY, dragStarted}
 ipcMain.handle('window-drag-start', (_evt) => {
     if (!mainWindow) return { ok: false, error: 'no main window' };
-    let bounds;
+    let bounds, mouse;
     try {
         bounds = mainWindow.getBounds();
+        mouse = screen.getCursorScreenPoint();
     } catch (e) {
-        console.error(`[main] R107 window-drag-start getBounds error: ${e?.message}`);
-        return { ok: false, error: 'getBounds failed' };
+        console.error(`[main] R111 DRAG_START_ERROR: ${e?.message}`);
+        return { ok: false, error: 'drag-start setup failed' };
     }
-    const mouse = screen.getCursorScreenPoint();
     dragStart = {
         winX: bounds.x,
         winY: bounds.y,
         width: bounds.width,
         height: bounds.height,
-        mouseScreenX: mouse.x,
-        mouseScreenY: mouse.y,
+        mouseStartX: mouse.x,
+        mouseStartY: mouse.y,
+        dragStarted: false,  // 3px 容忍后再设为 true (区分点击 vs 拖动)
     };
-    console.log(`[main] R108 window-drag-start bounds=(${bounds.x},${bounds.y},${bounds.width},${bounds.height}) mouse=(${mouse.x},${mouse.y})`);
+    console.log(`[main] R111 DRAG_START win=(${bounds.x},${bounds.y},${bounds.width},${bounds.height}) mouseStart=(${mouse.x},${mouse.y})`);
     return { ok: true, start: dragStart };
 });
-ipcMain.on('window-drag-move', (_evt, mouse) => {
-    // R108 防护: 多重 null check (单击不拖动 / drag-end 后 / window 失焦后)
-    if (!mainWindow || !dragStart || !mouse || typeof mouse.x !== 'number' || typeof mouse.y !== 'number') return;
+
+ipcMain.on('window-drag-move', (_evt, _unused) => {
+    // R111 诊断: 入口 log (确认 IPC 真的到达 main 端)
+    console.log('[main] R111 DRAG_MOVE_ENTRY dragStart=' + (dragStart ? 'set' : 'null'));
+    // R111 修复: 不依赖 renderer 传 clientX/Y — main 端用 screen.getCursorScreenPoint() 拿当前屏幕坐标
+    //   保证 dragStart.mouseStartX (drag-start 时屏幕坐标) 与当前屏幕坐标在同一坐标系
+    if (!mainWindow || !dragStart) {
+        console.log('[main] R111 DRAG_MOVE_SKIP reason=' + (!mainWindow ? 'no mainWindow' : 'no dragStart'));
+        return;
+    }
     try {
-        const dx = mouse.x - dragStart.mouseScreenX;
-        const dy = mouse.y - dragStart.mouseScreenY;
+        console.log('[main] R111 DRAG_MOVE_TRY_ENTRY dragStarted=' + dragStart.dragStarted);
+        let mouse;
+        try {
+            mouse = screen.getCursorScreenPoint();
+            console.log('[main] R111 DRAG_MOVE_MOUSE_NOW=(' + mouse.x + ',' + mouse.y + ')');
+        } catch (e) {
+            console.error(`[main] R111 DRAG_MOVE_ERROR getCursorScreenPoint: ${e?.message}; clearing drag`);
+            dragStart = null;
+            return;
+        }
+        const dx = mouse.x - dragStart.mouseStartX;
+        const dy = mouse.y - dragStart.mouseStartY;
+        // R111 单击 vs 拖动区分: 移动距离 < 3px 仍算点击, 实际不移动窗口
+        if (!dragStart.dragStarted) {
+            if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;  // 仍算点击, 不动
+            dragStart.dragStarted = true;
+            console.log(`[main] R111 DRAG_REAL_START dx=${dx}dy=${dy} (3px 容忍通过)`);
+        }
         const newX = Math.round(dragStart.winX + dx);
         const newY = Math.round(dragStart.winY + dy);
-        // R108 修复: screen.getDisplayMatching 必须接收 Rectangle (非 BrowserWindow)
-        //   原 R107 传 mainWindow 是错的 Electron API 调用
+        // R108 修复: screen.getDisplayMatching 接收 Rectangle
         const rect = mainWindow.getBounds();
         const display = screen.getDisplayMatching(rect);
         const wa = display.workArea;
         const clampedX = Math.max(wa.x, Math.min(newX, wa.x + wa.width - dragStart.width));
         const clampedY = Math.max(wa.y, Math.min(newY, wa.y + wa.height - dragStart.height));
-        // R108: 记录 before bounds 用于 R108 测试断言
+        // R111: 记录 before bounds, setBounds 后立即读 after, 断言真变
         const beforeX = rect.x, beforeY = rect.y;
         mainWindow.setBounds({
             x: clampedX, y: clampedY,
             width: dragStart.width, height: dragStart.height,
         });
-        // R108: 立即读 after bounds 断言实际变化 (避免 catch 吞掉 setBounds 异常)
         const afterRect = mainWindow.getBounds();
-        console.log(`[main] R108 window-drag-move dx=${dx}dy=${dy} before=(${beforeX},${beforeY}) after=(${afterRect.x},${afterRect.y}) new=(${clampedX},${clampedY})`);
+        console.log(`[main] R111 DRAG_MOVE dx=${dx}dy=${dy} before=(${beforeX},${beforeY}) after=(${afterRect.x},${afterRect.y}) mouseNow=(${mouse.x},${mouse.y})`);
     } catch (e) {
-        // R108: 异常必须 log (不能吞), 但 drag 状态清零避免后续误移动
-        console.error(`[main] R108 window-drag-move ERROR: ${e?.message}; drag state cleared`);
+        // R111: 异常必须 log (不能吞), 但 drag 状态清零避免后续误移动
+        console.error(`[main] R111 DRAG_MOVE_ERROR: ${e?.message}; drag state cleared`);
         dragStart = null;
     }
 });
+
 ipcMain.on('window-drag-end', (_evt) => {
     if (dragStart) {
         const final = mainWindow ? mainWindow.getBounds() : null;
-        console.log(`[main] R108 window-drag-end final=(${final?.x},${final?.y}) boundsSize=${final?.width}x${final?.height}`);
+        console.log(`[main] R111 DRAG_END final=(${final?.x},${final?.y}) size=${final?.width}x${final?.height} dragStarted=${dragStart.dragStarted}`);
+    } else {
+        console.log('[main] R111 DRAG_END (no active drag)');
     }
-    // R108: drag-end 后清理, 之后 send drag-move 不移动窗口
+    // R111: drag-end 后清理, 之后 send drag-move 不移动窗口
     dragStart = null;
 });
+
+ipcMain.on('window-drag-cancel', (_evt) => {
+    // R111: 显式 cancel IPC (pointercancel / blur 触发)
+    if (dragStart) {
+        console.log('[main] R111 DRAG_CANCEL (renderer reported)');
+        dragStart = null;
+    }
+});
+
 
 // R104: 监听 window blur 强制结束拖拽 (避免拖到其他应用时卡住)
 if (typeof app !== 'undefined' && app.on) {

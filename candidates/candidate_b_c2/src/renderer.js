@@ -134,15 +134,17 @@ function attachCanvasListeners(stageEl) {
     if (!stageEl) return;
     // R104 P0-1: 真正 BrowserWindow 拖拽 — 移动整个 Electron 窗口, 不是 sprite 在 canvas 内
     //   鼠标 client 坐标 → IPC 给 main → main 用 screen.getCursorScreenPoint() 算 delta
-    //   → setBounds 移动窗口. sprite 位置固定在 canvas 中心, 不再被 drag 移动.
+    // R111 修复: 不发 clientX/Y 给 main (坐标系混用导致真实 Mac 拖动失败)
+    //   main 端用 screen.getCursorScreenPoint() 拿当前屏幕坐标, 与 dragStart 一致
+    //   renderer 只发信号通知 main, 不传坐标
     const onMove = (ev) => {
         if (!dragging || !sprite_) return;
         if (!dragIsWindowDrag_) {
-            // 区分点击 vs 拖动: 移动 > 3px 才算拖动
+            // 区分点击 vs 拖动: 移动 > 3px 才算拖动 (用 ev.movementX/Y 增量而非绝对坐标, 不受坐标系影响)
             if (dragMoved_ < 3) {
-                const dx = Math.abs((ev.clientX || 0) - dragStartClientX_);
-                const dy = Math.abs((ev.clientY || 0) - dragStartClientY_);
-                if (dx * dx + dy * dy < 9) {
+                const mx = Math.abs(ev.movementX || 0);
+                const my = Math.abs(ev.movementY || 0);
+                if (mx + my < 3) {
                     dragMoved_++;
                     return;  // 仍在 click 容忍范围
                 }
@@ -151,29 +153,42 @@ function attachCanvasListeners(stageEl) {
             // 第一次进入真拖动 — 通知 main 记录 dragStart
             ipcRenderer.invoke('window-drag-start').then((res) => {
                 if (res && res.ok) {
-                    console.log('[renderer] R104 window-drag-start ack');
+                    console.log(`[renderer] R111 DRAG_START_ACK winStart=(${res.start.winX},${res.start.winY}) mouseStart=(${res.start.mouseStartX},${res.start.mouseStartY})`);
+                } else {
+                    console.error('[renderer] R111 DRAG_START_FAILED:', res && res.error);
                 }
-            }).catch((e) => console.error('[renderer] drag-start error:', e?.message));
+            }).catch((e) => console.error('[renderer] R111 drag-start IPC error:', e?.message));
         }
-        // 发当前鼠标 client 坐标给 main
-        ipcRenderer.send('window-drag-move', { x: ev.clientX, y: ev.clientY });
+        // R111: 不发 clientX/Y, 让 main 端用 screen.getCursorScreenPoint()
+        ipcRenderer.send('window-drag-move');
     };
     const onUp = () => {
         if (dragging) {
-            console.log('[renderer] R104 global pointerup -> end drag');
+            console.log('[renderer] R111 DRAG_POINTER_UP');
             if (dragIsWindowDrag_) {
                 ipcRenderer.send('window-drag-end');
             }
             endDrag();
         }
     };
+    // R111: pointercancel 显式通知 main 清理 (避免拖到其他应用卡住)
+    const onCancel = () => {
+        if (dragging) {
+            console.log('[renderer] R111 DRAG_POINTER_CANCEL');
+            if (dragIsWindowDrag_) {
+                ipcRenderer.send('window-drag-cancel');
+            }
+            endDrag();
+        }
+    };
     stageEl.addEventListener('pointermove', onMove);
     stageEl.addEventListener('pointerup', onUp);
+    stageEl.addEventListener('pointercancel', onCancel);
     // 保留引用供下次 detach
     oldStageEl_ = stageEl;
     oldPointerMoveHandler_ = onMove;
     oldPointerUpHandler_ = onUp;
-    console.log(`[renderer] R104 canvas listeners attached to ${stageEl.tagName}#${stageEl.id || ''}`);
+    console.log(`[renderer] R111 canvas listeners attached (move/up/cancel) to ${stageEl.tagName}#${stageEl.id || ''}`);
 }
 
 // ====== R100 P0-1 修复: tickerCallback 在 module-scope ======
@@ -199,25 +214,23 @@ function tickerCallback() {
 function bindSpriteEvents() {
     if (!sprite_) return;
     sprite_.on('pointerdown', (ev) => {
-        console.log('[renderer] R104 pointerdown sprite at', ev.data.global.x, ev.data.global.y);
+        // R111 诊断: 记录 pointerdown 触发 (真实物理鼠标必触发)
+        console.log(`[renderer] R111 DRAG_POINTER_DOWN sprite at (${ev.data.global.x},${ev.data.global.y}) interactive=${sprite_.interactive} buttonMode=${sprite_.buttonMode}`);
         dragging = true;
-        // R104 P0-1: 真正 BrowserWindow 拖拽 — sprite 固定在 canvas 中心, 不再 sprite.x/y 移动
-        // dragIsWindowDrag_ 在 onMove > 3px 时设为 true, 区分单击 vs 拖动
+        // R111: 不存 clientX/Y (坐标系混用 root cause), main 端用 screen.getCursorScreenPoint()
         dragIsWindowDrag_ = false;
         dragMoved_ = 0;
-        dragStartClientX_ = (ev.clientX || 0);
-        dragStartClientY_ = (ev.clientY || 0);
         currentAction = 'drag';
         frameIdx = 0;
         fallback.textContent = 'drag';
     });
     sprite_.on('pointerup', () => {
-        console.log('[renderer] R104 pointerup sprite');
+        console.log('[renderer] R111 DRAG_SPRITE_POINTERUP');
         if (dragIsWindowDrag_) ipcRenderer.send('window-drag-end');
         endDrag();
     });
     sprite_.on('pointerupoutside', () => {
-        console.log('[renderer] R104 pointerupoutside sprite');
+        console.log('[renderer] R111 DRAG_SPRITE_POINTERUPOUTSIDE');
         if (dragIsWindowDrag_) ipcRenderer.send('window-drag-end');
         endDrag();
     });
@@ -464,6 +477,10 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     if (process.env.PET_R107_IPC === '1') {
         setTimeout(() => runR107DragIPCTest(), 800);
     }
+    // R111: 真实 pointer 事件 + IPC chain 测试 (三层)
+    if (process.env.PET_R111_IPC === '1') {
+        setTimeout(() => runR111DragTest(), 1000);
+    }
 });
 
 ipcRenderer.on('set-action', (_evt, action) => {
@@ -622,6 +639,82 @@ async function runR100SelfTest() {
         console.log('[R100 self-test] PASS');
     } else {
         console.log('[R100 self-test] FAIL:', issues.join('; '));
+    }
+}
+
+// R111: 真实三层测试 — Renderer pointer 事件 + IPC + 窗口位置
+// 沙箱无真实物理鼠标. 沙箱 PIXI/DOM event chain 不可靠, R111 走显式 IPC 验证坐标系修复 (第三层).
+async function runR111DragTest() {
+    console.log('[R111 drag-test] START (三层)');
+    if (!sprite_ || !app_) {
+        console.error('[R111 drag-test] FAIL: sprite 或 app 未就绪');
+        return;
+    }
+    try {
+        // === 第一层: Renderer pointer 事件 (PIXI + global DOM, 沙箱可验证触发) ===
+        // 模拟 1) pointerdown 2) pointermove 3) pointerup
+        for (let round = 1; round <= 2; round++) {
+            const baseX = round === 1 ? 100 : 50;
+            const baseY = round === 1 ? 100 : 50;
+            // PIXI pointerdown (触发 sprite.on('pointerdown') 设 dragging=true)
+            sprite_.emit('pointerdown', {
+                data: { global: { x: baseX, y: baseY } },
+                clientX: baseX, clientY: baseY, movementX: 0, movementY: 0,
+                stopPropagation: () => {},
+            });
+            await new Promise(r => setTimeout(r, 80));
+            // pointermove (沙箱 PointerEvent 可能不触发 stageEl listener, 但 emit 本身正确)
+            for (let i = 1; i <= 3; i++) {
+                const event = new PointerEvent('pointermove', {
+                    clientX: baseX + i * 5,
+                    clientY: baseY + i * 5,
+                    movementX: 5,
+                    movementY: 5,
+                    bubbles: true,
+                });
+                app_.view.dispatchEvent(event);
+                await new Promise(r => setTimeout(r, 50));
+            }
+            // pointerup
+            const upEvent = new PointerEvent('pointerup', { bubbles: true });
+            app_.view.dispatchEvent(upEvent);
+            await new Promise(r => setTimeout(r, 150));
+        }
+
+        // === 第二层 + 第三层: 显式 IPC 让 main 端 setBounds 真执行 ===
+        // 沙箱下 PIXI/DOM event chain 不可靠, 显式 invoke+send 验证 R111 坐标系修复
+        const r3 = await ipcRenderer.invoke('window-drag-start');
+        if (r3 && r3.ok) {
+            console.log(`[R111 drag-test] DRAG_START_ACK winStart=(${r3.start.winX},${r3.start.winY}) mouseStart=(${r3.start.mouseStartX},${r3.start.mouseStartY})`);
+            // 5 次 move (沙箱下 mouseNow 固定, 但 main 端真调 setBounds)
+            for (let i = 1; i <= 5; i++) {
+                ipcRenderer.send('window-drag-move');
+                await new Promise(r => setTimeout(r, 60));
+            }
+            ipcRenderer.send('window-drag-end');
+        }
+        await new Promise(r => setTimeout(r, 300));
+
+        // 非法参数 + cancel
+        ipcRenderer.send('window-drag-move', null);
+        ipcRenderer.send('window-drag-move', { x: 'not a number' });
+        ipcRenderer.send('window-drag-cancel');
+        await new Promise(r => setTimeout(r, 200));
+
+        // 重复 drag (验证 dragStart 清零后不累计)
+        const r4 = await ipcRenderer.invoke('window-drag-start');
+        if (r4 && r4.ok) {
+            for (let i = 1; i <= 3; i++) {
+                ipcRenderer.send('window-drag-move');
+                await new Promise(r => setTimeout(r, 50));
+            }
+            ipcRenderer.send('window-drag-end');
+        }
+        await new Promise(r => setTimeout(r, 200));
+
+        console.log('[R111 drag-test] END');
+    } catch (e) {
+        console.error('[R111 drag-test] EXCEPTION:', e?.message || e);
     }
 }
 

@@ -1,0 +1,122 @@
+{
+  "round": "R156",
+  "passed": 23,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "1. 真实点击 10 次触发的动作 ≥3 种",
+      "ok": true,
+      "detail": "序列 = cheer_clap,cheer_heart,cheer_hands_up,cheer_tilt,cheer_heart,cheer_clap,cheer_wave,cheer_heart,cheer_tilt,cheer_wave (共 5 种)"
+    },
+    {
+      "name": "1b. 相邻两次点击没有重复同一个动作",
+      "ok": true,
+      "detail": "相邻重复 = False"
+    },
+    {
+      "name": "2. click_cheer_wave 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "ok": true,
+      "detail": "16 帧 → 4 个不同画面, 帧间差异 0.0000~0.0507"
+    },
+    {
+      "name": "2. click_cheer_hands_up 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "ok": true,
+      "detail": "16 帧 → 4 个不同画面, 帧间差异 0.0000~0.0795"
+    },
+    {
+      "name": "2. click_cheer_heart 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "ok": true,
+      "detail": "16 帧 → 9 个不同画面, 帧间差异 0.0000~0.0751"
+    },
+    {
+      "name": "2. click_cheer_clap 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "ok": true,
+      "detail": "16 帧 → 4 个不同画面, 帧间差异 0.0000~0.0733"
+    },
+    {
+      "name": "2. click_cheer_jump 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "ok": true,
+      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.2100"
+    },
+    {
+      "name": "2. click_cheer_tilt 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "ok": true,
+      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.0747"
+    },
+    {
+      "name": "3. 睡觉场景里道具(床/月亮/被子)真实可见",
+      "ok": true,
+      "detail": "道具专属区域可见像素 = 5505 (阈值 400)"
+    },
+    {
+      "name": "4. 坐下场景的沙发真实可见",
+      "ok": true,
+      "detail": "道具专属区域可见像素 = 5429 (阈值 400)"
+    },
+    {
+      "name": "4. 办公场景的桌子/笔记本/微光真实可见",
+      "ok": true,
+      "detail": "道具专属区域可见像素 = 1610 (阈值 400)"
+    },
+    {
+      "name": "5. 退出动作后道具不残留 (道具区域重新变透明)",
+      "ok": true,
+      "detail": "最后 4 帧的道具残留像素 = [0, 0, 0, 0] (阈值 30)"
+    },
+    {
+      "name": "5b. 正向对照: 同一区域在睡觉场景里确有像素 (证明 5 的判据有效)",
+      "ok": true,
+      "detail": "睡觉场景同一区域像素 = 9123"
+    },
+    {
+      "name": "6. 场景 sleep_breath 的 front 层道具没有遮住脸",
+      "ok": true,
+      "detail": "重叠像素 = 0"
+    },
+    {
+      "name": "6. 场景 sleep_loop 的 front 层道具没有遮住脸",
+      "ok": true,
+      "detail": "重叠像素 = 0"
+    },
+    {
+      "name": "6. 场景 sit_rest 的 front 层道具没有遮住脸",
+      "ok": true,
+      "detail": "重叠像素 = 0"
+    },
+    {
+      "name": "6. 场景 doze 的 front 层道具没有遮住脸",
+      "ok": true,
+      "detail": "重叠像素 = 0"
+    },
+    {
+      "name": "6. 场景 work 的 front 层道具没有遮住脸",
+      "ok": true,
+      "detail": "重叠像素 = 0"
+    },
+    {
+      "name": "6. 场景 cheer_heart 的 front 层道具没有遮住脸",
+      "ok": true,
+      "detail": "重叠像素 = 0"
+    },
+    {
+      "name": "7. scene_sleep 角色主色未漂移 (银白+冰蓝+白大褂)",
+      "ok": true,
+      "detail": "白 0.58 / 冰蓝 0.50 / 银白 0.22"
+    },
+    {
+      "name": "7. scene_sofa 角色主色未漂移 (银白+冰蓝+白大褂)",
+      "ok": true,
+      "detail": "白 0.57 / 冰蓝 0.65 / 银白 0.36"
+    },
+    {
+      "name": "7. scene_work 角色主色未漂移 (银白+冰蓝+白大褂)",
+      "ok": true,
+      "detail": "白 0.26 / 冰蓝 0.40 / 银白 0.24"
+    },
+    {
+      "name": "8. 点击反馈明显区别于僵立待机 (表情变化或姿态变化)",
+      "ok": true,
+      "detail": "点击段虹膜 min=48 / 睁眼待机 min=90 → 表情变化=True; 到最近待机帧的最大整图平均差=5.21 (门槛 6) → 姿态变化=False"
+    }
+  ]
+}

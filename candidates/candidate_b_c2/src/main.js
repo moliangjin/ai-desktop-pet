@@ -557,9 +557,9 @@ async function runPreviewSequence() {
     await previewCommand({ cmd: 'action', action: 'doze' });
     summary.lib_sit_to_doze = await captureFrames('lib_sit_to_doze', 16, 90);
 
-    // ====== 场景 10 (R156): 点击互动池 — 6 个动作逐个采集 (每个动作 3 帧全过程) =====
+    // ====== 场景 10 (R158): 点击互动池 — 6 个**真实**动作逐个采集 (每个动作 3 帧全过程) =====
     // 目的: 让用户能**看到**每个点击动作的完整"开始/中间/结束", 而不是只信一份动作表。
-    const CLICK_ACTIONS = ['cheer_heart', 'cheer_jump', 'cheer_spin', 'cheer_wink', 'cheer_hands', 'cheer_sway'];
+    const CLICK_ACTIONS = ['cheer_wave', 'cheer_hands_up', 'cheer_heart', 'cheer_clap', 'cheer_jump', 'cheer_tilt'];
     for (const act of CLICK_ACTIONS) {
         await quiet();
         const res = await previewCommand({ cmd: 'click', action: act });

@@ -2,7 +2,7 @@
   "round": 156,
   "base_round": 147,
   "test": "R147/R153/R156 e2e runtime (real Electron, production code)",
-  "pass": 57,
+  "pass": 59,
   "fail": 0,
   "not_verified": 0,
   "items": [
@@ -33,8 +33,8 @@
     {
       "status": "PASS",
       "id": "TB1",
-      "desc": "全部单元测试通过 (R141/R144/R147/R148/R153/R156 共 9 份)",
-      "detail": "passed=122 failed=0 (共 122 项)"
+      "desc": "全部单元测试通过 (R141/R144/R147/R148/R153/R156/R158 共 10 份)",
+      "detail": "passed=147 failed=0 (共 147 项)"
     },
     {
       "status": "PASS",
@@ -51,7 +51,7 @@
     {
       "status": "PASS",
       "id": "TC3",
-      "desc": "200x240 真实 PixiJS 矩阵下 23 帧零裁切 (含方向倾斜)",
+      "desc": "真实 PixiJS 矩阵下全部帧零裁切 (R156: 114 帧 = R138 23 + R153 + R156 20; 含方向倾斜与逐帧地面行)",
       "detail": "frames=114 clipped=0 issues=0"
     },
     {
@@ -64,7 +64,7 @@
       "status": "PASS",
       "id": "TD2",
       "desc": "单击被判定为 CLICK 且触发了可见反馈 (真实 pointer 事件路径)",
-      "detail": "kind=CLICK elapsed=92ms dist=0.0px | "
+      "detail": "kind=CLICK elapsed=93ms dist=0.0px | "
     },
     {
       "status": "PASS",
@@ -82,13 +82,13 @@
       "status": "PASS",
       "id": "TD5",
       "desc": "待机眨眼用 frame=5 (纯闭眼, 手臂下垂), frame=4 '手放胸前'零出现",
-      "detail": "眨眼 3 次, 手放胸前帧出现 0 次, gaps=2110,3347 count=3"
+      "detail": "眨眼 4 次, 手放胸前帧出现 0 次, gaps=2560,2630,82700 count=4"
     },
     {
       "status": "PASS",
       "id": "TE1",
       "desc": "真实撞到屏幕边缘后动作方向同步反向 (窗口真的掉头)",
-      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -34 (6 次 MOVE) → 转向后 75 (48 次 MOVE)"
+      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -33 (6 次 MOVE) → 转向后 73 (47 次 MOVE)"
     },
     {
       "status": "PASS",
@@ -106,7 +106,7 @@
       "status": "PASS",
       "id": "TG3",
       "desc": "真实行走帧的上半身倾斜方向正确 (左负右正)",
-      "detail": "walk_left 均值=-2.29 (32/32 帧为负) / walk_right 均值=+2.30 (1/32 帧为负)"
+      "detail": "walk_left 均值=-2.25 (32/32 帧为负) / walk_right 均值=+2.23 (1/32 帧为负)"
     },
     {
       "status": "PASS",
@@ -124,19 +124,19 @@
       "status": "PASS",
       "id": "TH1",
       "desc": "行走躯干偏心: 左右符号相反且 < 身高的 3% (修复\"前倾像摔倒\")",
-      "detail": "walk_left 均值=-0.01227 walk_right 均值=+0.01228 最大绝对值=0.01689 门槛=0.03"
+      "detail": "walk_left 均值=-0.01202 walk_right 均值=+0.01191 最大绝对值=0.01689 门槛=0.03"
     },
     {
       "status": "PASS",
       "id": "TH2",
       "desc": "坐→躺之间存在多帧渐变 (修复\"坐下瞬间变成躺姿\")",
-      "detail": "中间态帧 14 帧 (门槛 ≥3) [{\"frame\": 1, \"d_sit\": 3.766, \"d_lie\": 63.191}, {\"frame\": 2, \"d_sit\": 7.055, \"d_lie\": 63.338}, {\"frame\": 3, \"d_sit\": 9.152, \"d_lie\": 63.353}, {\"frame\": 4, \"d_sit\": 11.469, \"d_lie\": 63.615}, {\"frame\": 5, \"d_sit\": 31.353, \"d_lie\": 64.958}, {\"frame\": 6, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 7, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 8, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 9, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 10, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 11, \"d_sit\": 38.542, \"d_lie\": 74.241}, {\"frame\": 12, \"d_sit\": 40.411, \"d_lie\": 67.472}, {\"frame\": 13, \"d_sit\": 41.716, \"d_lie\": 60.188}, {\"frame\": 14, \"d_sit\": 42.361, \"d_lie\": 45.901}]"
+      "detail": "中间态帧 14 帧 (门槛 ≥3) [{\"frame\": 1, \"d_sit\": 3.784, \"d_lie\": 63.223}, {\"frame\": 2, \"d_sit\": 6.809, \"d_lie\": 63.164}, {\"frame\": 3, \"d_sit\": 9.192, \"d_lie\": 63.394}, {\"frame\": 4, \"d_sit\": 12.186, \"d_lie\": 64.506}, {\"frame\": 5, \"d_sit\": 31.399, \"d_lie\": 64.863}, {\"frame\": 6, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 7, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 8, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 9, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 10, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 11, \"d_sit\": 38.544, \"d_lie\": 74.271}, {\"frame\": 12, \"d_sit\": 40.409, \"d_lie\": 67.475}, {\"frame\": 13, \"d_sit\": 41.793, \"d_lie\": 60.176}, {\"frame\": 14, \"d_sit\": 42.531, \"d_lie\": 46.071}]"
     },
     {
       "status": "PASS",
       "id": "TH3",
       "desc": "多帧库动作在真实运行时确实逐帧推进 (防 anim_clock 每帧时长回归)",
-      "detail": "各动作最大\"变化像素数\" {\"look_around\": 2698, \"tilt_head\": 3040, \"head_nod\": 9018, \"blink_soft\": 8785, \"sleep_breath\": 5549} (门槛 ≥25); 静止的动作: 无"
+      "detail": "各动作最大\"变化像素数\" {\"look_around\": 2698, \"tilt_head\": 3040, \"head_nod\": 8952, \"blink_soft\": 8778, \"sleep_breath\": 1014} (门槛 ≥25); 静止的动作: 无"
     },
     {
       "status": "PASS",
@@ -148,13 +148,13 @@
       "status": "PASS",
       "id": "TH5",
       "desc": "点击反馈明显区别于僵立待机 (R156: 表情变化或姿态变化, 二者满足其一)",
-      "detail": "点击段虹膜像素 min=64 / 睁眼待机 min=90 / happy 参照 min=9 / 点击段到最近待机帧的最大平均差=17.90 (门槛 6)"
+      "detail": "点击段虹膜像素 min=8 / 睁眼待机 min=90 / happy 参照 min=8 / 点击段到最近待机帧的最大平均差=3.25 (门槛 6)"
     },
     {
       "status": "PASS",
       "id": "TH6",
       "desc": "睡眠期间有可见呼吸起伏, 且幅度不过大",
-      "detail": "最大帧间差=0.7536 (需 >0.05), 身高=153px, 粗估比例=0.0001 (门槛 <0.02)"
+      "detail": "最大帧间差=0.5608 (需 >0.05), 身高=153px, 粗估比例=0.0001 (门槛 <0.02)"
     },
     {
       "status": "PASS",
@@ -178,13 +178,13 @@
       "status": "PASS",
       "id": "TI0",
       "desc": "R156 运行时客观量化全部通过 (点击池随机性/多帧画面/道具可见/道具退场残留=0/道具不遮脸/身份不漂移/点击反馈区别于僵立待机)",
-      "detail": "R156 运行时客观校验: 22 passed, 0 failed"
+      "detail": "R156 运行时客观校验: 23 passed, 0 failed"
     },
     {
       "status": "PASS",
       "id": "TI1_1",
       "desc": "1. 真实点击 10 次触发的动作 ≥3 种",
-      "detail": "序列 = cheer_heart,cheer_jump,cheer_sway,cheer_wink,cheer_hands,cheer_jump,cheer_wink,cheer_heart,cheer_jump,cheer_hands (共 5 种)"
+      "detail": "序列 = cheer_clap,cheer_hands_up,cheer_wave,cheer_jump,cheer_hands_up,cheer_wave,cheer_tilt,cheer_jump,cheer_hands_up,cheer_wave (共 5 种)"
     },
     {
       "status": "PASS",
@@ -195,38 +195,38 @@
     {
       "status": "PASS",
       "id": "TI1_3",
-      "desc": "2. click_cheer_heart 至少有 3 个互不相同的画面 (开始/中间/结束)",
-      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.0770"
+      "desc": "2. click_cheer_wave 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.0818"
     },
     {
       "status": "PASS",
       "id": "TI1_4",
-      "desc": "2. click_cheer_jump 至少有 3 个互不相同的画面 (开始/中间/结束)",
-      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.2299"
+      "desc": "2. click_cheer_hands_up 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "detail": "16 帧 → 4 个不同画面, 帧间差异 0.0000~0.0795"
     },
     {
       "status": "PASS",
       "id": "TI1_5",
-      "desc": "2. click_cheer_spin 至少有 3 个互不相同的画面 (开始/中间/结束)",
-      "detail": "16 帧 → 4 个不同画面, 帧间差异 0.0000~0.1671"
+      "desc": "2. click_cheer_heart 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "detail": "16 帧 → 9 个不同画面, 帧间差异 0.0000~0.0883"
     },
     {
       "status": "PASS",
       "id": "TI1_6",
-      "desc": "2. click_cheer_wink 至少有 3 个互不相同的画面 (开始/中间/结束)",
-      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.2197"
+      "desc": "2. click_cheer_clap 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.0845"
     },
     {
       "status": "PASS",
       "id": "TI1_7",
-      "desc": "2. click_cheer_hands 至少有 3 个互不相同的画面 (开始/中间/结束)",
-      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.1462"
+      "desc": "2. click_cheer_jump 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.2128"
     },
     {
       "status": "PASS",
       "id": "TI1_8",
-      "desc": "2. click_cheer_sway 至少有 3 个互不相同的画面 (开始/中间/结束)",
-      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.2197"
+      "desc": "2. click_cheer_tilt 至少有 3 个互不相同的画面 (开始/中间/结束)",
+      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.0747"
     },
     {
       "status": "PASS",
@@ -291,26 +291,32 @@
     {
       "status": "PASS",
       "id": "TI1_19",
+      "desc": "6. 场景 cheer_heart 的 front 层道具没有遮住脸",
+      "detail": "重叠像素 = 0"
+    },
+    {
+      "status": "PASS",
+      "id": "TI1_20",
       "desc": "7. scene_sleep 角色主色未漂移 (银白+冰蓝+白大褂)",
       "detail": "白 0.58 / 冰蓝 0.50 / 银白 0.22"
     },
     {
       "status": "PASS",
-      "id": "TI1_20",
+      "id": "TI1_21",
       "desc": "7. scene_sofa 角色主色未漂移 (银白+冰蓝+白大褂)",
       "detail": "白 0.57 / 冰蓝 0.65 / 银白 0.36"
     },
     {
       "status": "PASS",
-      "id": "TI1_21",
+      "id": "TI1_22",
       "desc": "7. scene_work 角色主色未漂移 (银白+冰蓝+白大褂)",
       "detail": "白 0.26 / 冰蓝 0.40 / 银白 0.24"
     },
     {
       "status": "PASS",
-      "id": "TI1_22",
+      "id": "TI1_23",
       "desc": "8. 点击反馈明显区别于僵立待机 (表情变化或姿态变化)",
-      "detail": "点击段虹膜 min=64 / 睁眼待机 min=90 → 表情变化=True; 到最近待机帧的最大整图平均差=17.90 (门槛 6) → 姿态变化=True"
+      "detail": "点击段虹膜 min=8 / 睁眼待机 min=90 → 表情变化=True; 到最近待机帧的最大整图平均差=3.25 (门槛 6) → 姿态变化=False"
     },
     {
       "status": "PASS",
@@ -322,31 +328,37 @@
       "status": "PASS",
       "id": "TI3",
       "desc": "办公动作已登记 + 道具库与场景配置齐备",
-      "detail": "work=true, 道具=7, 场景=5"
+      "detail": "work=true, 道具=8, 场景=6"
     },
     {
       "status": "PASS",
       "id": "TI4",
-      "desc": "7 个场景道具在真实运行时全部加载成功 (零失败)",
-      "detail": "[renderer:1] [renderer] R156 props-asset-report loaded=7 failed=0"
+      "desc": "8 个场景道具在真实运行时全部加载成功 (零失败)",
+      "detail": "[renderer:1] [renderer] R156 props-asset-report loaded=8 failed=0"
     },
     {
       "status": "PASS",
       "id": "TI5",
       "desc": "道具按场景挂载 (床+月亮+被子 / 沙发 / 转椅+桌+笔记本+微光), 无道具动作时 mounted=none",
-      "detail": "sleep=3 sit=4 work=2 none=91"
+      "detail": "sleep=3 sit=4 work=2 none=116"
     },
     {
       "status": "PASS",
       "id": "TI6",
       "desc": "真实运行时点击从池中随机触发多个动作, 每个都是 3 帧 (开始/中间/结束)",
-      "detail": "6 种: action=cheer_hands action=cheer_heart action=cheer_jump action=cheer_spin action=cheer_sway action=cheer_wink "
+      "detail": "6 种: action=cheer_clap action=cheer_hands_up action=cheer_heart action=cheer_jump action=cheer_tilt action=cheer_wave "
     },
     {
       "status": "PASS",
       "id": "TI7",
       "desc": "R156 可观看产物齐备 (6 点击 GIF + 4 场景 GIF + 2 张总览图)",
       "detail": "10 个 GIF, 2 张总览图"
+    },
+    {
+      "status": "PASS",
+      "id": "TI8",
+      "desc": "R158 可观看产物齐备 (6 个新点击动作 GIF + 1 张点击池总览图)",
+      "detail": "6 个 GIF, 1 张总览图"
     }
   ]
 }

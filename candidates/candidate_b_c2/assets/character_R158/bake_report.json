@@ -1,0 +1,516 @@
+{
+  "round": "R158",
+  "techniques": [
+    "arm_rig (肩/肘/腕 圆形咬口 + 衣身还原)",
+    "face_swap (眼部区域合成, 复用 R153)",
+    "head_transform (头部连续权重场, 复用 R153)",
+    "body_shift (跳跃剪影对比, 复用 R156)",
+    "prop_heart (程序化矢量爱心)"
+  ],
+  "items": [
+    {
+      "file": "cheer_wave_0.png",
+      "action": "cheer_wave",
+      "index": 0,
+      "bbox": [
+        333,
+        35,
+        810,
+        987
+      ],
+      "pose": {
+        "R": [
+          130,
+          0,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 4,
+        "dy": 0
+      },
+      "face": "idle_04_blink_half.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_wave_1.png",
+      "action": "cheer_wave",
+      "index": 1,
+      "bbox": [
+        335,
+        37,
+        799,
+        987
+      ],
+      "pose": {
+        "R": [
+          133,
+          -14,
+          30
+        ]
+      },
+      "head": {
+        "rotate": 6,
+        "dy": -2
+      },
+      "face": "idle_05_blink_closed.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_wave_2.png",
+      "action": "cheer_wave",
+      "index": 2,
+      "bbox": [
+        332,
+        36,
+        852,
+        987
+      ],
+      "pose": {
+        "R": [
+          126,
+          -7,
+          -30
+        ]
+      },
+      "head": {
+        "rotate": 3,
+        "dy": 0
+      },
+      "face": null,
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_hands_up_0.png",
+      "action": "cheer_hands_up",
+      "index": 0,
+      "bbox": [
+        176,
+        37,
+        847,
+        987
+      ],
+      "pose": {
+        "L": [
+          -118,
+          0,
+          0
+        ],
+        "R": [
+          118,
+          0,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 6,
+        "dy": -2
+      },
+      "face": "idle_04_blink_half.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_hands_up_1.png",
+      "action": "cheer_hands_up",
+      "index": 1,
+      "bbox": [
+        226,
+        39,
+        805,
+        987
+      ],
+      "pose": {
+        "L": [
+          -126,
+          -10,
+          0
+        ],
+        "R": [
+          126,
+          10,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 8,
+        "dy": -4
+      },
+      "face": "idle_05_blink_closed.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_hands_up_2.png",
+      "action": "cheer_hands_up",
+      "index": 2,
+      "bbox": [
+        161,
+        36,
+        863,
+        987
+      ],
+      "pose": {
+        "L": [
+          -112,
+          0,
+          0
+        ],
+        "R": [
+          112,
+          0,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 4,
+        "dy": -1
+      },
+      "face": "idle_04_blink_half.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_heart_0.png",
+      "action": "cheer_heart",
+      "index": 0,
+      "bbox": [
+        308,
+        36,
+        717,
+        987
+      ],
+      "pose": {
+        "L": [
+          -6,
+          116,
+          -18
+        ],
+        "R": [
+          6,
+          -116,
+          18
+        ]
+      },
+      "head": {
+        "rotate": -6,
+        "dy": 0
+      },
+      "face": "idle_05_blink_closed.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_heart_1.png",
+      "action": "cheer_heart",
+      "index": 1,
+      "bbox": [
+        298,
+        39,
+        727,
+        987
+      ],
+      "pose": {
+        "L": [
+          -6,
+          140,
+          0
+        ],
+        "R": [
+          6,
+          -140,
+          0
+        ]
+      },
+      "head": {
+        "rotate": -8,
+        "dy": -3
+      },
+      "face": "idle_05_blink_closed.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_heart_2.png",
+      "action": "cheer_heart",
+      "index": 2,
+      "bbox": [
+        300,
+        36,
+        724,
+        987
+      ],
+      "pose": {
+        "L": [
+          -6,
+          132,
+          -8
+        ],
+        "R": [
+          6,
+          -132,
+          8
+        ]
+      },
+      "head": {
+        "rotate": -4,
+        "dy": 0
+      },
+      "face": null,
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_clap_0.png",
+      "action": "cheer_clap",
+      "index": 0,
+      "bbox": [
+        163,
+        36,
+        864,
+        987
+      ],
+      "pose": {
+        "L": [
+          -30,
+          -34,
+          0
+        ],
+        "R": [
+          30,
+          34,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 3,
+        "dy": 0
+      },
+      "face": null,
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_clap_1.png",
+      "action": "cheer_clap",
+      "index": 1,
+      "bbox": [
+        297,
+        37,
+        728,
+        987
+      ],
+      "pose": {
+        "L": [
+          -6,
+          142,
+          0
+        ],
+        "R": [
+          6,
+          -142,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 5,
+        "dy": -2
+      },
+      "face": "idle_05_blink_closed.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_clap_2.png",
+      "action": "cheer_clap",
+      "index": 2,
+      "bbox": [
+        162,
+        36,
+        865,
+        987
+      ],
+      "pose": {
+        "L": [
+          -32,
+          -30,
+          0
+        ],
+        "R": [
+          32,
+          30,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 2,
+        "dy": 0
+      },
+      "face": null,
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_jump_0.png",
+      "action": "cheer_jump",
+      "index": 0,
+      "bbox": [
+        265,
+        225,
+        765,
+        987
+      ],
+      "pose": {
+        "L": [
+          -18,
+          0,
+          0
+        ],
+        "R": [
+          18,
+          0,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 0,
+        "dy": 0
+      },
+      "face": "idle_05_blink_closed.png",
+      "scale_y": 0.8,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_jump_1.png",
+      "action": "cheer_jump",
+      "index": 1,
+      "bbox": [
+        194,
+        39,
+        830,
+        987
+      ],
+      "pose": {
+        "L": [
+          -124,
+          0,
+          0
+        ],
+        "R": [
+          124,
+          0,
+          0
+        ]
+      },
+      "head": {
+        "rotate": 6,
+        "dy": -4
+      },
+      "face": "idle_05_blink_closed.png",
+      "scale_y": 1.0,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_jump_2.png",
+      "action": "cheer_jump",
+      "index": 2,
+      "bbox": [
+        257,
+        186,
+        773,
+        987
+      ],
+      "pose": {
+        "L": [
+          -20,
+          0,
+          0
+        ],
+        "R": [
+          20,
+          0,
+          0
+        ]
+      },
+      "head": {
+        "rotate": -4,
+        "dy": 2
+      },
+      "face": null,
+      "scale_y": 0.84,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_tilt_0.png",
+      "action": "cheer_tilt",
+      "index": 0,
+      "bbox": [
+        338,
+        39,
+        712,
+        987
+      ],
+      "pose": {},
+      "head": {
+        "rotate": 17,
+        "dy": 0
+      },
+      "face": null,
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_tilt_1.png",
+      "action": "cheer_tilt",
+      "index": 1,
+      "bbox": [
+        338,
+        39,
+        712,
+        987
+      ],
+      "pose": {},
+      "head": {
+        "rotate": 17,
+        "dy": 0
+      },
+      "face": "idle_04_blink_half.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "cheer_tilt_2.png",
+      "action": "cheer_tilt",
+      "index": 2,
+      "bbox": [
+        338,
+        36,
+        711,
+        987
+      ],
+      "pose": {},
+      "head": {
+        "rotate": 12,
+        "dy": 0
+      },
+      "face": "idle_05_blink_closed.png",
+      "scale_y": null,
+      "note": "手臂骨架摆姿 + 头部权重场 + 眼部合成"
+    },
+    {
+      "file": "prop_heart.png",
+      "action": "cheer_heart",
+      "index": -1,
+      "bbox": [
+        452,
+        350,
+        572,
+        450
+      ],
+      "note": "程序化矢量爱心特效 (叠在双手合拢处上方, front 层)"
+    }
+  ]
+}

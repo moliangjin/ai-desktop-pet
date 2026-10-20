@@ -273,7 +273,8 @@ test('F1 需新素材的动作清单存在且未被算进已实现动作', () =>
             `${item.action} 既标为需新素材, 又出现在 manifest 动作库里 (虚报完成)`);
     }
     const descs = NEEDS_NEW_ASSETS.map(x => x.action);
-    for (const expect of ['turn_around', 'walk_backward', 'run', 'wave_hand', 'eat_drink']) {
+    // R158: wave_hand 已由 arm_rig 真实实现 (cheer_wave) ⇒ 从"需新素材"清单移除, 不再要求
+    for (const expect of ['turn_around', 'walk_backward', 'run', 'eat_drink']) {
         assert.ok(descs.includes(expect), `需新素材清单缺少 ${expect}`);
     }
 });

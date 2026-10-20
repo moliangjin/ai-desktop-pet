@@ -195,10 +195,15 @@ test('B3 权重生效: 高权重动作出现频率更高 (不是等概率)', () 
 });
 
 // ====== C. 场景道具 ======
-test('C1 7 个道具文件齐全, 场景登记的 back/front 道具都在库里', () => {
+test('C1 8 个道具文件齐全 (R156 的 7 个 + R158 的爱心特效), 场景登记的 back/front 道具都在库里', () => {
     assert.ok(PROPS.enabled, 'manifest 的 props 段必须启用');
-    assert.strictEqual(Object.keys(PROPS_LIB).length, 7,
-        `应有 7 个道具, 实际 ${Object.keys(PROPS_LIB).length}: ${Object.keys(PROPS_LIB).join(',')}`);
+    // R158: 在 R156 的 7 个道具基础上新增 prop_heart (比心爱心特效)
+    assert.strictEqual(Object.keys(PROPS_LIB).length, 8,
+        `应有 8 个道具, 实际 ${Object.keys(PROPS_LIB).length}: ${Object.keys(PROPS_LIB).join(',')}`);
+    for (const need of ['prop_bed', 'prop_quilt', 'prop_moon', 'prop_sofa',
+                        'prop_chair', 'prop_desk', 'prop_screen_glow', 'prop_heart']) {
+        assert.ok(PROPS_LIB[need], `道具库缺少 ${need}`);
+    }
     for (const [name, spec] of Object.entries(PROPS_LIB)) {
         assert.ok(spec.file, `道具 ${name} 缺 file`);
         assert.ok(fs.existsSync(path.join(ASSETS, spec.file)), `道具文件缺失: ${spec.file}`);
@@ -212,7 +217,14 @@ test('C1 7 个道具文件齐全, 场景登记的 back/front 道具都在库里'
         for (const n of (scene.back || []).concat(scene.front || [])) {
             assert.ok(PROPS_LIB[n], `场景 ${action} 引用了未登记的道具 ${n}`);
         }
-        assert.ok((scene.back || []).length > 0, `场景 ${action} 没有 back 层道具`);
+        // R158: 允许"纯 front 层特效"场景 (比心的爱心特效只有 front 层, 没有 back 层道具)
+        if (!(scene.back || []).length) {
+            assert.ok((scene.front || []).length > 0,
+                `场景 ${action} 既没有 back 层也没有 front 层道具`);
+            assert.ok(/特效/.test(scene.desc || ''),
+                `场景 ${action} 没有 back 层道具时, 说明必须写清是纯特效`);
+            continue;
+        }
     }
 });
 
@@ -401,21 +413,32 @@ test('D3 引擎能进入 WORK 状态, 下发 work 动作, 结束后回到 idle',
 // ====== E. 诚实性 ======
 test('E1 素材做不到的动作仍在"需要新素材"清单里 (不得硬标完成)', () => {
     const descs = NEEDS_NEW_ASSETS.map(x => `${x.action}`).join(',');
-    for (const need of ['heart_hands_true', 'clap_hands', 'typing', 'spin_180', 'wave_hand']) {
+    // R158: wave_hand 已由 arm_rig 真实实现 (cheer_wave)、clap_hands 已由 arm_rig 真实实现 (cheer_clap)
+    // ⇒ 这两项不再需要新素材, 已从清单移除; 仍然做不到的必须留在清单里 (不得硬标完成)
+    for (const need of ['heart_hands_true', 'typing', 'spin_180']) {
         assert.ok(descs.includes(need), `需新素材清单缺少 ${need}`);
     }
+    assert.ok(!descs.includes('wave_hand'),
+        'wave_hand 已由 R158 的 cheer_wave 真实实现, 不应再标为需新素材');
+    assert.ok(!descs.includes('clap_hands'),
+        'clap_hands 已由 R158 的 cheer_clap 真实实现, 不应再标为需新素材');
     for (const item of NEEDS_NEW_ASSETS) {
         assert.ok(!ACTION_CATALOG[item.action],
             `${item.action} 既标为需新素材, 又出现在已实现动作表里 (自相矛盾)`);
     }
 });
 
-test('E2 点击动作的说明里如实标注了"近似"实现 (比心/双手/转身)', () => {
+test('E2 点击动作的说明里如实标注了做不到的部分 (比心可读性上限 / 转身缺背面素材)', () => {
     const heart = LIB_ACTIONS.cheer_heart.desc;
-    assert.ok(/近似/.test(heart), 'cheer_heart 的说明必须标注"近似"');
-    const spin = LIB_ACTIONS.cheer_spin.desc;
-    assert.ok(/不是真正的/.test(spin) || /表现手法/.test(spin),
-        'cheer_spin 的说明必须说明它是 2D 表现手法而非真正的背面转身');
+    // R158: 比心不再是"近似的手放胸前", 但必须如实写明"手指级心形在显示尺寸不可读"
+    assert.ok(/不可读/.test(heart) || /如实说明/.test(heart),
+        'cheer_heart 的说明必须如实写明手指级比心在桌宠显示尺寸下不可读');
+    assert.ok(/爱心特效/.test(heart), 'cheer_heart 的说明必须写明用了爱心特效');
+    // R158: cheer_spin 已下架 (水平压缩冒充转身) ⇒ 转身必须留在"需要新素材"清单里
+    assert.ok(!LIB_ACTIONS.cheer_spin, 'cheer_spin 必须下架 (R158 禁止用压缩冒充转身)');
+    const spinNeed = NEEDS_NEW_ASSETS.find(x => x.action === 'spin_180');
+    assert.ok(spinNeed, '真正的 180° 背面转身必须留在需新素材清单里');
+    assert.ok(/背面素材/.test(spinNeed.desc), 'spin_180 必须写明缺的是背面素材');
     const work = LIB_ACTIONS.work.desc;
     assert.ok(/屏幕/.test(work) || /电脑/.test(work), 'work 的说明必须写清是"在电脑前办公"');
 });
@@ -448,7 +471,9 @@ test('F1 核心 6 组仍是 23 个互不相同的帧文件, R138 原始字节未
 test('F2 道具段不改动任何角色帧 (道具是独立 PNG, 不覆盖角色素材)', () => {
     const propFiles = Object.values(PROPS_LIB).map(s => s.file);
     for (const f of propFiles) {
-        assert.ok(f.startsWith('character_R156/'), `道具 ${f} 必须放在 character_R156/ 目录`);
+        // R158: 道具允许放在 character_R156/ (R156 的 7 个) 或 character_R158/ (R158 的爱心特效)
+        assert.ok(f.startsWith('character_R156/') || f.startsWith('character_R158/'),
+            `道具 ${f} 必须放在 character_R156/ 或 character_R158/ 目录`);
         assert.ok(fs.existsSync(path.join(ASSETS, f)), `道具缺失 ${f}`);
     }
     for (const action of MANIFEST.animation_order) {

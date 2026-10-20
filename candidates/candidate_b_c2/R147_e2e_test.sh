@@ -107,7 +107,7 @@ fi
 echo ""
 echo "  [B] 单元测试全量..."
 UNIT_TOTAL=0; UNIT_PASS=0; UNIT_FAIL=0
-for t in r141_behavior_engine r144_layout r144_oneshot r144_assets_gate r147_layout_pixi_parity r147_interaction r148_walk_direction r153_action_library r156_click_props_work; do
+for t in r141_behavior_engine r144_layout r144_oneshot r144_assets_gate r147_layout_pixi_parity r147_interaction r148_walk_direction r153_action_library r156_click_props_work r158_click_actions; do
     OUT=$(node "tests/$t.test.js" 2>&1 | tail -3)
     LINE=$(echo "$OUT" | grep -oE "[0-9]+ passed, [0-9]+ failed" | tail -1)
     P=$(echo "$LINE" | grep -oE "^[0-9]+"); F=$(echo "$LINE" | grep -oE "[0-9]+ failed" | grep -oE "^[0-9]+")
@@ -116,7 +116,7 @@ for t in r141_behavior_engine r144_layout r144_oneshot r144_assets_gate r147_lay
         record FAIL TB1_$t "单测 $t" "$LINE"
     fi
 done
-record PASS TB1 "全部单元测试通过 (R141/R144/R147/R148/R153/R156 共 9 份)" "passed=$UNIT_PASS failed=$UNIT_FAIL (共 $UNIT_TOTAL 项)"
+record PASS TB1 "全部单元测试通过 (R141/R144/R147/R148/R153/R156/R158 共 10 份)" "passed=$UNIT_PASS failed=$UNIT_FAIL (共 $UNIT_TOTAL 项)"
 
 # =========================================================
 # C. 真实运行时: R147 运行时自检
@@ -453,10 +453,10 @@ else
     record FAIL TI3 "办公动作 / 道具 / 场景配置" "$R156_CONSIST"
 fi
 
-# 7 个道具资源在真实运行时全部加载成功
+# 8 个道具资源在真实运行时全部加载成功 (R158: 新增 prop_heart 比心道具)
 PROP_REPORT=$(grep "R156 props-asset-report" "$LOG_PREVIEW" | tail -1)
-if echo "$PROP_REPORT" | grep -q "loaded=7" && echo "$PROP_REPORT" | grep -q "failed=0"; then
-    record PASS TI4 "7 个场景道具在真实运行时全部加载成功 (零失败)" "$PROP_REPORT"
+if echo "$PROP_REPORT" | grep -q "loaded=8" && echo "$PROP_REPORT" | grep -q "failed=0"; then
+    record PASS TI4 "8 个场景道具在真实运行时全部加载成功 (零失败)" "$PROP_REPORT"
 else
     record FAIL TI4 "道具资源加载" "$PROP_REPORT"
 fi
@@ -489,6 +489,15 @@ if [ "${R156_GIF:-0}" -ge 10 ] && [ "${R156_PNG:-0}" -ge 2 ]; then
     record PASS TI7 "R156 可观看产物齐备 (6 点击 GIF + 4 场景 GIF + 2 张总览图)" "$R156_GIF 个 GIF, $R156_PNG 张总览图"
 else
     record FAIL TI7 "R156 可观看产物齐备" "$R156_GIF GIF / $R156_PNG PNG"
+fi
+
+# R158 可观看交付物齐备 (6 个新点击动作 GIF + 1 张点击池总览)
+R158_GIF=$(ls "$CAND/evidence_r158_gifs/"*.gif 2>/dev/null | wc -l | tr -d ' ')
+R158_PNG=$(ls "$CAND/evidence_r158_gifs/"*.png 2>/dev/null | wc -l | tr -d ' ')
+if [ "${R158_GIF:-0}" -ge 6 ] && [ "${R158_PNG:-0}" -ge 1 ]; then
+    record PASS TI8 "R158 可观看产物齐备 (6 个新点击动作 GIF + 1 张点击池总览图)" "$R158_GIF 个 GIF, $R158_PNG 张总览图"
+else
+    record FAIL TI8 "R158 可观看产物齐备" "$R158_GIF GIF / $R158_PNG PNG"
 fi
 
 # =========================================================

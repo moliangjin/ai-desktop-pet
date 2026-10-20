@@ -48,12 +48,14 @@ const ACTION_CATALOG = Object.freeze({
 
     // —— R156 新增 ——
     work: Object.freeze({ kind: 'rest', group: 'library', loop: true, desc: '在电脑前办公 (新 idle 类状态)' }),
-    cheer_heart: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '比心 (近似)' }),
-    cheer_jump: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '开心小跳' }),
-    cheer_spin: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '原地轻盈转身' }),
-    cheer_wink: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '歪头眨眼卖萌' }),
-    cheer_hands: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '双手小庆祝' }),
-    cheer_sway: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '开心摇摆' }),
+
+    // —— R158 新增 (6 个**真实**点击互动; R156 的几何形变动作已按"禁止压缩/平移/重命名冒充"下架) ——
+    cheer_wave: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '真挥手 (手臂骨架抬手 + 手腕摆动)' }),
+    cheer_hands_up: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '双臂高举欢呼' }),
+    cheer_heart: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '比心 (双手合拢 + 爱心特效)' }),
+    cheer_clap: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '鼓掌 (张开→合拢→张开)' }),
+    cheer_jump: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '开心跳跃 (双臂上扬 + 离地)' }),
+    cheer_tilt: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '歪头眨眼卖萌' }),
 });
 
 /**
@@ -152,12 +154,13 @@ function pickGesture(random, lastAction, exclude = []) {
  * 每个动作都有 3 帧 (开始/中间/结束), 不是单张定格。
  */
 const CLICK_POOL = Object.freeze([
+    // R158: 6 个真实动作 —— 手臂骨架摆姿 (36_R158_arm_rig.py) + 头部权重场 + 跳跃剪影
+    Object.freeze({ action: 'cheer_wave', weight: 3 }),
+    Object.freeze({ action: 'cheer_hands_up', weight: 3 }),
     Object.freeze({ action: 'cheer_heart', weight: 3 }),
+    Object.freeze({ action: 'cheer_clap', weight: 2 }),
     Object.freeze({ action: 'cheer_jump', weight: 2 }),
-    Object.freeze({ action: 'cheer_spin', weight: 2 }),
-    Object.freeze({ action: 'cheer_wink', weight: 3 }),
-    Object.freeze({ action: 'cheer_hands', weight: 2 }),
-    Object.freeze({ action: 'cheer_sway', weight: 2 }),
+    Object.freeze({ action: 'cheer_tilt', weight: 3 }),
 ]);
 
 /**
@@ -196,13 +199,13 @@ const NEEDS_NEW_ASSETS = Object.freeze([
     Object.freeze({ action: 'turn_around', desc: '原地转身 (360° 转身) — R138 无背面素材, 只能用左右步态交替近似' }),
     Object.freeze({ action: 'walk_backward', desc: '后退走 — R138 无后退步态素材' }),
     Object.freeze({ action: 'run', desc: '奔跑 — R138 无奔跑素材, 当前只有 30px/s 散步' }),
-    Object.freeze({ action: 'wave_hand', desc: '挥手打招呼 — R138 无挥手素材 (R156 的 cheer_hands 是双臂抬起, 不是挥手)' }),
+    // R158: 挥手已由 arm_rig 真实实现 (cheer_wave) ⇒ 不再需要新素材
     Object.freeze({ action: 'eat_drink', desc: '进食/喝水 — R138 无道具与手部动作素材' }),
     // —— R156 追加 (点击互动与办公场景的素材边界, 如实列出, 不得硬标 PASS) ——
-    Object.freeze({ action: 'heart_hands_true', desc: '真正的双手比心手势 — R138 无手部素材, 当前用"右手横在胸前"近似 (cheer_heart)' }),
-    Object.freeze({ action: 'clap_hands', desc: '双手拍掌/庆祝挥动 — R138 无手部素材, 当前用双臂抬起近似 (cheer_hands)' }),
+    Object.freeze({ action: 'heart_hands_true', desc: '手指级比心 (拇指+食指围成心形) — R158 用"双手合拢+爱心特效"实现 (整只开口在显示尺寸只有约 12x16 px, 单指宽约 2px, 心形不可读); 要真正的手指心需要新素材' }),
+    // R158: 鼓掌已由 arm_rig 真实实现 (cheer_clap) ⇒ 不再需要新素材
     Object.freeze({ action: 'typing', desc: '敲键盘手部动作 — R138 无手部素材, 当前办公场景只能做"看屏幕/思考/停顿" (work)' }),
-    Object.freeze({ action: 'spin_180', desc: '真正的 180° 背面转身 — R138 无背面素材, 当前用 2D 水平压缩读作侧身 (cheer_spin)' }),
+    Object.freeze({ action: 'spin_180', desc: '真正的 180° 背面转身 — R138 全库只有正面素材(缺背面素材), R158 已把 cheer_spin(水平压缩冒充转身)下架; 需要新的背面/侧身素材 (规格见 manifest.r158_click_actions.new_asset_requests)' }),
 ]);
 
 /**

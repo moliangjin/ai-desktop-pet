@@ -763,6 +763,9 @@ function startClickReaction(forcedAction) {
         sprite_.texture = meta.frames[0];
         applyFramePosition(action, 0);
     }
+    // R158: 点击反馈也可能有道具场景 (比心的爱心特效) —— 必须随点击动作挂载,
+    //   否则道具永远不出现 (R158 之前点击路径从不调用 applyPropsFor)
+    applyPropsFor(action);
     console.log(`[renderer] R156 CLICK_REACTION start action=${action} ` +
         `frames=${meta.frames.length} recent=${clickRecent_.join('>')}`);
     return true;
@@ -789,6 +792,8 @@ function updateClickReaction(now) {
             sprite_.texture = meta.frames[Math.min(frameIdx, meta.frames.length - 1)];
             applyFramePosition(currentAction, frameIdx);
         }
+        // R158: 点击反馈结束 → 道具跟着回到当前动作的场景 (爱心特效必须退场)
+        applyPropsFor(currentAction);
         console.log(`[renderer] R156 CLICK_REACTION end action=${rec.action} ` +
             `t=+${Date.now() - R144_T0_}ms`);
         return false;

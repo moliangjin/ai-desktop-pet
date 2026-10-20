@@ -188,8 +188,9 @@ def main():
           f'相邻重复 = {adjacent_repeat}')
 
     # ---------- 2. 每个点击动作有 ≥3 个互不相同的剪影 ----------
-    for scene in ('click_cheer_heart', 'click_cheer_jump', 'click_cheer_spin',
-                  'click_cheer_wink', 'click_cheer_hands', 'click_cheer_sway'):
+    # R158: 点击池换成 6 个真实动作 (cheer_spin/cheer_sway/cheer_wink/cheer_hands 已下架)
+    for scene in ('click_cheer_wave', 'click_cheer_hands_up', 'click_cheer_heart',
+                  'click_cheer_clap', 'click_cheer_jump', 'click_cheer_tilt'):
         files = scene_frames(meta, scene)
         if not files:
             check(f'2. {scene} 有采集帧', False, '无采集帧')

@@ -19,7 +19,7 @@
 | 交付索引 | `docs/R148_DELIVERY_INDEX.md`（本文件） |
 | 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R148_review.zip` |
 | ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R148_review.zip.sha256` |
-| 备份 | `backup/V0.0_backup_20261020_18xxxxxx_r148.zip` + 同名 `.sha256`（见提交 `02cc4ee` 同级的归档提交） |
+| 备份 | `backup/V0.0_backup_20261020_182920_r148.zip`（106 文件 / 20,133,049 B）+ 同名 `.sha256` |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`、`evidence_r144_e2e.json`、`evidence_r141_e2e.json` |
 | 方向几何测量 | `candidates/candidate_b_c2/evidence_r148_direction.json` |
 | 可观看运行预览 | `candidates/candidate_b_c2/evidence_r148_preview/`（6 个 GIF + 汇总图 + x 轨迹图 + 采集元数据） |

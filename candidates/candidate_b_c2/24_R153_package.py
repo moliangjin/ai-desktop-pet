@@ -126,8 +126,8 @@ DOC_FILES = [
 
 README = """R153 审查包说明 (AI 智能陪伴桌宠 V0.0)
 =========================================
-生成时间: %s
-提交:     %s
+生成时间: __GENERATED_AT__
+提交:     __COMMIT__
 
 本轮主题: 动作自然度与自主生活丰富度升级 (承接 R148)
 
@@ -226,7 +226,9 @@ def build_review(commit):
         for rel, arc in DOC_FILES:
             if add(zf, os.path.join(ROOT, rel), arc):
                 n += 1
-        zf.writestr("evidence/README_R153_review.txt", README % (time.strftime("%Y-%m-%d %H:%M:%S"), commit))
+        readme = README.replace("__GENERATED_AT__", time.strftime("%Y-%m-%d %H:%M:%S")) \
+                         .replace("__COMMIT__", commit)
+        zf.writestr("evidence/README_R153_review.txt", readme)
         n += 1
     return n
 

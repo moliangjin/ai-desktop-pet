@@ -19,7 +19,7 @@
 | 交付索引 | `docs/R153_DELIVERY_INDEX.md`（本文件） |
 | 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R153_review.zip` |
 | ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R153_review.zip.sha256` |
-| 备份 | `backup/V0.0_backup_<时间戳>_r153.zip`（仓库内） |
+| 备份 | `backup/V0.0_backup_20261020_233440_r153.zip`（609 文件 / 43,749,074 B）+ 同名 `.sha256` |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json` |
 | 运行时客观量化 | `candidates/candidate_b_c2/evidence_r153_runtime.json`（6 项）、`evidence_r153_posture.json`（行走姿态） |
 | 可观看运行预览 | `candidates/candidate_b_c2/evidence_r153_gifs/`（16 个 GIF + 动作总览图 + 坐躺过渡帧条） |

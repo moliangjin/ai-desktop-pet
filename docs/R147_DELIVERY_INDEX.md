@@ -19,7 +19,7 @@
 | 交付索引 | `docs/R147_DELIVERY_INDEX.md`（本文件） |
 | 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R147_review.zip` |
 | ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R147_review.zip.sha256` |
-| 备份 | `backup/V0.0_backup_<ts>_r147.zip` + 同名 `.sha256` |
+| 备份 | `backup/V0.0_backup_20261020_151827_r147.zip` + 同名 `.sha256` |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json` |
 | 可观看运行预览 | `candidates/candidate_b_c2/evidence_r147_preview/`（5 个 GIF + 汇总图 + 采集元数据 + 量化结果） |
 | Mac 真机验收入口 | `candidates/candidate_b_c2/C2_Mac人工验收.command`（双击即用） |

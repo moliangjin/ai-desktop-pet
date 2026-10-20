@@ -467,14 +467,14 @@ async function runPreviewSequence() {
     await sleep_(300);
     if (behaviorEngine) behaviorEngine.startWalk(-1, 300);
     await sleep_(150);
-    summary.walk_left = await captureFrames('walk_left', 26, 65);
+    summary.walk_left = await captureFrames('walk_left', 32, 65);
 
     // --- 场景 2: 向右行走 ---
     await previewCommand({ cmd: 'action', action: 'idle' });
     await sleep_(300);
     if (behaviorEngine) behaviorEngine.startWalk(1, 300);
     await sleep_(150);
-    summary.walk_right = await captureFrames('walk_right', 26, 65);
+    summary.walk_right = await captureFrames('walk_right', 32, 65);
 
     // --- 场景 3: 自然待机 (稳定站姿 + 自然眨眼, 无胸腔膨胀) ---
     await quiet();
@@ -495,6 +495,26 @@ async function runPreviewSequence() {
     summary.wake_result = wakeRes;
     console.log(`[main] R147 PREVIEW wake result=${JSON.stringify(wakeRes)}`);
     summary.wake = await captureFrames('wake', 34, 60);
+
+    // --- 场景 6 (R148): 撞边转向后的连续动作 ---
+    // 把窗口挪到接近左缘 → 向左走 → 必然撞到屏幕左缘 → 引擎自动反向 (edge-turn)
+    //   → 全身朝向与步态必须同步切换为 walk_right, 且**连续**不中断。
+    // 采集的是真实运行帧, 每帧同时记录窗口真实 x, 便于在 GIF 上直接看出"撞边→反向"。
+    await quiet();
+    if (mainWindow) {
+        const b = mainWindow.getBounds();
+        const display = screen.getDisplayMatching(b);
+        const margin = (behaviorConfig && behaviorConfig.edge_margin_px) || 4;
+        // 离左缘约 100px: 留出自然走向边缘的过程, 撞边后还有余量继续向右
+        const targetX = Math.min(display.workArea.x + margin + 100,
+            display.workArea.x + display.workArea.width - b.width - margin);
+        mainWindow.setBounds({ x: targetX, y: b.y, width: b.width, height: b.height });
+        console.log(`[main] R148 PREVIEW edge-turn place x=${targetX} (workArea.x=${display.workArea.x})`);
+    }
+    await sleep_(250);
+    if (behaviorEngine) behaviorEngine.startWalk(-1, 900);
+    await sleep_(150);
+    summary.edge_turn = await captureFrames('edge_turn', 90, 55);
 
     const metaFile = path.join(previewDir_, 'preview_meta.json');
     fs.writeFileSync(metaFile, JSON.stringify(summary, null, 2));

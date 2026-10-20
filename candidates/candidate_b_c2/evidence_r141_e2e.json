@@ -33,13 +33,13 @@
       "status": "PASS",
       "id": "5",
       "desc": "idle 能自动切换 (无需用户按键)",
-      "detail": "观测到 3 次从 IDLE 自动切出"
+      "detail": "观测到 4 次从 IDLE 自动切出"
     },
     {
       "status": "PASS",
       "id": "6",
       "desc": "walk_left / walk_right 状态有效",
-      "detail": "观测到 2 次进入行走状态"
+      "detail": "观测到 3 次进入行走状态"
     },
     {
       "status": "PASS",
@@ -63,13 +63,13 @@
       "status": "PASS",
       "id": "7",
       "desc": "自动行走会更新窗口坐标 (非原地踏步)",
-      "detail": "18 次 setBounds, x 跨度 39.0px (5->44)"
+      "detail": "31 次 setBounds, x 跨度 39.0px (5->44)"
     },
     {
       "status": "PASS",
       "id": "8",
       "desc": "到边缘会转向",
-      "detail": "观测到 2 次 edge-turn 状态转移"
+      "detail": "观测到 3 次 edge-turn 状态转移"
     },
     {
       "status": "PASS",

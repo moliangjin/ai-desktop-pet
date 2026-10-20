@@ -63,7 +63,7 @@
       "status": "PASS",
       "id": "TD2",
       "desc": "单击被判定为 CLICK 且触发了可见反馈 (真实 pointer 事件路径)",
-      "detail": "kind=CLICK elapsed=93ms dist=0.0px | duration=620ms bump=9px"
+      "detail": "kind=CLICK elapsed=92ms dist=0.0px | duration=620ms bump=9px"
     },
     {
       "status": "PASS",
@@ -81,13 +81,13 @@
       "status": "PASS",
       "id": "TD5",
       "desc": "待机眨眼按随机间隔发生 (非 1.2s 机械循环)",
-      "detail": "眨眼 3 次, gaps=2440,2200 count=3"
+      "detail": "眨眼 3 次, gaps=2550,2610 count=3"
     },
     {
       "status": "PASS",
       "id": "TE1",
       "desc": "真实撞到屏幕边缘后动作方向同步反向 (窗口真的掉头)",
-      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -34 (6 次 MOVE) → 转向后 101 (16 次 MOVE)"
+      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -32 (6 次 MOVE) → 转向后 78 (50 次 MOVE)"
     },
     {
       "status": "PASS",
@@ -105,7 +105,7 @@
       "status": "PASS",
       "id": "TG3",
       "desc": "真实行走帧的上半身倾斜方向正确 (左负右正)",
-      "detail": "walk_left 均值=-13.04 (26/26 帧为负) / walk_right 均值=+12.23 (0/26 帧为负)"
+      "detail": "walk_left 均值=-13.02 (32/32 帧为负) / walk_right 均值=+16.29 (0/32 帧为负)"
     },
     {
       "status": "PASS",

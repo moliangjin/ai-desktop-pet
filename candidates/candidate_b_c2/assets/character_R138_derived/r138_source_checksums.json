@@ -1,0 +1,29 @@
+{
+  "round": "R148",
+  "note": "R138 原始 23 帧的 SHA256 基线 (R148 镜像派生后仍必须逐字节一致)",
+  "files": {
+    "character_R138/idle/idle_00_base.png": "09141caf2b5b091ebd6f9a61c85a881976f87c4ce62cbb63017e57c88dd73aee",
+    "character_R138/idle/idle_01_inhale_peak.png": "0410128ab74de19e8de99afda342ae9ced7d978acf9e9a9a8a1ad9571b51b1eb",
+    "character_R138/idle/idle_02_exhale_mid.png": "61347926c154a4ac779ac01ab24a90d732a0d9c81d83bfec10b36f614b52a027",
+    "character_R138/idle/idle_03_exhale_low.png": "bb2bd5c037b9f7be2734ce7ee9fe5557baf6f8b50e68401be6f3dfa7a9540cc5",
+    "character_R138/idle/idle_04_blink_half.png": "26b0ea948fc3bbaff9f94cf4886e1f930c8284fde01293858e9655fc2d707b5e",
+    "character_R138/idle/idle_05_blink_closed.png": "2796e82144b48ba43f4fee610f952bb0d1b729c1f0e9dd0e28fa7e7a4937c4fe",
+    "character_R138/sleep_loop/sleep_loop_00_base.png": "daa7e464c733f20b89887710f730a839ed86f5f34dab66b70daa994d6319bcdf",
+    "character_R138/sleep_loop/sleep_loop_01_breath_in.png": "6b974599b9346e52b362487b4eeda42ee13248a1d372147878599c1685710458",
+    "character_R138/sleep_loop/sleep_loop_02_stable.png": "ba287dad2af59d251d6b932de394eb5282f665a87a706c2179d053e770e582ee",
+    "character_R138/sleep_enter/sleep_enter_01_sit.png": "38c0977e92dc584f4722ba37a8888b76f7172000375a1b8ee4b2c009c48d2d0a",
+    "character_R138/sleep_enter/sleep_enter_02_lie.png": "86470dae75e6fc3934d96f18339b974342860150a276aed6498720911951f2f5",
+    "character_R138/sleep_enter/sleep_enter_03_settled.png": "4aa9b630c3bb8d94127997bc951114af22c6b33db802432d774cdb6baad18aca",
+    "character_R138/walk_right/walk_right_00_stand.png": "efc3f283b54b5b1100e565597d662230e08058b3d8c745f0d86871cea002d97e",
+    "character_R138/walk_right/walk_right_01_right_step.png": "f1d10f85de1aae8982f3cd6f5b50addec2a4e4feea04aa077433ed1f3f271ea9",
+    "character_R138/walk_right/walk_right_02_pass.png": "3d5c92267a54b1b7e0a859d5275a1c54cf063e4375e0645ef3cefd50dc6ddd8d",
+    "character_R138/walk_right/walk_right_03_left_step.png": "b677226a9da114d84dcd677b55c8dbc435a76a489f7d473544ef1e80dab6d863",
+    "character_R138/walk_left/walk_left_00_stand.png": "e0536182329993d8d3bf584e1d953fece65b77c38ee2321cd208eb5febb3318e",
+    "character_R138/walk_left/walk_left_01_left_step.png": "ce0796a9470aa165e67cf4a696ff14f658e36d70db5f108c921e325b988f3c9c",
+    "character_R138/walk_left/walk_left_02_pass.png": "7fd250d57febfbf0fc1624d39e2e81baa7c78bb02e727e1d5ab09853bd2740f8",
+    "character_R138/walk_left/walk_left_03_right_step.png": "90277efa8ab4dcc34c5edb24ae372b85ff6cfa550b1baf45268665bdaef6ed49",
+    "character_R138/wake_up/wake_up_00_lift.png": "36ca6df301b02a11e551edf4f5f689f4f784242a0148254ec88ae47abfc9460d",
+    "character_R138/wake_up/wake_up_01_sit_up.png": "212fb11a5b5b2b0e3fd12cba081aab9743ad5ac62099793616285199a255d9de",
+    "character_R138/wake_up/wake_up_02_stand.png": "e0536182329993d8d3bf584e1d953fece65b77c38ee2321cd208eb5febb3318e"
+  }
+}

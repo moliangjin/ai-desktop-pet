@@ -1,0 +1,89 @@
+{
+  "round": "R148",
+  "strategy": "mirror(confirmed-correct walk_left) + emblem re-seat",
+  "emblem_template_box": [
+    540,
+    370,
+    582,
+    416
+  ],
+  "source_dir": "assets/character_R138/walk_left",
+  "frames": [
+    {
+      "src": "assets/character_R138/walk_left/walk_left_00_stand.png",
+      "out": "assets/character_R138_derived/walk_right_mirror/walk_right_m_00.png",
+      "emblem_box": [
+        540,
+        370,
+        582,
+        416
+      ],
+      "emblem_ncc": 0.9935,
+      "ink_pixels": 699,
+      "bbox": [
+        320,
+        37,
+        704,
+        987
+      ],
+      "sha256": "19b4656afe79510961447a2509369f2ca37b508173e82aeef99436d73443f17c"
+    },
+    {
+      "src": "assets/character_R138/walk_left/walk_left_01_left_step.png",
+      "out": "assets/character_R138_derived/walk_right_mirror/walk_right_m_01.png",
+      "emblem_box": [
+        539,
+        371,
+        581,
+        417
+      ],
+      "emblem_ncc": 0.8516,
+      "ink_pixels": 809,
+      "bbox": [
+        291,
+        37,
+        725,
+        987
+      ],
+      "sha256": "d8c2129c0a28a15fafbebcffd3c767ab8cef20bf920b9a8ab8a7de33e238fcf6"
+    },
+    {
+      "src": "assets/character_R138/walk_left/walk_left_02_pass.png",
+      "out": "assets/character_R138_derived/walk_right_mirror/walk_right_m_02.png",
+      "emblem_box": [
+        538,
+        371,
+        580,
+        417
+      ],
+      "emblem_ncc": 0.8109,
+      "ink_pixels": 885,
+      "bbox": [
+        306,
+        37,
+        718,
+        987
+      ],
+      "sha256": "582c29d1a9a27b60341772b831171e1d9c931319ce069714f6e13a04380f8540"
+    },
+    {
+      "src": "assets/character_R138/walk_left/walk_left_03_right_step.png",
+      "out": "assets/character_R138_derived/walk_right_mirror/walk_right_m_03.png",
+      "emblem_box": [
+        537,
+        372,
+        579,
+        418
+      ],
+      "emblem_ncc": 0.8671,
+      "ink_pixels": 807,
+      "bbox": [
+        301,
+        38,
+        723,
+        987
+      ],
+      "sha256": "6c6342eb14e0f8e94b96907d3264dfd4645b3ed2f5d0f257a671c68ceb3db0bf"
+    }
+  ]
+}

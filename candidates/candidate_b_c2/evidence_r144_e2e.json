@@ -5,8 +5,8 @@
   "fail": 0,
   "not_verified": 3,
   "logs": {
-    "walk_scenario": "/tmp/r144_e2e_42312/main.log",
-    "sleep_scenario": "/tmp/r144_e2e_42312/sleep.log"
+    "walk_scenario": "/tmp/r144_e2e_55899/main.log",
+    "sleep_scenario": "/tmp/r144_e2e_55899/sleep.log"
   },
   "items": [
     {
@@ -49,7 +49,7 @@
       "status": "PASS",
       "id": "B0",
       "desc": "Electron 真实启动并产生日志",
-      "detail": "日志 119 行"
+      "detail": "日志 123 行"
     },
     {
       "status": "PASS",
@@ -61,7 +61,7 @@
       "status": "PASS",
       "id": "B2",
       "desc": "资源就绪握手: ASSETS_READY(23/23) 先于引擎启动",
-      "detail": "ready@行34 < engine@行37"
+      "detail": "ready@行37 < engine@行40"
     },
     {
       "status": "PASS",
@@ -91,7 +91,7 @@
       "status": "PASS",
       "id": "B8",
       "desc": "窗口坐标复核: 整数坐标 + actual==target + 真实位移==请求步长",
-      "detail": "17 次 setBounds, 不一致 0, 位移不符 0, 零步长 0, x 跨度 105px"
+      "detail": "14 次 setBounds, 不一致 0, 位移不符 0, 零步长 0, x 跨度 86px"
     },
     {
       "status": "PASS",
@@ -121,7 +121,7 @@
       "status": "PASS",
       "id": "D1",
       "desc": "慢速加载: 引擎在资源就绪后才启动, 且首次行为切换未丢失",
-      "detail": "ready@行35 < engine@行37, 后续自动切换 2 次"
+      "detail": "ready@行39 < engine@行41, 后续自动切换 4 次"
     },
     {
       "status": "PASS",
@@ -145,7 +145,7 @@
       "status": "PASS",
       "id": "F3",
       "desc": "末帧保持时长符合 frame_ms (600ms) 且未回卷到首帧",
-      "detail": "样本 3 次, 保持 600~610ms, 回卷 0 次"
+      "detail": "样本 3 次, 保持 609~610ms, 回卷 0 次"
     },
     {
       "status": "NOT_GUI_VERIFIED",

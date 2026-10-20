@@ -1,0 +1,249 @@
+{
+  "round": "R148",
+  "metric": "boots/ankle-offset (鞋尖几何), 不使用坐标符号/文件名/动画名",
+  "groups": {
+    "walk_left": {
+      "frames": [
+        {
+          "stance": "STAND",
+          "Lbottom": 986,
+          "Rbottom": 986,
+          "planted": null,
+          "toe_dir": 0,
+          "file": "walk_left_00_stand.png",
+          "index": 0
+        },
+        {
+          "stance": "STEP",
+          "planted": "L",
+          "Lbottom": 986,
+          "Rbottom": 958,
+          "lift_px": 28,
+          "ankle_x": 472.0,
+          "mass_x": 455.9,
+          "toe_offset_px": -16.1,
+          "toe_dir": -1,
+          "file": "walk_left_01_left_step.png",
+          "index": 1
+        },
+        {
+          "stance": "STEP",
+          "planted": "L",
+          "Lbottom": 986,
+          "Rbottom": 968,
+          "lift_px": 18,
+          "ankle_x": 462.5,
+          "mass_x": 446.4,
+          "toe_offset_px": -16.1,
+          "toe_dir": -1,
+          "file": "walk_left_02_pass.png",
+          "index": 2
+        },
+        {
+          "stance": "STEP",
+          "planted": "L",
+          "Lbottom": 986,
+          "Rbottom": 966,
+          "lift_px": 20,
+          "ankle_x": 462.0,
+          "mass_x": 438.8,
+          "toe_offset_px": -23.2,
+          "toe_dir": -1,
+          "file": "walk_left_03_right_step.png",
+          "index": 3
+        }
+      ],
+      "expected_toe_dir": -1,
+      "step_toe_dirs": [
+        -1,
+        -1,
+        -1
+      ],
+      "step_planted_sides": [
+        "L",
+        "L",
+        "L"
+      ],
+      "toe_dir_all_match": true,
+      "planted_side_all_match": true,
+      "verdict": "PASS"
+    },
+    "walk_right_OLD": {
+      "frames": [
+        {
+          "stance": "STAND",
+          "Lbottom": 986,
+          "Rbottom": 986,
+          "planted": null,
+          "toe_dir": 0,
+          "file": "walk_right_00_stand.png",
+          "index": 0
+        },
+        {
+          "stance": "STEP",
+          "planted": "L",
+          "Lbottom": 986,
+          "Rbottom": 958,
+          "lift_px": 28,
+          "ankle_x": 459.3,
+          "mass_x": 424.5,
+          "toe_offset_px": -34.8,
+          "toe_dir": -1,
+          "file": "walk_right_01_right_step.png",
+          "index": 1
+        },
+        {
+          "stance": "STEP",
+          "planted": "L",
+          "Lbottom": 988,
+          "Rbottom": 969,
+          "lift_px": 19,
+          "ankle_x": 464.0,
+          "mass_x": 440.4,
+          "toe_offset_px": -23.6,
+          "toe_dir": -1,
+          "file": "walk_right_02_pass.png",
+          "index": 2
+        },
+        {
+          "stance": "STEP",
+          "planted": "L",
+          "Lbottom": 986,
+          "Rbottom": 962,
+          "lift_px": 24,
+          "ankle_x": 479.0,
+          "mass_x": 462.3,
+          "toe_offset_px": -16.7,
+          "toe_dir": -1,
+          "file": "walk_right_03_left_step.png",
+          "index": 3
+        }
+      ],
+      "expected_toe_dir": 1,
+      "step_toe_dirs": [
+        -1,
+        -1,
+        -1
+      ],
+      "step_planted_sides": [
+        "L",
+        "L",
+        "L"
+      ],
+      "toe_dir_all_match": false,
+      "planted_side_all_match": false,
+      "verdict": "FAIL"
+    },
+    "walk_right_R148": {
+      "frames": [
+        {
+          "stance": "STAND",
+          "Lbottom": 986,
+          "Rbottom": 986,
+          "planted": null,
+          "toe_dir": 0,
+          "file": "walk_right_m_00.png",
+          "index": 0
+        },
+        {
+          "stance": "STEP",
+          "planted": "R",
+          "Lbottom": 958,
+          "Rbottom": 986,
+          "lift_px": 28,
+          "ankle_x": 551.0,
+          "mass_x": 566.6,
+          "toe_offset_px": 15.6,
+          "toe_dir": 1,
+          "file": "walk_right_m_01.png",
+          "index": 1
+        },
+        {
+          "stance": "STEP",
+          "planted": "R",
+          "Lbottom": 968,
+          "Rbottom": 986,
+          "lift_px": 18,
+          "ankle_x": 560.5,
+          "mass_x": 576.1,
+          "toe_offset_px": 15.6,
+          "toe_dir": 1,
+          "file": "walk_right_m_02.png",
+          "index": 2
+        },
+        {
+          "stance": "STEP",
+          "planted": "R",
+          "Lbottom": 966,
+          "Rbottom": 986,
+          "lift_px": 20,
+          "ankle_x": 561.0,
+          "mass_x": 583.9,
+          "toe_offset_px": 22.9,
+          "toe_dir": 1,
+          "file": "walk_right_m_03.png",
+          "index": 3
+        }
+      ],
+      "expected_toe_dir": 1,
+      "step_toe_dirs": [
+        1,
+        1,
+        1
+      ],
+      "step_planted_sides": [
+        "R",
+        "R",
+        "R"
+      ],
+      "toe_dir_all_match": true,
+      "planted_side_all_match": true,
+      "verdict": "PASS"
+    }
+  },
+  "mirror_checks": [
+    {
+      "index": 0,
+      "outside_emblem_max_abs_diff": 0,
+      "outside_emblem_differing_pixels": 0,
+      "outside_emblem_pixels": 4175904,
+      "emblem_ncc_unflipped": 0.8684,
+      "emblem_ncc_flipped": 0.2692,
+      "emblem_not_mirrored": true,
+      "emblem_side_rel_body_px": 49.5
+    },
+    {
+      "index": 1,
+      "outside_emblem_max_abs_diff": 0,
+      "outside_emblem_differing_pixels": 0,
+      "outside_emblem_pixels": 4175904,
+      "emblem_ncc_unflipped": 0.8629,
+      "emblem_ncc_flipped": 0.2981,
+      "emblem_not_mirrored": true,
+      "emblem_side_rel_body_px": 52.5
+    },
+    {
+      "index": 2,
+      "outside_emblem_max_abs_diff": 0,
+      "outside_emblem_differing_pixels": 0,
+      "outside_emblem_pixels": 4175904,
+      "emblem_ncc_unflipped": 0.9295,
+      "emblem_ncc_flipped": 0.2599,
+      "emblem_not_mirrored": true,
+      "emblem_side_rel_body_px": 47.5
+    },
+    {
+      "index": 3,
+      "outside_emblem_max_abs_diff": 0,
+      "outside_emblem_differing_pixels": 0,
+      "outside_emblem_pixels": 4175904,
+      "emblem_ncc_unflipped": 0.7885,
+      "emblem_ncc_flipped": 0.2908,
+      "emblem_not_mirrored": true,
+      "emblem_side_rel_body_px": 46.5
+    }
+  ],
+  "mirror_exact_outside_emblem": true,
+  "emblem_not_mirrored_all": true,
+  "emblem_on_character_left_chest": true
+}

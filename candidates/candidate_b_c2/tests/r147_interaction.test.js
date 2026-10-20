@@ -364,13 +364,23 @@ test('C4 待机期间角色轮廓不发生整体伸缩 (只切换站姿与眨眼
 });
 
 // ====== D. 左右行走方向 (映射 + 朝向倾斜) ======
-test('D1 manifest: walk_left / walk_right 各自保留原始帧, 且倾斜方向相反', () => {
+// R148 修订: walk_right 不再直接使用 R138 原始 walk_right 帧 —— 那 4 帧的落脚脚/鞋尖
+// 与 walk_left 同向 (均朝左), 向右移动时观感是"倒退走"。改为使用**派生镜像帧**
+// (由已确认方向正确的 walk_left 整体水平镜像 + 徽章归位生成)。
+// R147 原本担心的"只改名就宣称通过"由 R148 的**逐像素镜像校验**接管
+// (见 tests/r148_walk_direction.test.js 与 18_R148_direction_verify.py)。
+test('D1 manifest: walk_left 用原始帧 / walk_right 用派生镜像帧, 且倾斜方向相反', () => {
     const wl = MANIFEST.actions.walk_left, wr = MANIFEST.actions.walk_right;
     assert.strictEqual(wl.frames.length, 4);
     assert.strictEqual(wr.frames.length, 4);
-    // 两组素材**不同源** (不是改名, 也不是同一套帧)
+    // walk_left 保留 R138 原始帧 (方向已确认正确)
     assert.ok(wl.frames.every(f => f.includes('/walk_left/')), 'walk_left 必须使用 walk_left 原始帧');
-    assert.ok(wr.frames.every(f => f.includes('/walk_right/')), 'walk_right 必须使用 walk_right 原始帧');
+    // walk_right 使用派生镜像帧
+    assert.ok(wr.frames.every(f => f.includes('character_R138_derived/walk_right_mirror/')),
+        'walk_right 必须使用派生镜像帧');
+    // 两组**不是同一批文件** (不是改名, 也不是同一套帧)
+    const setL = new Set(wl.frames);
+    assert.ok(wr.frames.every(f => !setL.has(f)), 'walk_right 不得复用 walk_left 的帧文件');
     // 倾斜方向相反
     assert.ok(wl.lean.skew_x > 0, 'walk_left 应向左倾斜 (k>0)');
     assert.ok(wr.lean.skew_x < 0, 'walk_right 应向右倾斜 (k<0)');

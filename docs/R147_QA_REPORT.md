@@ -202,9 +202,10 @@ MAC_REAL_GUI_ACCEPTANCE = PENDING
 V0_0_RELEASE_STATUS = NOT_FROZEN
 V0_1_DEVELOPMENT = NOT_AUTHORIZED
 
-GIT_COMMIT = <见 §六>
+GIT_COMMIT = 7ec7a3bcd9c2cde6bdf741cb2abd426ff9c34888
 REVIEW_ZIP_PATH = /Users/musk123/Downloads/minimax工作文件夹/character_animation_R147_review.zip
-REVIEW_ZIP_SHA256 = <见 ZIP 同目录的 .sha256 文件>
+REVIEW_ZIP_SHA256 = 见 ZIP 同目录的 character_animation_R147_review.zip.sha256
+                       (刻意不内嵌: 内嵌会造成"改报告就改 ZIP 哈希"的循环自引用)
 ```
 
 字段口径说明：

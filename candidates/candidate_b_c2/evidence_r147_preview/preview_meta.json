@@ -1,0 +1,1242 @@
+{
+  "walk_left": [
+    {
+      "file": "/tmp/r147_preview/walk_left_000.png",
+      "winX": 596,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_001.png",
+      "winX": 594,
+      "dx": -2,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_002.png",
+      "winX": 591,
+      "dx": -5,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_003.png",
+      "winX": 589,
+      "dx": -7,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_004.png",
+      "winX": 586,
+      "dx": -10,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_005.png",
+      "winX": 584,
+      "dx": -12,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_006.png",
+      "winX": 581,
+      "dx": -15,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_007.png",
+      "winX": 579,
+      "dx": -17,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_008.png",
+      "winX": 577,
+      "dx": -19,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_009.png",
+      "winX": 575,
+      "dx": -21,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_010.png",
+      "winX": 572,
+      "dx": -24,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_011.png",
+      "winX": 569,
+      "dx": -27,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_012.png",
+      "winX": 567,
+      "dx": -29,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_013.png",
+      "winX": 565,
+      "dx": -31,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_014.png",
+      "winX": 562,
+      "dx": -34,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_015.png",
+      "winX": 560,
+      "dx": -36,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_016.png",
+      "winX": 558,
+      "dx": -38,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_017.png",
+      "winX": 555,
+      "dx": -41,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_018.png",
+      "winX": 552,
+      "dx": -44,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_019.png",
+      "winX": 550,
+      "dx": -46,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_020.png",
+      "winX": 548,
+      "dx": -48,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_021.png",
+      "winX": 546,
+      "dx": -50,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_022.png",
+      "winX": 543,
+      "dx": -53,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_023.png",
+      "winX": 540,
+      "dx": -56,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_024.png",
+      "winX": 538,
+      "dx": -58,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_left_025.png",
+      "winX": 536,
+      "dx": -60,
+      "winY": 300
+    }
+  ],
+  "walk_right": [
+    {
+      "file": "/tmp/r147_preview/walk_right_000.png",
+      "winX": 528,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_001.png",
+      "winX": 530,
+      "dx": 2,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_002.png",
+      "winX": 533,
+      "dx": 5,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_003.png",
+      "winX": 535,
+      "dx": 7,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_004.png",
+      "winX": 537,
+      "dx": 9,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_005.png",
+      "winX": 539,
+      "dx": 11,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_006.png",
+      "winX": 542,
+      "dx": 14,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_007.png",
+      "winX": 545,
+      "dx": 17,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_008.png",
+      "winX": 547,
+      "dx": 19,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_009.png",
+      "winX": 549,
+      "dx": 21,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_010.png",
+      "winX": 551,
+      "dx": 23,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_011.png",
+      "winX": 554,
+      "dx": 26,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_012.png",
+      "winX": 557,
+      "dx": 29,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_013.png",
+      "winX": 559,
+      "dx": 31,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_014.png",
+      "winX": 561,
+      "dx": 33,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_015.png",
+      "winX": 563,
+      "dx": 35,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_016.png",
+      "winX": 566,
+      "dx": 38,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_017.png",
+      "winX": 569,
+      "dx": 41,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_018.png",
+      "winX": 571,
+      "dx": 43,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_019.png",
+      "winX": 573,
+      "dx": 45,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_020.png",
+      "winX": 576,
+      "dx": 48,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_021.png",
+      "winX": 578,
+      "dx": 50,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_022.png",
+      "winX": 581,
+      "dx": 53,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_023.png",
+      "winX": 583,
+      "dx": 55,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_024.png",
+      "winX": 585,
+      "dx": 57,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/walk_right_025.png",
+      "winX": 588,
+      "dx": 60,
+      "winY": 300
+    }
+  ],
+  "idle": [
+    {
+      "file": "/tmp/r147_preview/idle_000.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_001.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_002.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_003.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_004.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_005.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_006.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_007.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_008.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_009.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_010.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_011.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_012.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_013.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_014.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_015.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_016.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_017.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_018.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_019.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_020.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_021.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_022.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_023.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_024.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_025.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_026.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_027.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_028.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_029.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_030.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_031.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_032.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_033.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_034.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_035.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_036.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_037.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_038.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_039.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_040.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_041.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_042.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_043.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_044.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_045.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_046.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_047.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_048.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_049.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_050.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_051.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_052.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_053.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_054.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_055.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_056.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_057.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_058.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_059.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_060.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_061.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_062.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_063.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_064.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_065.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_066.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_067.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_068.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_069.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_070.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_071.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_072.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_073.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_074.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_075.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_076.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_077.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_078.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_079.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_080.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_081.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_082.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_083.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_084.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_085.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_086.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_087.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_088.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/idle_089.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    }
+  ],
+  "click_result": {
+    "id": 5,
+    "cmd": "click",
+    "ok": true,
+    "downSeen": true,
+    "kind": "CLICK",
+    "clientX": 100,
+    "clientY": 143
+  },
+  "click": [
+    {
+      "file": "/tmp/r147_preview/click_000.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_001.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_002.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_003.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_004.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_005.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_006.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_007.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_008.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_009.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_010.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_011.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_012.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_013.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_014.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_015.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_016.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_017.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_018.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_019.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_020.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_021.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_022.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_023.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_024.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/click_025.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    }
+  ],
+  "wake_result": {
+    "id": 8,
+    "cmd": "click",
+    "ok": true,
+    "downSeen": true,
+    "kind": "CLICK",
+    "clientX": 100,
+    "clientY": 190
+  },
+  "wake": [
+    {
+      "file": "/tmp/r147_preview/wake_000.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_001.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_002.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_003.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_004.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_005.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_006.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_007.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_008.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_009.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_010.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_011.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_012.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_013.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_014.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_015.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_016.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_017.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_018.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_019.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_020.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_021.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_022.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_023.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_024.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_025.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_026.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_027.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_028.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_029.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_030.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_031.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_032.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    },
+    {
+      "file": "/tmp/r147_preview/wake_033.png",
+      "winX": 590,
+      "dx": 0,
+      "winY": 300
+    }
+  ]
+}

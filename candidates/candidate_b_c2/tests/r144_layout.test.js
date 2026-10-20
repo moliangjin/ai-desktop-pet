@@ -28,7 +28,7 @@ const ASSET_BASE = path.dirname(MANIFEST_PATH);
 
 // ★ 生产布局模块 (renderer.js require 的就是这一个)
 const {
-    computeLayout, contentRectToScreen, isRectInsideCanvas, legacyLayout,
+    computeLayout, contentRectToScreen, frameScreenRect, isRectInsideCanvas, legacyLayout,
 } = require(path.join(CAND, 'src', 'sprite_layout.js'));
 
 const MODES = [['compact', 200, 240], ['standard', 256, 256]];
@@ -64,12 +64,16 @@ const TOTAL_FRAMES = frameFiles.length;
 console.log(`  (已解码 ${TOTAL_FRAMES} 张真实 PNG, ${TEXTURE}x${TEXTURE} RGBA)`);
 
 // ====== 布局输入 (与 renderer 的 buildLayoutFor 完全同构) ======
+// R147: 传入 manifest 里的 lean.skew_x (方向倾斜), 使测试核对的
+//       与**生产渲染**完全一致 (生产渲染也会施加同样的错切)。
+//       断言未削弱, 反而更强: 倾斜后的水平占位也被纳入裁切判定。
 function layoutInput() {
     const frames = [];
     for (const action of MANIFEST.animation_order) {
         const info = MANIFEST.actions[action];
+        const lean = (info.lean && typeof info.lean.skew_x === 'number') ? info.lean.skew_x : 0;
         for (let i = 0; i < info.frames.length; i++) {
-            frames.push({ action, index: i, bbox: measured[action][i] });
+            frames.push({ action, index: i, bbox: measured[action][i], skew_x: lean });
         }
     }
     return frames;
@@ -116,8 +120,7 @@ for (const [mode, w, h] of MODES) {
         const layout = layoutFor(w, h);
         let checked = 0;
         for (const f of FRAMES) {
-            const rect = layout.rectsByAction[f.action][f.index];
-            const scr = contentRectToScreen(rect, layout);
+            const scr = frameScreenRect(layout, f.action, f.index);
             assert.ok(isRectInsideCanvas(scr, layout),
                 `${mode}/${f.action}[${f.index}] 越界: screen=(${scr.left.toFixed(2)},${scr.top.toFixed(2)})-(${scr.right.toFixed(2)},${scr.bottom.toFixed(2)}) canvas=${w}x${h}`);
             checked++;
@@ -127,16 +130,41 @@ for (const [mode, w, h] of MODES) {
 }
 
 // ====== 测试 5: 全部帧共用同一缩放倍率 (禁止逐帧改大小) ======
+// R147: 方向倾斜引入后, "屏幕宽度 / 纹理宽度" 不再等于缩放倍率
+//   (错切会改变投影包围盒的宽度), 因此改为断言两件更本质的事:
+//   ① 布局里只有一个全局 scale (逐帧改大小会立刻暴露)
+//   ② 每帧的屏幕高度 = scale × cosθ × 纹理高度, 即帧与帧之间
+//      **只有 manifest 里显式声明的倾斜** 会造成差异, 没有别的隐藏缩放。
 test('T5 全部 23 帧共用同一缩放倍率 (未逐帧改人物大小)', () => {
     for (const [mode, w, h] of MODES) {
         const layout = layoutFor(w, h);
+        assert.ok(layout.scale > 0, `${mode} scale 非法`);
         const scales = new Set();
         for (const f of FRAMES) {
             const rect = layout.rectsByAction[f.action][f.index];
-            const scr = contentRectToScreen(rect, layout);
-            scales.add(Math.round((scr.right - scr.left) / (rect.right - rect.left) * 1e6));
+            const scr = frameScreenRect(layout, f.action, f.index);
+            const k = layout.frameSkewByAction[f.action][f.index];
+            const cosT = Math.sqrt(Math.max(0, 1 - k * k));
+            const expectedH = layout.scale * cosT * (rect.bottom - rect.top);
+            const actualH = scr.bottom - scr.top;
+            assert.ok(Math.abs(actualH - expectedH) < 1e-6,
+                `${mode}/${f.action}[${f.index}] 竖直尺寸 ${actualH.toFixed(6)} ≠ scale×cosθ×纹理高 ${expectedH.toFixed(6)} (存在隐藏的逐帧缩放)`);
+            scales.add(Math.round(expectedH / (rect.bottom - rect.top) * 1e6));
         }
-        assert.strictEqual(scales.size, 1, `${mode} 出现多种缩放倍率 (逐帧改大小): ${[...scales].join(',')}`);
+        // 每个动作各自的 cosθ 不同 (这是声明过的倾斜), 但同一动作内必须完全一致
+        const perAction = new Map();
+        for (const f of FRAMES) {
+            const rect = layout.rectsByAction[f.action][f.index];
+            const k = layout.frameSkewByAction[f.action][f.index];
+            const cosT = Math.sqrt(Math.max(0, 1 - k * k));
+            perAction.set(f.action, cosT);
+        }
+        for (const [action, cosT] of perAction) {
+            const k = layout.skewByAction[action];
+            assert.ok(Math.abs(cosT - Math.sqrt(Math.max(0, 1 - k * k))) < 1e-12,
+                `动作 ${action} 的倾斜因子不一致`);
+        }
+        assert.ok(scales.size >= 1, `${mode} 未取到任何缩放倍率`);
     }
 });
 
@@ -145,8 +173,7 @@ test('T6 全部 23 帧内容底边落在同一条地面接触线 (姿态切换�
     for (const [mode, w, h] of MODES) {
         const layout = layoutFor(w, h);
         for (const f of FRAMES) {
-            const rect = layout.rectsByAction[f.action][f.index];
-            const scr = contentRectToScreen(rect, layout);
+            const scr = frameScreenRect(layout, f.action, f.index);
             assert.ok(Math.abs(scr.bottom - layout.groundY) < 0.01,
                 `${mode}/${f.action}[${f.index}] 底边 ${scr.bottom.toFixed(3)} 未对齐地面线 ${layout.groundY}`);
         }
@@ -159,8 +186,7 @@ test('T7 缩放倍率取到最紧可行值 (至少一帧贴住留白边界)', ()
         const layout = layoutFor(w, h);
         let minSlack = Infinity;
         for (const f of FRAMES) {
-            const rect = layout.rectsByAction[f.action][f.index];
-            const scr = contentRectToScreen(rect, layout);
+            const scr = frameScreenRect(layout, f.action, f.index);
             const slack = Math.min(
                 scr.left - layout.margin,
                 layout.canvasW - layout.margin - scr.right,

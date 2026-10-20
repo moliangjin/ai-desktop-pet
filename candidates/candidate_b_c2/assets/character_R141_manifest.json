@@ -1,6 +1,6 @@
 {
   "character_id": "default_scientist",
-  "version": "R144-RUNTIME",
+  "version": "R147-RUNTIME",
   "source_round": "R138",
   "source_manifest": "/Users/musk123/Downloads/minimax工作文件夹/图文工作/character_animation_R138/08_MANIFEST/R138_manifest.json",
   "a1_reference_sha256": "3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df",
@@ -43,7 +43,29 @@
       "frame_ms": 200,
       "fps": 5,
       "loop": true,
-      "anchor": "stand"
+      "anchor": "stand",
+      "director": {
+        "enabled": true,
+        "base_index": 0,
+        "blink_sequence": [
+          4,
+          5
+        ],
+        "blink_frame_ms": [
+          90,
+          110
+        ],
+        "blink_interval_ms": [
+          1600,
+          3400
+        ],
+        "excluded_frames": [
+          1,
+          2,
+          3
+        ],
+        "note": "R147: idle_01_inhale_peak 胸腔剧烈膨胀(实测外扩 26px), 运行时不再播放; 改稳定站姿 + 自然眨眼(1.6~3.4s 随机间隔, 远慢于 R141 的 1.2s 机械循环)"
+      }
     },
     "walk_left": {
       "frames": [
@@ -55,7 +77,14 @@
       "frame_ms": 130,
       "fps": 7.69,
       "loop": true,
-      "anchor": "stand"
+      "anchor": "stand",
+      "lean": {
+        "skew_x": 0.085,
+        "pivot_y": 921.6,
+        "direction": -1,
+        "note": "R147: 保留原 4 帧(迈步方向本就正确); 叠加整体向左倾斜, 身体与腿一起朝移动方向倾, 纹理不镜像"
+      },
+      "note": "R147: 原 walk_left 4 帧为刚性横滑步态(双脚同向漂移), 已移入 extra_frames 仅保留不播放"
     },
     "walk_right": {
       "frames": [
@@ -67,7 +96,13 @@
       "frame_ms": 130,
       "fps": 7.69,
       "loop": true,
-      "anchor": "stand"
+      "anchor": "stand",
+      "lean": {
+        "skew_x": -0.11,
+        "pivot_y": 921.6,
+        "direction": 1,
+        "note": "R147: 保留原 4 帧; 叠加整体向右倾斜(实测净倾斜与 walk_left 对称: 左 -13px / 右 +12px)"
+      }
     },
     "sleep_enter": {
       "frames": [

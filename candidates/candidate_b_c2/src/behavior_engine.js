@@ -99,6 +99,9 @@ class BehaviorEngine {
         this._running = false;
         this._dragging = false;
         this._pendingResume = null;  // 拖拽结束后待恢复的计时器
+        this._holdTimer = null;      // R147: 点击反馈期间的短暂按住计时器
+        this._movePaused = false;    // R147: 行走位移是否被点击反馈暂停
+        this._autonomousPaused = false; // R147: 预览/验收模式下暂停自主决策
         this._walkRemaining = 0;     // 剩余行走距离 (px)
         this._walkDirection = 0;     // -1 左 / +1 右
         this._walkStartedAt = 0;
@@ -126,6 +129,7 @@ class BehaviorEngine {
         if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
         if (this._moveTimer !== null) { this._clearInterval(this._moveTimer); this._moveTimer = null; }
         if (this._pendingResume !== null) { this._clearTimeout(this._pendingResume); this._pendingResume = null; }
+        if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
     }
 
     // ---------- 内部工具 ----------
@@ -163,6 +167,11 @@ class BehaviorEngine {
 
     _decideNextFromIdle() {
         if (!this._running || this._dragging) return;
+        // R147: 预览/验收模式下暂停自主决策 (仍可被显式 startWalk 驱动)
+        if (this._autonomousPaused) {
+            this._scheduleIdle();
+            return;
+        }
         const pSleep = this.config.sleep_probability;
         const r = this._random();
         if (r < pSleep) {
@@ -173,15 +182,40 @@ class BehaviorEngine {
         }
     }
 
-    _startWalk(dir) {
+    /**
+     * 暂停/恢复自主决策 (预览采集与验收脚本用)。
+     * 暂停时不会自行决定去走或去睡, 但状态机仍可被 startWalk 等显式驱动。
+     */
+    setAutonomousPaused(paused) {
+        this._autonomousPaused = !!paused;
+        return this._autonomousPaused;
+    }
+
+    _startWalk(dir, distancePx) {
         this._walkDirection = dir >= 0 ? 1 : -1;
-        this._walkTarget = this._randInt(this.config.walk_min_distance_px, this.config.walk_max_distance_px);
+        // 新的一次行走不受此前"点击反馈暂停"的影响 (否则会走不起来)
+        this._movePaused = false;
+        this._walkTarget = (typeof distancePx === 'number' && distancePx > 0)
+            ? distancePx
+            : this._randInt(this.config.walk_min_distance_px, this.config.walk_max_distance_px);
         this._walkRemaining = this._walkTarget;
         this._walkStartedAt = this._now();
         this._lastMoveAt = this._now();
         this._transition(this._walkDirection < 0 ? STATES.WALK_LEFT : STATES.WALK_RIGHT, 'idle-decision');
         this._setAction(STATE_ACTION[this.state]);
         this._startMoveTimer();
+    }
+
+    /**
+     * 强制开始一次行走 (验收脚本 / 预览采集用)。
+     * 走的是与自主决策**完全相同**的 _startWalk 路径, 不另开逻辑。
+     * @param {number} dir -1 左 / +1 右
+     * @param {number} [distancePx] 指定行走距离 (默认用配置里的随机区间)
+     */
+    startWalk(dir, distancePx) {
+        if (!this._running) return false;
+        this._startWalk(dir >= 0 ? 1 : -1, distancePx);
+        return true;
     }
 
     _startMoveTimer() {
@@ -197,7 +231,7 @@ class BehaviorEngine {
     }
 
     _walkTick() {
-        if (!this._running || this._dragging) { this._stopMoveTimer(); return; }
+        if (!this._running || this._dragging || this._movePaused) { this._stopMoveTimer(); return; }
         if (this.state !== STATES.WALK_LEFT && this.state !== STATES.WALK_RIGHT) {
             this._stopMoveTimer();
             return;
@@ -300,10 +334,17 @@ class BehaviorEngine {
         if (dragging) {
             // 拖拽优先: 停掉所有行为计时器和位移
             if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
+            if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
             this._stopMoveTimer();
+            this._movePaused = false;
             this._transition(STATES.DRAGGING, 'user-drag-start');
             this._setAction('idle');
         } else {
+            // R147: 醒来动画进行中时, 松手不得把状态打回 idle (否则会闪一下站姿)
+            if (this.state === STATES.WAKE_UP) {
+                this._dragging = false;
+                return true;
+            }
             this._transition(STATES.IDLE, 'user-drag-end');
             this._setAction('idle');
             // 短暂过渡后恢复自主行为
@@ -317,6 +358,100 @@ class BehaviorEngine {
     }
 
     isDragging() { return this._dragging; }
+
+    // ---------- R147: 点击反馈与睡眠唤醒 ----------
+
+    /**
+     * 用户单击角色 (不是拖拽)。
+     *
+     * 职责:
+     *   1) 结束"按住"状态 (拖拽态), 但**不**先切回 idle 再切别的动作
+     *      —— 睡眠点击时直接进入 wake_up, 避免闪一下站姿 (不瞬移, 走完整过渡动画)
+     *   2) 非睡眠场景: 暂缓自主行为计时器, 保证点击反馈期间不会被 walk 立刻覆盖
+     *
+     * @param {string} prevAction 按下之前的动作名 (idle / walk_* / sleep_*)
+     * @param {number} [holdMs] 暂缓时长
+     * @returns {'react'|'wake'|'ignored'}
+     */
+    onUserClick(prevAction, holdMs) {
+        if (!this._running) return 'ignored';
+        const wasSleeping = (prevAction === 'sleep_loop' || prevAction === 'sleep_enter');
+        // 结束拖拽态 (用户仍按着角色 → 引擎进入 DRAGGING)
+        if (this._dragging) {
+            this._dragging = false;
+            if (this.state === STATES.DRAGGING) {
+                if (wasSleeping) {
+                    // 睡眠被点击 → 直接进入醒来流程 (wake_up 一次性动画负责过渡)
+                    this._clearPendingTimers();
+                    this._transition(STATES.WAKE_UP, 'user-click-wake');
+                    this._setAction('wake_up');
+                    return 'wake';
+                }
+                this._transition(STATES.IDLE, 'user-click');
+                this._setAction('idle');
+            }
+        }
+        if (wasSleeping) {
+            this._clearPendingTimers();
+            // R147: 已经在醒来流程中 → 不得重复下发 wake_up (否则会重播醒来动画)
+            if (this.state === STATES.WAKE_UP) return 'wake';
+            this._transition(STATES.WAKE_UP, 'user-click-wake');
+            this._setAction('wake_up');
+            return 'wake';
+        }
+        this.holdBriefly(holdMs);
+        return 'react';
+    }
+
+    /**
+     * 暂缓自主行为 (点击反馈期间), 期间结束后恢复原有排程。
+     * 绝不消耗随机源 —— 原有随机序列不受影响。
+     * @param {number} [ms]
+     */
+    holdBriefly(ms) {
+        if (!this._running) return false;
+        const delay = (typeof ms === 'number' && ms > 0) ? ms : 700;
+        if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
+        if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
+        // 行走中 → 暂停位移计时器, 保留剩余距离, 反馈结束后继续走完
+        if (this.state === STATES.WALK_LEFT || this.state === STATES.WALK_RIGHT) {
+            this._stopMoveTimer();
+            this._movePaused = true;
+        }
+        this._holdTimer = this._setTimeout(() => {
+            this._holdTimer = null;
+            if (!this._running || this._dragging) return;
+            if (this._movePaused) {
+                this._movePaused = false;
+                if (this.state === STATES.WALK_LEFT || this.state === STATES.WALK_RIGHT) {
+                    this._lastMoveAt = this._now();
+                    this._startMoveTimer();
+                }
+                return;
+            }
+            if (this.state === STATES.IDLE) this._scheduleIdle();
+        }, delay);
+        return true;
+    }
+
+    /**
+     * 用户点击唤醒 (sleep_loop → wake_up → idle)。
+     * 必须走 wake_up 一次性动画, 不得直接瞬移成站姿。
+     */
+    wakeUpByUser() {
+        if (!this._running) return false;
+        this._clearPendingTimers();
+        if (this.state === STATES.WAKE_UP) return true;
+        this._transition(STATES.WAKE_UP, 'user-click-wake');
+        this._setAction('wake_up');
+        return true;
+    }
+
+    _clearPendingTimers() {
+        if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
+        if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
+        if (this._pendingResume !== null) { this._clearTimeout(this._pendingResume); this._pendingResume = null; }
+    }
 
     getState() { return this.state; }
 
@@ -333,6 +468,10 @@ class BehaviorEngine {
             walkDirection: this._walkDirection,
             hasTimer: this._timer !== null,
             hasMoveTimer: this._moveTimer !== null,
+            hasHoldTimer: this._holdTimer !== null,
+            movePaused: this._movePaused,
+            pendingTimerCount: [this._timer, this._moveTimer, this._holdTimer, this._pendingResume]
+                .filter((t) => t !== null).length,
             transitionLog: this.transitionLog.slice(-20),
         };
     }

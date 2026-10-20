@@ -29,6 +29,7 @@ let initialMode = 'standard';
 let quitAfter = null, perfOut = null;
 let acceptanceMode = false;    // R141 §九: 验收加速模式 (不改变正式状态机逻辑)
 let sleepProbabilityOverride = null;   // R144: 行为概率覆盖 (0=只走, 1=只睡), 供确定性验收脚本使用
+let previewDir_ = null;        // R147: 运行时预览采集目录 (仅验收/预览用, 正式运行为 null)
 for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--manifest' && args[i+1]) manifestPath = args[++i];
@@ -40,6 +41,8 @@ for (let i = 0; i < args.length; i++) {
     // R102 P0-5: 兼容 --quit-after=<value> 形式 (e.g. --quit-after=1800)
     else if (a.startsWith('--quit-after=')) quitAfter = parseFloat(a.split('=')[1], 10);
     else if (a === '--perf-out' && args[i+1]) perfOut = args[++i];
+    // R147: 运行时预览采集 (输出 PNG 帧序列, 供生成可观看 GIF)
+    else if (a === '--preview' && args[i+1]) previewDir_ = args[++i];
     // R141 §九: 验收加速模式 (只缩短时长参数, 不改变状态机逻辑)
     else if (a === '--acceptance') acceptanceMode = true;
     else if (a === '--acceptance-mode' && args[i+1]) acceptanceMode = (args[++i] !== 'off');
@@ -367,6 +370,8 @@ function startBehaviorEngine() {
         console.log(`[main] R144 sleep-probability override=${sleepProbabilityOverride}`);
     }
     behaviorEngine = createBehaviorEngine(cfg);
+    // R147: 预览模式下暂停自主决策, 由预览脚本显式驱动场景 (正式运行不受影响)
+    if (previewDir_) behaviorEngine.setAutonomousPaused(true);
     behaviorEngine.start();
     console.log(`[main] R144 behavior engine started state=${behaviorEngine.getState()}`);
     return true;
@@ -388,6 +393,10 @@ ipcMain.on('assets-ready', (_evt, report) => {
     }
     console.log(`[main] R144 ASSETS_READY loaded=${verdict.loaded}/${verdict.total} actions=${REQUIRED_ACTIONS.join(',')}`);
     startBehaviorEngine();
+    // R147: 运行时预览采集 (仅 --preview <dir> 时启用; 不影响正式运行)
+    if (previewDir_) {
+        setTimeout(() => { runPreviewSequence().catch((e) => console.error('[main] R147 PREVIEW_ERROR', e && e.message)); }, 900);
+    }
 });
 
 ipcMain.on('action-switch', (_evt, action) => {
@@ -395,6 +404,105 @@ ipcMain.on('action-switch', (_evt, action) => {
         mainWindow.webContents.send('set-action', action);
     }
 });
+
+// ====== R147: 运行时预览采集 (仅 --preview <dir>) ======
+// 采集的是**真实运行**的 Electron 窗口像素 (webContents.capturePage),
+// 并同时记录窗口的真实 x 位移 → 用来生成"左右行走 / 点击反馈 / 自然待机"的可观看 GIF。
+// 正式运行不受影响 (previewDir_ 为 null 时整段不执行)。
+const previewPending_ = new Map();
+let previewSeq_ = 0;
+
+ipcMain.on('preview-result', (_evt, payload) => {
+    const id = payload && payload.id;
+    if (id && previewPending_.has(id)) {
+        const resolve = previewPending_.get(id);
+        previewPending_.delete(id);
+        resolve(payload);
+    }
+});
+
+function previewCommand(payload, timeoutMs = 4000) {
+    return new Promise((resolve) => {
+        if (!mainWindow) { resolve({ ok: false, error: 'no window' }); return; }
+        const id = ++previewSeq_;
+        const timer = setTimeout(() => {
+            if (previewPending_.has(id)) { previewPending_.delete(id); resolve({ ok: false, error: 'timeout' }); }
+        }, timeoutMs);
+        previewPending_.set(id, (res) => { clearTimeout(timer); resolve(res); });
+        mainWindow.webContents.send('preview-command', Object.assign({ id }, payload));
+    });
+}
+
+const sleep_ = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function captureFrames(scene, count, intervalMs) {
+    const dir = previewDir_;
+    const x0 = mainWindow.getBounds().x;
+    const meta = [];
+    for (let i = 0; i < count; i++) {
+        const img = await mainWindow.webContents.capturePage();
+        const file = path.join(dir, `${scene}_${String(i).padStart(3, '0')}.png`);
+        fs.writeFileSync(file, img.toPNG());
+        const b = mainWindow.getBounds();
+        meta.push({ file, winX: b.x, dx: b.x - x0, winY: b.y });
+        await sleep_(intervalMs);
+    }
+    return meta;
+}
+
+async function runPreviewSequence() {
+    if (!previewDir_ || !mainWindow) return;
+    fs.mkdirSync(previewDir_, { recursive: true });
+    console.log(`[main] R147 PREVIEW start dir=${previewDir_}`);
+    const summary = {};
+    const quiet = async (ms) => {
+        // 让引擎保持安静 (不走不睡), 用于待机场景
+        if (behaviorEngine) behaviorEngine.holdBriefly(ms || 60000);
+        await previewCommand({ cmd: 'action', action: 'idle' });
+        await sleep_(400);
+    };
+
+    // --- 场景 1: 向左行走 (窗口真的向左移动 + walk_left 动作 + 向左倾斜) ---
+    await previewCommand({ cmd: 'action', action: 'idle' });
+    await sleep_(300);
+    if (behaviorEngine) behaviorEngine.startWalk(-1, 300);
+    await sleep_(150);
+    summary.walk_left = await captureFrames('walk_left', 26, 65);
+
+    // --- 场景 2: 向右行走 ---
+    await previewCommand({ cmd: 'action', action: 'idle' });
+    await sleep_(300);
+    if (behaviorEngine) behaviorEngine.startWalk(1, 300);
+    await sleep_(150);
+    summary.walk_right = await captureFrames('walk_right', 26, 65);
+
+    // --- 场景 3: 自然待机 (稳定站姿 + 自然眨眼, 无胸腔膨胀) ---
+    await quiet();
+    summary.idle = await captureFrames('idle', 90, 70);
+
+    // --- 场景 4: 鼠标单击反馈 (真实 pointer 事件路径) ---
+    await quiet();
+    const clickRes = await previewCommand({ cmd: 'click' });
+    summary.click_result = clickRes;
+    console.log(`[main] R147 PREVIEW click result=${JSON.stringify(clickRes)}`);
+    summary.click = await captureFrames('click', 26, 45);
+
+    // --- 场景 5: 睡眠点击唤醒 (sleep_loop → wake_up → idle) ---
+    await quiet();
+    await previewCommand({ cmd: 'action', action: 'sleep_loop' });
+    await sleep_(900);
+    const wakeRes = await previewCommand({ cmd: 'click' });
+    summary.wake_result = wakeRes;
+    console.log(`[main] R147 PREVIEW wake result=${JSON.stringify(wakeRes)}`);
+    summary.wake = await captureFrames('wake', 34, 60);
+
+    const metaFile = path.join(previewDir_, 'preview_meta.json');
+    fs.writeFileSync(metaFile, JSON.stringify(summary, null, 2));
+    console.log(`[main] R147 PREVIEW done meta=${metaFile}`);
+    if (quitAfter !== null) {
+        setTimeout(() => { try { app.quit(); } catch (e) {} }, 600);
+    }
+}
 
 // ====== R141: 行为引擎 IPC ======
 
@@ -412,6 +520,18 @@ ipcMain.on('behavior-drag-state', (_evt, dragging) => {
     if (!behaviorEngine) return;
     behaviorEngine.setDragging(!!dragging);
     console.log(`[main] R141 behavior drag-state=${!!dragging} state=${behaviorEngine.getState()}`);
+});
+
+// ====== R147: 鼠标单击角色 ======
+// renderer 判定为 CLICK (短按 + 位移 < 3px) 后发来, 带按下之前的动作名。
+// 主进程负责: ①结束"按住"态 ②睡眠时走 wake_up 过渡 ③暂缓自主行为计时器,
+// 保证点击反馈不会立刻被 walk 覆盖。
+ipcMain.on('character-click', (_evt, payload) => {
+    if (!behaviorEngine) return;
+    const prevAction = (payload && payload.action) || '';
+    const holdMs = (payload && typeof payload.holdMs === 'number') ? payload.holdMs : 700;
+    const result = behaviorEngine.onUserClick(prevAction, holdMs);
+    console.log(`[main] R147 character-click prev=${prevAction} result=${result} state=${behaviorEngine.getState()} hold=${holdMs}ms`);
 });
 
 // 行为状态查询 (测试/诊断)

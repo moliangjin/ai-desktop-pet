@@ -1,0 +1,117 @@
+{
+  "round": 147,
+  "test": "R147 e2e runtime (real Electron, production code)",
+  "pass": 18,
+  "fail": 0,
+  "not_verified": 0,
+  "items": [
+    {
+      "status": "PASS",
+      "id": "TA1",
+      "desc": "manifest 23 帧路径真实有效 (23 个不同文件)",
+      "detail": "total=23 valid=23 unique=23"
+    },
+    {
+      "status": "PASS",
+      "id": "TA2",
+      "desc": "R138 23 帧角色资产逐字节未变 (SHA256 比对交付清单)",
+      "detail": "47 OK, 0 失配"
+    },
+    {
+      "status": "PASS",
+      "id": "TA3",
+      "desc": "A1 母版 SHA256 未变",
+      "detail": "3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df"
+    },
+    {
+      "status": "PASS",
+      "id": "TA4",
+      "desc": "R113 拖拽核心代码逐字未改",
+      "detail": "R113 拖拽核心 9/9 个区块逐字未改 (对比 6e35231)"
+    },
+    {
+      "status": "PASS",
+      "id": "TB1",
+      "desc": "全部单元测试通过 (R144 的 38 项 + R147 新增 28 项)",
+      "detail": "passed=66 failed=0 (共 66 项)"
+    },
+    {
+      "status": "PASS",
+      "id": "TC1",
+      "desc": "运行时自检 PASS (首帧同步/地面线/方向倾斜/待机无膨胀帧/点击可见反馈)",
+      "detail": "issues=0 | peakBump=9.0px"
+    },
+    {
+      "status": "PASS",
+      "id": "TC2",
+      "desc": "待机只出现站姿与眨眼帧 (膨胀帧 1/2/3 从未播放)",
+      "detail": "idle frames seen = [0,4,5]"
+    },
+    {
+      "status": "PASS",
+      "id": "TC3",
+      "desc": "200x240 真实 PixiJS 矩阵下 23 帧零裁切 (含方向倾斜)",
+      "detail": "frames=46 clipped=0 issues=0"
+    },
+    {
+      "status": "PASS",
+      "id": "TD1",
+      "desc": "运行时左右行走施加了反向倾斜 (walk_left 左 / walk_right 右)",
+      "detail": "walk_left skew=0.085, walk_right skew=-0.11"
+    },
+    {
+      "status": "PASS",
+      "id": "TD2",
+      "desc": "单击被判定为 CLICK 且触发了可见反馈 (真实 pointer 事件路径)",
+      "detail": "kind=CLICK elapsed=93ms dist=0.0px | duration=620ms bump=9px"
+    },
+    {
+      "status": "PASS",
+      "id": "TD3",
+      "desc": "点击不误触发拖拽 (日志中无 window-drag-start)",
+      "detail": "0 次"
+    },
+    {
+      "status": "PASS",
+      "id": "TD4",
+      "desc": "睡眠点击走完整 wake_up 过渡 (不瞬移成站姿)",
+      "detail": "DRAGGING -> WAKE_UP (user-click-wake) → wake_up 播完回 IDLE"
+    },
+    {
+      "status": "PASS",
+      "id": "TD5",
+      "desc": "待机眨眼按随机间隔发生 (非 1.2s 机械循环)",
+      "detail": "眨眼 3 次, gaps=2440,2200 count=3"
+    },
+    {
+      "status": "PASS",
+      "id": "TE1",
+      "desc": "真实撞到屏幕边缘后动作方向同步反向 (窗口真的掉头)",
+      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -34 (6 次 MOVE) → 转向后 101 (16 次 MOVE)"
+    },
+    {
+      "status": "PASS",
+      "id": "TG1",
+      "desc": "真实待机帧胸部轮廓宽度零波动 (无胸腔膨胀)",
+      "detail": "波动=0px"
+    },
+    {
+      "status": "PASS",
+      "id": "TG2",
+      "desc": "真实单击帧弹跳幅度肉眼可见",
+      "detail": "9px"
+    },
+    {
+      "status": "PASS",
+      "id": "TG3",
+      "desc": "真实行走帧的上半身倾斜方向正确 (左负右正)",
+      "detail": "walk_left 均值=-13.04 (26/26 帧为负) / walk_right 均值=+12.23 (0/26 帧为负)"
+    },
+    {
+      "status": "PASS",
+      "id": "TG4",
+      "desc": "可观看的运行时预览 GIF 齐备 (左右走/点击/待机/唤醒)",
+      "detail": "5 个 GIF 位于 evidence_r147_preview/"
+    }
+  ]
+}

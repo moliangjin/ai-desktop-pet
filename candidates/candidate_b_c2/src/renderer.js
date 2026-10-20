@@ -18,10 +18,19 @@ const PIXI = require('pixi.js');
 //   sprite_layout.js : 基于素材真实非透明 bbox 的缩放/锚点/地面线算法
 //   anim_clock.js    : 帧推进时钟 (一次性动画末帧停住 + 只报一次完成)
 //   asset_gate.js    : 资源就绪判定 (main 侧使用, renderer 只负责报告事实)
+// R147 新增纯逻辑生产模块:
+//   idle_director.js : 自然待机导演 (稳定站姿 + 自然眨眼, 去掉胸腔膨胀帧)
+//   (方向倾斜 skew 的换算同样放在 sprite_layout.js, 与 PixiJS 顶点语义同源)
 const {
-    computeLayout, contentRectToScreen, isRectInsideCanvas,
+    computeLayout, contentRectToScreen, isRectInsideCanvas, frameScreenRect, skewAngleX,
 } = require('./sprite_layout.js');
 const { AnimationClock } = require('./anim_clock.js');
+const { IdleDirector } = require('./idle_director.js');
+// R147: 点击/拖拽判定 (纯逻辑, 与自动化测试共用同一份代码)
+const {
+    classifyPress, isClickReaction, isDragEnd, releasesPress,
+    CLICK_MAX_MS, CLICK_MAX_PX, DRAG_THRESHOLD_PX,
+} = require('./click_policy.js');
 
 const stage = document.getElementById('stage');
 const fallback = document.getElementById('fallback');
@@ -47,6 +56,78 @@ function setFallbackText(msg) {
 if (!DEV_MODE) {
     if (fallback) fallback.style.display = 'none';
     if (debugBanner) debugBanner.style.display = 'none';
+}
+
+// ====== R147: 运行时自检 (PET_R147_SELFTEST=1) ======
+// 在**真实渲染进程**里核对:
+//   1) 切换动作后 Sprite.texture 立刻等于目标动作第 0 帧 (首帧同步)
+//   2) 地面线同步 (sprite.y == 布局给出的该帧 y)
+//   3) 方向倾斜已施加 (sprite.skew.x == skewAngleX(lean.skew_x))
+//   4) 待机导演在长时间推进中**从不**返回被排除的膨胀/回落帧
+//   5) 点击反馈会产生真实的 texture 变化与 y 位移 (可见反馈)
+async function runR147SelfTest() {
+    console.log('[R147 self-test] START');
+    const issues = [];
+    const actions = Object.keys(spritesByAction);
+
+    // 1~3: 逐动作核对首帧 / 地面线 / 倾斜
+    for (const action of actions) {
+        applyAction(action);
+        const meta = spritesByAction[action];
+        if (!sprite_ || sprite_.texture !== meta.frames[0]) {
+            issues.push(`${action}: 切换后 texture 不是首帧`);
+        }
+        if (layout_) {
+            const expectY = layout_.frameYByAction[action][0];
+            if (expectY !== undefined && Math.abs(sprite_.y - expectY) > 1e-6) {
+                issues.push(`${action}: 地面线未同步 y=${sprite_.y} expect=${expectY}`);
+            }
+            const k = layout_.skewByAction[action] || 0;
+            if (Math.abs(sprite_.skew.x - skewAngleX(k)) > 1e-9) {
+                issues.push(`${action}: 方向倾斜未施加 skew=${sprite_.skew.x} expect=${skewAngleX(k)}`);
+            }
+        }
+    }
+
+    // 4: 待机导演长时间推进不得出现膨胀帧
+    applyAction('idle');
+    const excluded = (idleDirector_ && idleDirector_.spec && idleDirector_.spec.excluded_frames) || [];
+    const seen = new Set();
+    for (let t = 0; t <= 30000; t += 16) {
+        const d = idleDirector_.tick(performance.now() + t);
+        seen.add(d.frameIndex);
+    }
+    for (const f of seen) {
+        if (excluded.indexOf(f) !== -1) issues.push(`待机出现了被排除的膨胀/回落帧 index=${f}`);
+    }
+    console.log(`[R147 self-test] idle frames seen = [${[...seen].join(',')}] excluded=[${excluded.join(',')}]`);
+
+    // 5: 点击反馈必须产生可见变化 (texture 变化 + y 位移)
+    applyAction('idle');
+    const before = { tex: sprite_.texture, y: sprite_.y };
+    startClickReaction();
+    let moved = false, changed = false, peakBump = 0;
+    for (let i = 0; i < 30; i++) {
+        await new Promise((r) => setTimeout(r, 25));
+        const active = updateClickReaction(performance.now());
+        if (active) {
+            if (sprite_.texture !== before.tex) changed = true;
+            const arr = layout_.frameYByAction['idle'];
+            const baseY = arr && arr[0] !== undefined ? arr[0] : before.y;
+            peakBump = Math.max(peakBump, baseY - sprite_.y);
+        } else break;
+    }
+    if (!changed) issues.push('点击反馈未改变 texture (画面无可见变化)');
+    if (peakBump < 4) issues.push(`点击反馈弹跳幅度仅 ${peakBump.toFixed(1)}px (肉眼不可见)`);
+    console.log(`[R147 self-test] click textureChanged=${changed} peakBump=${peakBump.toFixed(1)}px`);
+
+    applyAction('idle');
+    console.log(`[R147 self-test] issues=${issues.length}`);
+    if (issues.length === 0) {
+        console.log('[R147 self-test] PASS');
+    } else {
+        console.log('[R147 self-test] FAIL:', issues.join('; '));
+    }
 }
 
 console.log('[renderer] PIXI version:', PIXI.VERSION, 'dev_mode=', DEV_MODE);
@@ -91,6 +172,20 @@ let layout_ = null;        // 当前布局 (scale / anchor / 逐帧地面线 y)
 let animClock_ = new AnimationClock();  // R144 P0-2: 帧推进时钟 (生产模块)
 let assetsReadySent_ = false;           // R144 P0-3: assets-ready 只发一次
 const R144_T0_ = Date.now();            // R144: 相对时间戳基准 (供 e2e 核算末帧保持时长)
+
+// ====== R147 新增 ======
+let idleDirector_ = null;    // 自然待机导演 (稳定站姿 + 自然眨眼)
+let clickReaction_ = null;   // 点击反馈状态 (轻微弹跳 + 眨眼)
+let pressInfo_ = null;       // 本次按下的计时/位移记录 (区分 CLICK 与 DRAG)
+let pressAction_ = null;     // 按下**之前**的动作名 (用于睡眠点击唤醒判定)
+let lastPressKind_ = null;   // 最近一次按下的判定结论 (CLICK/DRAG/HOLD/CANCEL)
+// CLICK 判定阈值来自纯逻辑模块 click_policy.js (与自动化测试同一份代码)
+const R147_CLICK_MAX_MS = CLICK_MAX_MS;   // 按住超过 400ms 不算单击
+const R147_CLICK_MAX_PX = CLICK_MAX_PX;   // 累计位移达到 3px 即判定为拖拽
+const R147_DRAG_THRESHOLD_PX = DRAG_THRESHOLD_PX;
+const R147_CLICK_DURATION_MS = 620;  // 点击反馈总时长
+const R147_CLICK_BUMP_PX = 9;        // 点击反馈的轻微弹跳峰值 (屏幕像素)
+const R147_CLICK_HOLD_MS = 700;      // 通知主进程"暂缓自主行为"的时长
 
 const frameDeltas = [];
 function tick() {
@@ -175,16 +270,10 @@ function attachCanvasListeners(stageEl) {
     //   renderer 只发信号通知 main, 不传坐标
     const onMove = (ev) => {
         if (!dragging || !sprite_) return;
-        if (!dragIsWindowDrag_) {
-            // 区分点击 vs 拖动: 移动 > 3px 才算拖动 (用 ev.movementX/Y 增量而非绝对坐标, 不受坐标系影响)
-            if (dragMoved_ < 3) {
-                const mx = Math.abs(ev.movementX || 0);
-                const my = Math.abs(ev.movementY || 0);
-                if (mx + my < 3) {
-                    dragMoved_++;
-                    return;  // 仍在 click 容忍范围
-                }
-            }
+        const mx = Math.abs(ev.movementX || 0);
+        const my = Math.abs(ev.movementY || 0);
+        if (pressInfo_) pressInfo_.distance += mx + my;
+        if (!dragIsWindowDrag_ && pressInfo_ && pressInfo_.distance >= R147_DRAG_THRESHOLD_PX) {
             dragIsWindowDrag_ = true;
             // 第一次进入真拖动 — 通知 main 记录 dragStart
             ipcRenderer.invoke('window-drag-start').then((res) => {
@@ -199,23 +288,17 @@ function attachCanvasListeners(stageEl) {
         ipcRenderer.send('window-drag-move');
     };
     const onUp = () => {
-        if (dragging) {
-            console.log('[renderer] R111 DRAG_POINTER_UP');
-            if (dragIsWindowDrag_) {
-                ipcRenderer.send('window-drag-end');
-            }
-            endDrag();
-        }
+        // R147: 统一走 finishPress — sprite 与 canvas 两层 pointerup 只会有一次生效
+        finishPress('up');
     };
     // R111: pointercancel 显式通知 main 清理 (避免拖到其他应用卡住)
     const onCancel = () => {
-        if (dragging) {
-            console.log('[renderer] R111 DRAG_POINTER_CANCEL');
-            if (dragIsWindowDrag_) {
-                ipcRenderer.send('window-drag-cancel');
-            }
-            endDrag();
+        if (!dragging) return;
+        console.log('[renderer] R111 DRAG_POINTER_CANCEL');
+        if (dragIsWindowDrag_) {
+            ipcRenderer.send('window-drag-cancel');
         }
+        finishPress('cancel');
     };
     stageEl.addEventListener('pointermove', onMove);
     stageEl.addEventListener('pointerup', onUp);
@@ -242,11 +325,29 @@ function tickerCallback() {
     if (!meta || meta.frames.length === 0) {
         return;  // R100 P0-5: 无帧时 skip 切帧, 不假装
     }
+    const now = performance.now();
+    // R147: 点击反馈优先 — 反馈期间不让基础动画推进, 也不会被 walk 覆盖
+    if (updateClickReaction(now)) {
+        return;
+    }
+    // R147: 自然待机由独立导演驱动 (稳定站姿 + 自然眨眼)
+    //   1) 不再播放 idle_01_inhale_peak (胸腔外扩 26px 的膨胀帧)
+    //   2) 眨眼间隔 1.6~3.4s 随机, 不再是 1.2s 机械循环
+    if (currentAction === 'idle' && idleDirector_ && idleDirector_.enabled) {
+        const d = idleDirector_.tick(now);
+        if (d.changed) {
+            frameIdx = d.frameIndex;
+            sprite_.texture = meta.frames[frameIdx];
+            applyFramePosition('idle', frameIdx);
+            console.log(`[renderer] R147 IDLE_BLINK frame=${frameIdx} phase=${d.phase} t=+${Date.now() - R144_T0_}ms`);
+        }
+        return;
+    }
     // 动作与时钟不同步时 (例如拖拽结束后直接回到 idle) 立即对齐, 避免沿用旧的末帧状态
     if (animClock_.action !== currentAction) {
-        animClock_.setAction(currentAction, meta, performance.now());
+        animClock_.setAction(currentAction, meta, now);
     }
-    const res = animClock_.tick(performance.now());
+    const res = animClock_.tick(now);
     lastAdvanceAt = animClock_.lastAdvanceAt;
     if (res.changed) {
         frameIdx = res.frameIndex;
@@ -278,8 +379,10 @@ function buildLayoutFor(manifest, canvasW, canvasH) {
         const a = manifest.actions[action];
         if (!a) continue;
         const boxes = bboxes[action] || [];
+        // R147: 方向倾斜 (整体朝向) — 同一动作内所有帧共享同一个错切因子
+        const lean = (a.lean && typeof a.lean.skew_x === 'number') ? a.lean.skew_x : 0;
         for (let i = 0; i < a.frames.length; i++) {
-            frames.push({ action, index: i, bbox: boxes[i] || null });
+            frames.push({ action, index: i, bbox: boxes[i] || null, skew_x: lean });
         }
     }
     const margin = (manifest && manifest.layout && manifest.layout.margin_px);
@@ -297,6 +400,109 @@ function applyFramePosition(action, index) {
     const arr = layout_.frameYByAction[action];
     if (!arr || arr[index] === undefined) return;
     sprite_.y = arr[index];
+    // R147: 方向倾斜 (整体朝向处理) — PixiJS 顶点层水平错切
+    //   k = sin(skew.x): k>0 → 上半身向左偏移 (向左走时身体朝左倾)
+    //   纹理本身不镜像 → 角色身份 / 服装 / 发型完全不变
+    const k = (layout_.skewByAction && typeof layout_.skewByAction[action] === 'number')
+        ? layout_.skewByAction[action] : 0;
+    sprite_.skew.x = skewAngleX(k);
+}
+
+/**
+ * R147: 统一的动作切换入口 —— 首帧立即显示 + 地面线同步 + 方向倾斜 + 待机导演重置。
+ *
+ * 修复的是 GPT 在 R144 独立审查里记录的老问题:
+ *   "切换 set-action 时 frameIdx 设为 0, 但 Sprite.texture 未立即更新"
+ * → 这里在切换的**同一时刻**就把 texture 换成目标动作的第 0 帧, 并同步地面线,
+ *   一次性动画播完也不会闪回首帧 (由 anim_clock 保证不回卷)。
+ *
+ * @param {string} action
+ * @param {{immediate?:boolean}} [opts] immediate=true 时立即应用首帧 (默认 true)
+ * @returns {boolean} 是否切换成功
+ */
+function applyAction(action, opts = {}) {
+    const meta = spritesByAction[action];
+    if (!meta || meta.frames.length === 0) {
+        console.warn(`[renderer] applyAction refused: ${action} has no frames`);
+        return false;
+    }
+    const changed = (currentAction !== action);
+    currentAction = action;
+    frameIdx = 0;
+    lastAdvanceAt = performance.now();
+    // R144 P0-2: 切换动作时重置一次性动画回报状态 (旧完成事件作废)
+    animClock_.setAction(action, meta, performance.now());
+    // R147: 动作被切换 → 任何进行中的点击反馈立即让位 (不得残留旧动作)
+    if (changed && clickReaction_) {
+        clickReaction_ = null;
+    }
+    // R147: 新动作立刻显示首帧 (不等下一次 ticker), 地面线同步
+    //   点击反馈进行中时不动 texture / y (否则反馈会被打断, 出现闪帧)
+    if (!clickReaction_) {
+        if (sprite_ && sprite_.texture !== meta.frames[0]) {
+            sprite_.texture = meta.frames[0];
+        }
+        applyFramePosition(action, 0);
+        // R147: 进入 idle 时重置自然待机导演 (稳定站姿 + 自然眨眼)
+        if (action === 'idle' && idleDirector_ && idleDirector_.enabled) {
+            const baseIdx = idleDirector_.setAction('idle', performance.now());
+            frameIdx = baseIdx;
+            if (sprite_ && meta.frames[baseIdx]) sprite_.texture = meta.frames[baseIdx];
+            applyFramePosition('idle', baseIdx);
+        }
+    }
+    return true;
+}
+
+/**
+ * R147: 点击反馈 —— 轻微弹跳 + 眨眼 (约 620ms)。
+ * 素材复用: idle 的 blink_half / blink_closed 两帧 (不新增动作资源, 不改身份/服装)。
+ */
+function startClickReaction() {
+    const idleMeta = spritesByAction['idle'];
+    if (!idleMeta || idleMeta.frames.length < 6) {
+        console.warn('[renderer] R147 CLICK_REACTION skipped: idle frames incomplete');
+        return false;
+    }
+    clickReaction_ = {
+        startAt: performance.now(),
+        durationMs: R147_CLICK_DURATION_MS,
+        base: idleMeta.frames[0],
+        blinkHalf: idleMeta.frames[4],
+        blinkClosed: idleMeta.frames[5],
+    };
+    console.log(`[renderer] R147 CLICK_REACTION start duration=${R147_CLICK_DURATION_MS}ms bump=${R147_CLICK_BUMP_PX}px`);
+    return true;
+}
+
+/**
+ * R147: 推进点击反馈。返回 true 表示反馈仍在进行 (ticker 应让位给反馈)。
+ */
+function updateClickReaction(now) {
+    if (!clickReaction_) return false;
+    const el = now - clickReaction_.startAt;
+    if (el >= clickReaction_.durationMs) {
+        clickReaction_ = null;
+        const meta = spritesByAction[currentAction];
+        if (meta && meta.frames.length && sprite_) {
+            sprite_.texture = meta.frames[Math.min(frameIdx, meta.frames.length - 1)];
+            applyFramePosition(currentAction, frameIdx);
+        }
+        console.log(`[renderer] R147 CLICK_REACTION end t=+${Date.now() - R144_T0_}ms`);
+        return false;
+    }
+    if (!sprite_) return true;
+    // 眨眼: 0~90ms 半闭, 90~200ms 全闭, 之后回到站姿
+    if (el < 90) sprite_.texture = clickReaction_.blinkHalf;
+    else if (el < 200) sprite_.texture = clickReaction_.blinkClosed;
+    else sprite_.texture = clickReaction_.base;
+    // 轻微弹跳: 抛物线, 峰值 R147_CLICK_BUMP_PX, 结束回到地面线
+    const t = Math.min(1, el / clickReaction_.durationMs);
+    const bump = Math.sin(Math.PI * t) * R147_CLICK_BUMP_PX;
+    const arr = layout_ && layout_.frameYByAction['idle'];
+    const baseY = (arr && arr[0] !== undefined) ? arr[0] : (sprite_.y + bump);
+    sprite_.y = baseY - bump;
+    return true;
 }
 
 // 应用布局到 sprite (锚点 / 统一缩放 / 水平居中 / 当前帧地面线)
@@ -305,6 +511,12 @@ function applyLayoutToSprite() {
     sprite_.anchor.set(layout_.anchor.x, layout_.anchor.y);
     sprite_.scale.set(layout_.scale, layout_.scale);
     sprite_.x = layout_.x;
+    // R147 首帧同步: 重建场景后立刻显示当前动作首帧 + 地面线 (不留旧动作残留)
+    const meta = spritesByAction[currentAction];
+    if (meta && meta.frames.length > 0) {
+        frameIdx = 0;
+        if (sprite_.texture !== meta.frames[0]) sprite_.texture = meta.frames[0];
+    }
     applyFramePosition(currentAction, frameIdx);
     console.log(`[renderer] R144 LAYOUT mode=${currentMode_} canvas=${layout_.canvasW}x${layout_.canvasH} scale=${layout_.scale.toFixed(6)} groundY=${layout_.groundY} margin=${layout_.margin} frames=${layout_.frameCount} missingBBox=${layout_.missingBBox}`);
     if (layout_.missingBBox > 0) {
@@ -323,6 +535,9 @@ function bindSpriteEvents() {
         // R111: 不存 clientX/Y (坐标系混用 root cause), main 端用 screen.getCursorScreenPoint()
         dragIsWindowDrag_ = false;
         dragMoved_ = 0;
+        // R147: 记录本次按下的计时与累计位移 (用于区分 CLICK / DRAG)
+        pressInfo_ = { at: performance.now(), distance: 0 };
+        pressAction_ = currentAction;   // 按下**之前**的动作 (睡眠点击唤醒用)
         // R141: 保留 currentAction='drag' (R60 self-test 依赖, 且 R141 manifest 无 'drag' 动作
         //   -> ticker 找不到帧会直接 return, 拖拽期间角色静止, 属预期行为)
         currentAction = 'drag';
@@ -336,27 +551,90 @@ function bindSpriteEvents() {
     });
     sprite_.on('pointerup', () => {
         console.log('[renderer] R111 DRAG_SPRITE_POINTERUP');
-        if (dragIsWindowDrag_) ipcRenderer.send('window-drag-end');
-        endDrag();
+        finishPress('up');
     });
     sprite_.on('pointerupoutside', () => {
         console.log('[renderer] R111 DRAG_SPRITE_POINTERUPOUTSIDE');
-        if (dragIsWindowDrag_) ipcRenderer.send('window-drag-end');
-        endDrag();
+        // 指针离开角色区域后松开 → 正常清理, 但不算单击
+        finishPress('outside');
     });
 }
 
-function endDrag() {
+/**
+ * R147: 统一的"按下结束"处理 — 唯一出口, 保证同一次操作只会有一种结果。
+ *
+ * 判定:
+ *   · 已经进入窗口拖拽 (累计位移 ≥ 3px)  → DRAG : 只发拖拽结束, 不触发点击反馈
+ *   · 正常抬起, 按住 ≤ 400ms 且位移 < 3px → CLICK : 触发点击反馈
+ *   · 指针离开角色区域 / 鼠标被取消       → 清理, 不触发点击反馈
+ *
+ * 幂等: dragging 为 false 时直接返回, 因此 sprite 与 canvas 两层 pointerup
+ *       重复到达时, 第二次是空操作 (不会重复 endDrag / 重复发 IPC)。
+ *
+ * @param {'up'|'outside'|'cancel'} reason
+ * @returns {boolean} 是否判定为 CLICK
+ */
+function finishPress(reason) {
+    if (!dragging) return false;   // R147: 幂等守卫 (sprite/canvas 两层 pointerup)
+    const wasWindowDrag = dragIsWindowDrag_;
+    const prevAction = pressAction_;
+    const info = pressInfo_;
+    const elapsed = info ? (performance.now() - info.at) : Infinity;
+    const distance = info ? info.distance : Infinity;
+    // R147: 判定逻辑放在纯逻辑模块 click_policy.js (与自动化测试同一份代码)
+    const kind = classifyPress({ reason, elapsedMs: elapsed, distancePx: distance, wasWindowDrag });
+    const isClick = isClickReaction(kind);
+    lastPressKind_ = kind;
+
+    if (isDragEnd(kind)) {
+        ipcRenderer.send('window-drag-end');
+    }
+    pressInfo_ = null;
+    pressAction_ = null;
+    endDrag({ click: isClick, kind, prevAction });
+    console.log(`[renderer] R147 PRESS_END kind=${kind} elapsed=${elapsed.toFixed(0)}ms dist=${distance.toFixed(1)}px prev=${prevAction}`);
+    return isClick;
+}
+
+/**
+ * 结束拖拽/按下状态。
+ * @param {{click?:boolean, kind?:string, prevAction?:string}} [opts]
+ */
+function endDrag(opts = {}) {
+    // R147: 幂等守卫 — 重复调用是空操作
+    if (!dragging && !opts.force) return false;
     dragging = false;
     dragIsWindowDrag_ = false;
-    currentAction = 'idle';
-    frameIdx = 0;
-    // R144 P0-2: 拖拽结束回到 idle — 重置一次性动画状态, 旧动画的完成事件作废
-    animClock_.setAction('idle', spritesByAction['idle'], performance.now());
+    dragMoved_ = 0;
+    const isClick = !!opts.click;
+    const kind = opts.kind || (isClick ? 'CLICK' : 'DRAG');
+    const prevAction = opts.prevAction || '';
+    const wasSleeping = (prevAction === 'sleep_loop' || prevAction === 'sleep_enter');
+
+    if (isClick && wasSleeping) {
+        // R147: 睡眠中被点击 → 保持当前画面, 等主进程下发 wake_up (不闪一下站姿)
+        //   醒来过渡由 wake_up 一次性动画承担, 绝不瞬移成站姿
+        console.log(`[renderer] R147 CLICK_WAKE prev=${prevAction} (等待 wake_up 指令)`);
+    } else {
+        // R147 首帧同步: 立刻显示目标动作首帧 + 地面线同步, 不留旧动作残留
+        applyAction('idle', { immediate: true });
+    }
+
     lastAdvanceAt = performance.now();
-    // R141 §四: 松开鼠标后恢复自主行为 (main 侧带过渡延迟)
-    ipcRenderer.send('behavior-drag-state', false);
-    setFallbackText('idle');
+    if (isClick) {
+        // R147: 点击走独立 IPC, 由主进程统一处理拖拽态与自主行为协调
+        ipcRenderer.send('character-click', {
+            action: prevAction,
+            holdMs: R147_CLICK_HOLD_MS,
+        });
+        // 非睡眠状态下的可见反馈: 轻微弹跳 + 眨眼
+        if (!wasSleeping) startClickReaction();
+    } else if (releasesPress(kind)) {
+        // R141 §四: 松开鼠标后恢复自主行为 (main 侧带过渡延迟)
+        ipcRenderer.send('behavior-drag-state', false);
+    }
+    setFallbackText(isClick ? 'click' : 'idle');
+    return true;
 }
 
 // R104 P0-2: 动画预览 — 键盘 1-4 切 idle/walk/jump/drag
@@ -381,12 +659,7 @@ function setupAnimationPreviewKeys() {
         if (actionMap[key]) {
             const action = actionMap[key];
             if (spritesByAction[action] && spritesByAction[action].frames.length > 0) {
-                currentAction = action;
-                frameIdx = 0;
-                lastAdvanceAt = performance.now();
-                // R144 P0-2: 切换动作时重置一次性动画状态 (旧完成事件作废)
-                animClock_.setAction(action, spritesByAction[action], performance.now());
-                applyFramePosition(action, frameIdx);
+                applyAction(action);
                 setFallbackText(`[dev] ${action} (1=idle 2=walk_left 3=walk_right 4=sleep_loop 5=sleep_enter 6=wake_up)`);
                 console.log(`[renderer][dev] animation preview: ${action}`);
             } else {
@@ -462,6 +735,8 @@ function applyModeToScene(mode, opts) {
     // 重启 ticker
     lastAdvanceAt = performance.now();
     frameIdx = 0;
+    // R147: 模式重建后用统一入口恢复当前动作 (首帧 + 地面线 + 倾斜 + 待机导演)
+    applyAction(currentAction);
     app_.ticker.add(tickerCallback);
     stageCssWidth = w;
     stageCssHeight = h;
@@ -475,6 +750,10 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     setFallbackText('[renderer] loading manifest…');
     const { manifest, baseDir } = payload;
     manifest_ = manifest;   // R144: 保留 manifest 供布局构建与边界自检
+    // R147: 自然待机导演 (稳定站姿 + 自然眨眼; 膨胀帧 idle_01 不再播放)
+    const idleSpec = (manifest.actions && manifest.actions.idle) ? manifest.actions.idle.director : null;
+    idleDirector_ = new IdleDirector({ spec: idleSpec });
+    console.log(`[renderer] R147 idle-director enabled=${idleDirector_ && idleDirector_.enabled} spec=${JSON.stringify(idleSpec)}`);
     currentMode_ = payload.initialMode || 'standard';
     // R102 P0-2: 记录 initial mode 供 R100 self-test 结束后恢复
     originalMode_ = currentMode_;
@@ -613,7 +892,8 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     attachCanvasListeners(app_.view);
     lastAdvanceAt = performance.now();
     frameIdx = 0;
-    animClock_.setAction(currentAction, spritesByAction[currentAction], performance.now());
+    // R147: 用统一入口初始化当前动作 (首帧立即显示 + 待机导演重置)
+    applyAction(currentAction);
     app_.ticker.add(tickerCallback);
 
     setFallbackText(`[renderer] R144 mode=${currentMode_} playing ${currentAction}`);
@@ -651,23 +931,72 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     if (process.env.PET_R144_SELFTEST === '1') {
         setTimeout(() => runR144BoundsSelfTest(), 800);
     }
+    // R147: 首帧同步 / 地面线 / 方向倾斜 / 待机无膨胀帧 / 点击可见反馈
+    if (process.env.PET_R147_SELFTEST === '1') {
+        setTimeout(() => runR147SelfTest(), 1200);
+    }
 });
 
 ipcRenderer.on('set-action', (_evt, action) => {
     if (spritesByAction[action] && spritesByAction[action].frames.length > 0) {
-        currentAction = action;
-        frameIdx = 0;
-        lastAdvanceAt = performance.now();  // R100 P0-1: 重置计时
-        // R144 P0-2: 切换动作时重置一次性动画回报状态 (旧完成事件作废)
-        animClock_.setAction(action, spritesByAction[action], performance.now());
-        // R144 P0-1: 新动作首帧对齐到地面接触线
-        applyFramePosition(action, frameIdx);
+        // R147: 首帧同步 — applyAction 立刻把 texture 换成目标动作第 0 帧,
+        //   地面线与方向倾斜同步更新, 不等下一次 ticker (修 R144 记录的旧问题)
+        const ok = applyAction(action);
         setFallbackText('[renderer] switched to ' + action);
-        console.log(`[renderer] R144 set-action ${action} loop=${!!spritesByAction[action].loop} frame_ms=${spritesByAction[action].frame_ms} frames=${spritesByAction[action].frames.length}`);
+        console.log(`[renderer] R147 set-action ${action} applied=${ok} loop=${!!spritesByAction[action].loop} frame_ms=${spritesByAction[action].frame_ms} frames=${spritesByAction[action].frames.length} skew=${layout_ && layout_.skewByAction ? layout_.skewByAction[action] : 0}`);
     } else {
         console.warn(`[renderer] set-action ${action} refused: empty frames`);
     }
 });
+
+// ====== R147: 运行时预览采集 (仅主进程 --preview 模式下发) ======
+// 用**真实的 pointer 事件**驱动 sprite 的 pointerdown/pointerup 处理链,
+// 因此走的是与用户真机点击完全相同的代码路径 (finishPress → CLICK → 点击反馈)。
+ipcRenderer.on('preview-command', async (_evt, payload) => {
+    const id = payload && payload.id;
+    const cmd = (payload && payload.cmd) || '';
+    try {
+        if (cmd === 'action') {
+            const ok = applyAction(payload.action);
+            ipcRenderer.send('preview-result', { id, cmd, ok, action: payload.action });
+        } else if (cmd === 'click') {
+            const res = await runPreviewClick();
+            ipcRenderer.send('preview-result', Object.assign({ id, cmd }, res));
+        } else {
+            ipcRenderer.send('preview-result', { id, cmd, ok: false, error: 'unknown cmd' });
+        }
+    } catch (e) {
+        ipcRenderer.send('preview-result', { id, cmd, ok: false, error: (e && e.message) || String(e) });
+    }
+});
+
+async function runPreviewClick() {
+    if (!sprite_ || !app_) return { ok: false, error: 'sprite/app 未就绪' };
+    // 用 sprite 的**可见包围盒中心**构造 pointer 事件 (走 PixiJS 的命中测试)
+    // 注意: 不能用 getGlobalPosition() —— 那是锚点位置, 躺睡姿态下锚点并不在角色身上
+    const b = sprite_.getBounds();
+    const rect = app_.view.getBoundingClientRect();
+    const clientX = rect.left + (b.x + b.width / 2);
+    const clientY = rect.top + (b.y + b.height / 2);
+    const base = {
+        clientX, clientY, button: 0, buttons: 1, bubbles: true, cancelable: true,
+        pointerId: 1, pointerType: 'mouse', isPrimary: true,
+    };
+    app_.view.dispatchEvent(new PointerEvent('pointerdown', base));
+    await new Promise((r) => setTimeout(r, 90));
+    const downSeen = !!pressInfo_;
+    app_.view.dispatchEvent(new PointerEvent('pointerup', Object.assign({}, base, { buttons: 0 })));
+    await new Promise((r) => setTimeout(r, 60));
+    const kind = lastPressKind_;
+    console.log(`[renderer] R147 PREVIEW_CLICK downSeen=${downSeen} kind=${kind}`);
+    return {
+        ok: true,
+        downSeen,
+        kind,
+        clientX: Math.round(clientX),
+        clientY: Math.round(clientY),
+    };
+}
 
 // R100 P0-2 修复: 模式切换 IPC 走完整协议
 //   main → renderer: set-mode (含 size + centerX + centerY)
@@ -999,6 +1328,10 @@ async function runR144BoundsSelfTest() {
                 sp.scale.set(layout.scale, layout.scale);
                 sp.x = layout.x;
                 sp.y = layout.frameYByAction[action][i];
+                // R147: 方向倾斜 (整体朝向) — 必须与生产渲染完全一致, 否则核算失真
+                const k = (layout.skewByAction && typeof layout.skewByAction[action] === 'number')
+                    ? layout.skewByAction[action] : 0;
+                sp.skew.x = skewAngleX(k);
                 // PixiJS 7.4.3: 游离 DisplayObject 必须走 temp-parent 机制才能算 worldTransform
                 //   (与 PixiJS 自己的 ObjectRendererSystem.render 完全一致的调用序列)
                 const cacheParent = sp.enableTempParent();
@@ -1018,19 +1351,26 @@ async function runR144BoundsSelfTest() {
                 const ax = layout.anchor.x;
                 const ay = layout.anchor.y;
                 // PixiJS 7.4.3: Matrix.apply 收的是 Point 对象
-                const tl = sp.worldTransform.apply(new PIXI.Point(rect.left - ax * origW, rect.top - ay * origH));
-                const br = sp.worldTransform.apply(new PIXI.Point(rect.right - ax * origW, rect.bottom - ay * origH));
+                // R147: 错切后四角的极值不一定落在 tl/br, 必须取 4 角最小包围盒
+                const quad = [
+                    [rect.left, rect.top], [rect.right, rect.top],
+                    [rect.left, rect.bottom], [rect.right, rect.bottom],
+                ].map(([u, v]) => sp.worldTransform.apply(new PIXI.Point(u - ax * origW, v - ay * origH)));
+                const qx = quad.map(p => p.x);
+                const qy = quad.map(p => p.y);
+                const tl = { x: Math.min(...qx), y: Math.min(...qy) };
+                const br = { x: Math.max(...qx), y: Math.max(...qy) };
                 const inside = tl.x >= -0.01 && tl.y >= -0.01 && br.x <= w + 0.01 && br.y <= h + 0.01;
                 const groundErr = Math.abs(br.y - layout.groundY);
                 totalFrames++;
                 if (!inside) {
                     clippedFrames++;
-                    issues.push(`${mode}/${action}[${i}] 越界 screen=(${tl.x.toFixed(2)},${tl.y.toFixed(2)})-(${br.x.toFixed(2)},${br.y.toFixed(2)}) canvas=${w}x${h}`);
+                    issues.push(`${mode}/${action}[${i}] 越界 screen=(${tl.x.toFixed(2)},${tl.y.toFixed(2)})-(${br.x.toFixed(2)},${br.y.toFixed(2)}) canvas=${w}x${h} skew=${k}`);
                 }
                 if (groundErr > 0.01) {
                     issues.push(`${mode}/${action}[${i}] 地面接触线偏差 ${groundErr.toFixed(4)}px`);
                 }
-                console.log(`[R144 bounds self-test] ${mode} ${action}[${i}] screen=(${tl.x.toFixed(2)},${tl.y.toFixed(2)})-(${br.x.toFixed(2)},${br.y.toFixed(2)}) inside=${inside} groundErr=${groundErr.toFixed(4)}`);
+                console.log(`[R144 bounds self-test] ${mode} ${action}[${i}] screen=(${tl.x.toFixed(2)},${tl.y.toFixed(2)})-(${br.x.toFixed(2)},${br.y.toFixed(2)}) inside=${inside} groundErr=${groundErr.toFixed(4)} skew=${k}`);
             }
         }
         console.log(`[R144 bounds self-test] MODE ${mode} canvas=${w}x${h} scale=${layout.scale.toFixed(6)} groundY=${layout.groundY} margin=${layout.margin}`);

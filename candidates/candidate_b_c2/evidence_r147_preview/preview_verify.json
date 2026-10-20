@@ -1,0 +1,73 @@
+{
+  "idle": {
+    "frames": 90,
+    "chest_width_min": 65,
+    "chest_width_max": 65,
+    "chest_width_delta": 0,
+    "bottom_delta": 0,
+    "distinct_poses": 1,
+    "pose_counts": [
+      90
+    ]
+  },
+  "click": {
+    "frames": 26,
+    "bounce_px": 9,
+    "distinct_poses": 2,
+    "pose_counts": [
+      20,
+      6
+    ],
+    "bottom_series": [
+      233,
+      231,
+      229,
+      227,
+      227,
+      227,
+      228,
+      229,
+      232,
+      234,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236,
+      236
+    ]
+  },
+  "walk_left": {
+    "avg_shift": -13.024940293066104,
+    "neg_frames": 26,
+    "total": 26,
+    "dx_min": -60,
+    "dx_max": 0
+  },
+  "walk_right": {
+    "avg_shift": 12.44546987411488,
+    "neg_frames": 0,
+    "total": 26,
+    "dx_min": 0,
+    "dx_max": 60
+  },
+  "wake": {
+    "frames": 34,
+    "distinct_poses": 3,
+    "pose_counts": [
+      7,
+      8,
+      19
+    ]
+  }
+}

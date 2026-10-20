@@ -1,0 +1,343 @@
+// R141 最小自主生活行为引擎 (纯逻辑模块, 无 Electron 依赖)
+//
+// 设计目标 (R141 §三):
+//   - 简单、稳定的有限状态机
+//   - 状态: IDLE / WALK_LEFT / WALK_RIGHT / SLEEP_ENTER / SLEEP_LOOP / WAKE_UP / DRAGGING
+//   - 明确优先级, 避免多个行为同时控制窗口位置或动画
+//   - 时间/速度/随机概率集中配置
+//   - 本轮不引入 AI 决策
+//
+// 关键约束 (R141 §七):
+//   - 单一计时器链, 不允许多个行为定时器并发
+//   - 拖拽期间不移动窗口
+//   - 停止时清理全部定时器
+//
+// 本模块不依赖 Electron, main.js 与自动测试 require 的是**同一份代码**,
+// 满足 R141 §八 "测试必须调用真实生产代码".
+
+'use strict';
+
+const DEFAULT_CONFIG = Object.freeze({
+    idle_min_ms: 3000,
+    idle_max_ms: 8000,
+    walk_speed_px_per_sec: 30,
+    walk_min_distance_px: 80,
+    walk_max_distance_px: 250,
+    walk_move_tick_ms: 33,
+    sleep_min_ms: 20000,
+    sleep_max_ms: 45000,
+    sleep_probability: 0.3,
+    walk_probability: 0.7,
+    drag_resume_delay_ms: 800,
+    edge_margin_px: 4,
+});
+
+const STATES = Object.freeze({
+    IDLE: 'IDLE',
+    WALK_LEFT: 'WALK_LEFT',
+    WALK_RIGHT: 'WALK_RIGHT',
+    SLEEP_ENTER: 'SLEEP_ENTER',
+    SLEEP_LOOP: 'SLEEP_LOOP',
+    WAKE_UP: 'WAKE_UP',
+    DRAGGING: 'DRAGGING',
+});
+
+// 状态优先级: 数值越大优先级越高. DRAGGING 最高 (用户操作永远优先).
+const STATE_PRIORITY = Object.freeze({
+    IDLE: 0,
+    SLEEP_LOOP: 1,
+    SLEEP_ENTER: 2,
+    WAKE_UP: 2,
+    WALK_LEFT: 3,
+    WALK_RIGHT: 3,
+    DRAGGING: 10,
+});
+
+// 一次性动画 (播完必须回调), 持续循环动画
+const ONE_SHOT_ACTIONS = Object.freeze(['sleep_enter', 'wake_up']);
+const LOOP_ACTIONS = Object.freeze(['idle', 'walk_left', 'walk_right', 'sleep_loop']);
+
+// 状态 -> 动画名
+const STATE_ACTION = Object.freeze({
+    IDLE: 'idle',
+    WALK_LEFT: 'walk_left',
+    WALK_RIGHT: 'walk_right',
+    SLEEP_ENTER: 'sleep_enter',
+    SLEEP_LOOP: 'sleep_loop',
+    WAKE_UP: 'wake_up',
+    DRAGGING: 'idle',
+});
+
+class BehaviorEngine {
+    /**
+     * @param {object} opts
+     * @param {object} [opts.config]      行为参数 (覆盖 DEFAULT_CONFIG)
+     * @param {function} [opts.onAction]  (actionName, state) => void   切换动画
+     * @param {function} [opts.onMove]    (dxPixels, state) => void     请求移动窗口
+     * @param {function} [opts.onState]   (from, to) => void           状态变化通知
+     * @param {function} [opts.random]    () => number                注入随机源 (测试用)
+     * @param {function} [opts.now]       () => number                注入时钟 (测试用)
+     * @param {function} [opts.setTimeout]/[opts.clearTimeout]        注入定时器
+     * @param {function} [opts.setInterval]/[opts.clearInterval]
+     */
+    constructor(opts = {}) {
+        this.config = Object.assign({}, DEFAULT_CONFIG, opts.config || {});
+        this.onAction = opts.onAction || (() => {});
+        this.onMove = opts.onMove || (() => {});
+        this.onState = opts.onState || (() => {});
+        this._random = opts.random || Math.random;
+        this._now = opts.now || (() => Date.now());
+
+        this._setTimeout = opts.setTimeout || ((fn, ms) => setTimeout(fn, ms));
+        this._clearTimeout = opts.clearTimeout || ((h) => clearTimeout(h));
+        this._setInterval = opts.setInterval || ((fn, ms) => setInterval(fn, ms));
+        this._clearInterval = opts.clearInterval || ((h) => clearInterval(h));
+
+        this.state = STATES.IDLE;
+        this._timer = null;          // 唯一的行为计时器
+        this._moveTimer = null;      // 行走位移计时器
+        this._running = false;
+        this._dragging = false;
+        this._pendingResume = null;  // 拖拽结束后待恢复的计时器
+        this._walkRemaining = 0;     // 剩余行走距离 (px)
+        this._walkDirection = 0;     // -1 左 / +1 右
+        this._walkStartedAt = 0;
+        this._walkTarget = 0;
+        this._lastMoveAt = 0;
+        this.transitionLog = [];
+    }
+
+    // ---------- 生命周期 ----------
+
+    start() {
+        if (this._running) return;
+        this._running = true;
+        this._transition(STATES.IDLE, 'engine-start');
+        this._scheduleIdle();
+    }
+
+    stop() {
+        this._running = false;
+        this._clearAllTimers();
+        this.state = STATES.IDLE;
+    }
+
+    _clearAllTimers() {
+        if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
+        if (this._moveTimer !== null) { this._clearInterval(this._moveTimer); this._moveTimer = null; }
+        if (this._pendingResume !== null) { this._clearTimeout(this._pendingResume); this._pendingResume = null; }
+    }
+
+    // ---------- 内部工具 ----------
+
+    _randInt(min, max) {
+        const lo = Math.min(min, max);
+        const hi = Math.max(min, max);
+        return lo + Math.floor(this._random() * (hi - lo + 1));
+    }
+
+    _transition(next, reason) {
+        const from = this.state;
+        if (from === next) return false;
+        this.state = next;
+        this.transitionLog.push({ from, to: next, reason, at: this._now() });
+        if (this.transitionLog.length > 200) this.transitionLog.splice(0, 100);
+        try { this.onState(from, next, reason); } catch (e) { /* 通知失败不阻塞引擎 */ }
+        return true;
+    }
+
+    _setAction(action) {
+        try { this.onAction(action, this.state); } catch (e) { /* 忽略 */ }
+    }
+
+    // ---------- 各状态的调度 ----------
+
+    _scheduleIdle() {
+        if (!this._running || this._dragging) return;
+        const ms = this._randInt(this.config.idle_min_ms, this.config.idle_max_ms);
+        this._timer = this._setTimeout(() => {
+            this._timer = null;
+            this._decideNextFromIdle();
+        }, ms);
+    }
+
+    _decideNextFromIdle() {
+        if (!this._running || this._dragging) return;
+        const pSleep = this.config.sleep_probability;
+        const r = this._random();
+        if (r < pSleep) {
+            this._enterSleep();
+        } else {
+            const dir = this._random() < 0.5 ? -1 : 1;
+            this._startWalk(dir);
+        }
+    }
+
+    _startWalk(dir) {
+        this._walkDirection = dir >= 0 ? 1 : -1;
+        this._walkTarget = this._randInt(this.config.walk_min_distance_px, this.config.walk_max_distance_px);
+        this._walkRemaining = this._walkTarget;
+        this._walkStartedAt = this._now();
+        this._lastMoveAt = this._now();
+        this._transition(this._walkDirection < 0 ? STATES.WALK_LEFT : STATES.WALK_RIGHT, 'idle-decision');
+        this._setAction(STATE_ACTION[this.state]);
+        this._startMoveTimer();
+    }
+
+    _startMoveTimer() {
+        this._stopMoveTimer();
+        this._moveTimer = this._setInterval(() => this._walkTick(), this.config.walk_move_tick_ms);
+    }
+
+    _stopMoveTimer() {
+        if (this._moveTimer !== null) {
+            this._clearInterval(this._moveTimer);
+            this._moveTimer = null;
+        }
+    }
+
+    _walkTick() {
+        if (!this._running || this._dragging) { this._stopMoveTimer(); return; }
+        if (this.state !== STATES.WALK_LEFT && this.state !== STATES.WALK_RIGHT) {
+            this._stopMoveTimer();
+            return;
+        }
+        const now = this._now();
+        const dtSec = Math.min((now - this._lastMoveAt) / 1000, 0.25); // 防止卡顿后一次跳太远
+        this._lastMoveAt = now;
+        if (dtSec <= 0) return;
+
+        const step = this.config.walk_speed_px_per_sec * dtSec;
+        const move = step * this._walkDirection;
+        this._walkRemaining -= step;
+
+        let canMove = true;
+        let edgeTurned = false;
+        try {
+            // onMove 返回 { blocked: true } 表示撞到屏幕边界
+            const res = this.onMove(move, this.state);
+            if (res && res.blocked) {
+                canMove = false;
+                edgeTurned = true;
+            }
+        } catch (e) {
+            canMove = false;
+        }
+
+        if (edgeTurned) {
+            // 撞边: 转向 (反向继续走), 重新计算剩余距离
+            this._walkDirection = -this._walkDirection;
+            this._walkRemaining = this.config.walk_min_distance_px;
+            const newState = this._walkDirection < 0 ? STATES.WALK_LEFT : STATES.WALK_RIGHT;
+            this._transition(newState, 'edge-turn');
+            this._setAction(STATE_ACTION[newState]);
+            return;
+        }
+
+        if (this._walkRemaining <= 0) {
+            this._stopMoveTimer();
+            this._walkRemaining = 0;
+            this._transition(STATES.IDLE, 'walk-complete');
+            this._setAction('idle');
+            this._scheduleIdle();
+        }
+    }
+
+    _enterSleep() {
+        this._transition(STATES.SLEEP_ENTER, 'idle-decision');
+        this._setAction('sleep_enter');
+        // 注意: sleep_enter 是一次性动画, 等 renderer 回调 onAnimationFinished('sleep_enter')
+    }
+
+    _onSleepEnterFinished() {
+        if (this.state !== STATES.SLEEP_ENTER) return false;
+        this._transition(STATES.SLEEP_LOOP, 'sleep_enter-finished');
+        this._setAction('sleep_loop');
+        const ms = this._randInt(this.config.sleep_min_ms, this.config.sleep_max_ms);
+        this._timer = this._setTimeout(() => {
+            this._timer = null;
+            if (this.state !== STATES.SLEEP_LOOP) return;
+            this._transition(STATES.WAKE_UP, 'sleep-duration-elapsed');
+            this._setAction('wake_up');
+            // wake_up 是一次性动画, 等 renderer 回调
+        }, ms);
+        return true;
+    }
+
+    _onWakeUpFinished() {
+        if (this.state !== STATES.WAKE_UP) return false;
+        this._transition(STATES.IDLE, 'wake_up-finished');
+        this._setAction('idle');
+        this._scheduleIdle();
+        return true;
+    }
+
+    // ---------- 外部事件 ----------
+
+    /**
+     * renderer 播放完一次性动画后的回调
+     * @param {string} action 动画名 (sleep_enter / wake_up)
+     */
+    onAnimationFinished(action) {
+        if (action === 'sleep_enter') return this._onSleepEnterFinished();
+        if (action === 'wake_up') return this._onWakeUpFinished();
+        return false;
+    }
+
+    /**
+     * 用户拖拽状态变化
+     * @param {boolean} dragging
+     */
+    setDragging(dragging) {
+        if (this._dragging === dragging) return false;
+        this._dragging = dragging;
+        if (dragging) {
+            // 拖拽优先: 停掉所有行为计时器和位移
+            if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
+            this._stopMoveTimer();
+            this._transition(STATES.DRAGGING, 'user-drag-start');
+            this._setAction('idle');
+        } else {
+            this._transition(STATES.IDLE, 'user-drag-end');
+            this._setAction('idle');
+            // 短暂过渡后恢复自主行为
+            if (this._pendingResume !== null) { this._clearTimeout(this._pendingResume); }
+            this._pendingResume = this._setTimeout(() => {
+                this._pendingResume = null;
+                if (this._running && !this._dragging) this._scheduleIdle();
+            }, this.config.drag_resume_delay_ms);
+        }
+        return true;
+    }
+
+    isDragging() { return this._dragging; }
+
+    getState() { return this.state; }
+
+    getStatePriority() { return STATE_PRIORITY[this.state] || 0; }
+
+    // 供测试与诊断
+    snapshot() {
+        return {
+            state: this.state,
+            running: this._running,
+            dragging: this._dragging,
+            walkRemaining: Math.round(this._walkRemaining),
+            walkTarget: this._walkTarget,
+            walkDirection: this._walkDirection,
+            hasTimer: this._timer !== null,
+            hasMoveTimer: this._moveTimer !== null,
+            transitionLog: this.transitionLog.slice(-20),
+        };
+    }
+}
+
+module.exports = {
+    BehaviorEngine,
+    STATES,
+    STATE_ACTION,
+    STATE_PRIORITY,
+    ONE_SHOT_ACTIONS,
+    LOOP_ACTIONS,
+    DEFAULT_CONFIG,
+};

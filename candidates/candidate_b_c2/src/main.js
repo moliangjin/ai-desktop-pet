@@ -18,11 +18,14 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
+// R141: 最小自主生活行为引擎 (纯逻辑, main 与测试共用同一份代码)
+const { BehaviorEngine, STATES } = require('./behavior_engine');
 
 const args = process.argv.slice(1);
 let manifestPath = null, winSize = 256, winX = 200, winY = 200;
 let initialMode = 'standard';
 let quitAfter = null, perfOut = null;
+let acceptanceMode = false;    // R141 §九: 验收加速模式 (不改变正式状态机逻辑)
 for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--manifest' && args[i+1]) manifestPath = args[++i];
@@ -34,6 +37,9 @@ for (let i = 0; i < args.length; i++) {
     // R102 P0-5: 兼容 --quit-after=<value> 形式 (e.g. --quit-after=1800)
     else if (a.startsWith('--quit-after=')) quitAfter = parseFloat(a.split('=')[1], 10);
     else if (a === '--perf-out' && args[i+1]) perfOut = args[++i];
+    // R141 §九: 验收加速模式 (只缩短时长参数, 不改变状态机逻辑)
+    else if (a === '--acceptance') acceptanceMode = true;
+    else if (a === '--acceptance-mode' && args[i+1]) acceptanceMode = (args[++i] !== 'off');
 }
 
 if (!manifestPath) {
@@ -53,6 +59,74 @@ const COMPACT_HEIGHT = parseInt(process.env.COMPACT_HEIGHT || '240', 10);
 
 let mainWindow = null;
 let currentMode = initialMode === 'compact' ? 'compact' : 'standard';
+
+// ====== R141: 自主行为引擎接入 ======
+// 行为引擎只负责"决定做什么"; 窗口坐标/边界由 main 侧 adapter 提供.
+let behaviorEngine = null;
+let behaviorConfig = null;
+let lastWindowBounds = null;   // 上次写入的窗口位置 (避免无变化时重复 setBounds)
+let moveWindowLogAt_ = 0;      // 移动日志节流
+
+function clampToWorkArea(x, y, w, h) {
+    const rect = mainWindow.getBounds();
+    const display = screen.getDisplayMatching(rect);
+    const wa = display.workArea;
+    const margin = (behaviorConfig && behaviorConfig.edge_margin_px) || 4;
+    const maxX = wa.x + wa.width - w - margin;
+    const maxY = wa.y + wa.height - h - margin;
+    const minX = wa.x + margin;
+    const minY = wa.y + margin;
+    return {
+        x: Math.max(minX, Math.min(x, Math.max(minX, maxX))),
+        y: Math.max(minY, Math.min(y, Math.max(minY, maxY))),
+        wa,
+        minX, minX_end: maxX, minY, minY_end: maxY,
+    };
+}
+
+// R141 §六 4/5: 平滑移动 + 不高频写入无变化位置
+function moveWindowBy(dx, dy) {
+    if (!mainWindow || behaviorEngine && behaviorEngine.getState() === STATES.DRAGGING) {
+        return { blocked: true, reason: 'dragging' };
+    }
+    const rect = mainWindow.getBounds();
+    const targetX = rect.x + dx;
+    const targetY = rect.y + dy;
+    const clamped = clampToWorkArea(targetX, targetY, rect.width, rect.height);
+    // 撞边检测: 目标位置被夹住, 说明到达屏幕边缘
+    const blocked = Math.abs(clamped.x - targetX) > 0.5 || Math.abs(clamped.y - targetY) > 0.5;
+    // 无变化则不写 (避免高频无意义 setBounds)
+    if (lastWindowBounds &&
+        lastWindowBounds.x === clamped.x && lastWindowBounds.y === clamped.y) {
+        return { blocked, moved: 0, clamped: true };
+    }
+    mainWindow.setBounds({ x: clamped.x, y: clamped.y, width: rect.width, height: rect.height });
+    lastWindowBounds = { x: clamped.x, y: clamped.y, width: rect.width, height: rect.height };
+    // R141: 移动日志 (节流 200ms) — 用于验证"真实窗口位置变化", 不是原地踏步
+    const now = Date.now();
+    if (!moveWindowLogAt_ || (now - moveWindowLogAt_) > 200) {
+        moveWindowLogAt_ = now;
+        console.log(`[main] R141 MOVE x=${clamped.x} y=${clamped.y} dx=${dx.toFixed(2)} state=${behaviorEngine ? behaviorEngine.getState() : 'n/a'}`);
+    }
+    return { blocked, moved: dx, x: clamped.x, y: clamped.y };
+}
+
+function createBehaviorEngine(config) {
+    behaviorConfig = config;
+    const engine = new BehaviorEngine({
+        config,
+        onAction: (action, state) => {
+            if (!mainWindow) return;
+            console.log(`[main] R141 BEHAVIOR action=${action} state=${state}`);
+            mainWindow.webContents.send('set-action', action);
+        },
+        onMove: (dx, state) => moveWindowBy(dx, 0),
+        onState: (from, to, reason) => {
+            console.log(`[main] R141 STATE ${from} -> ${to} (${reason})`);
+        },
+    });
+    return engine;
+}
 
 function applyMode(mode) {
     // R100 P0-4 修复: 模式切换保持角色屏幕中心稳定
@@ -144,6 +218,20 @@ function createWindow() {
             compactSize: { w: COMPACT_SIZE, h: COMPACT_HEIGHT },
             standardSize: { w: STANDARD_SIZE, h: STANDARD_SIZE },
         });
+
+        // R141: 启动自主行为引擎 (等 renderer 加载完资源再启动, 避免动画未就绪)
+        const behavior = (data && data.behavior) || {};
+        const cfg = Object.assign({}, behavior.config || {});
+        if (acceptanceMode) {
+            // R141 §九: 验收模式只加速状态触发, 不改状态机逻辑 (只缩短时长参数)
+            cfg.idle_min_ms = 1200; cfg.idle_max_ms = 2500;
+            cfg.sleep_min_ms = 4000; cfg.sleep_max_ms = 7000;
+            cfg.walk_min_distance_px = 40; cfg.walk_max_distance_px = 120;
+            console.log('[main] R141 ACCEPTANCE_MODE (加速参数, 状态机逻辑不变)');
+        }
+        behaviorEngine = createBehaviorEngine(cfg);
+        behaviorEngine.start();
+        console.log(`[main] R141 behavior engine started state=${behaviorEngine.getState()}`);
     });
 
     if (quitAfter) {
@@ -157,7 +245,24 @@ function createWindow() {
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
+    // R141 §六 7/§七: 关闭前清理所有定时器
+    if (behaviorEngine) {
+        behaviorEngine.stop();
+        behaviorEngine = null;
+        console.log('[main] R141 behavior engine stopped (window-all-closed)');
+    }
+    stopDragPolling();
     app.quit();
+});
+
+// R141 §六 7: 退出前清理 (before-quit 是最可靠的清理点)
+app.on('before-quit', () => {
+    if (behaviorEngine) {
+        behaviorEngine.stop();
+        behaviorEngine = null;
+        console.log('[main] R141 behavior engine stopped (before-quit)');
+    }
+    stopDragPolling();
 });
 
 ipcMain.on('renderer-ready', (_evt, info) => {
@@ -189,6 +294,38 @@ ipcMain.on('action-switch', (_evt, action) => {
     if (mainWindow) {
         mainWindow.webContents.send('set-action', action);
     }
+});
+
+// ====== R141: 行为引擎 IPC ======
+
+// renderer 播完一次性动画 (sleep_enter / wake_up) 后回报, 主进程推进状态机
+ipcMain.on('animation-finished', (_evt, action) => {
+    if (!behaviorEngine) return;
+    const ok = behaviorEngine.onAnimationFinished(action);
+    console.log(`[main] R141 animation-finished ${action} handled=${ok} state=${behaviorEngine.getState()}`);
+});
+
+// 拖拽与自主行为协调 (R141 §四)
+ipcMain.on('behavior-drag-state', (_evt, dragging) => {
+    if (!behaviorEngine) return;
+    behaviorEngine.setDragging(!!dragging);
+    console.log(`[main] R141 behavior drag-state=${!!dragging} state=${behaviorEngine.getState()}`);
+});
+
+// 行为状态查询 (测试/诊断)
+ipcMain.handle('behavior-state', async () => {
+    if (!behaviorEngine) return { ok: false, error: 'engine not started' };
+    return { ok: true, ...behaviorEngine.snapshot() };
+});
+
+// 强制切换行为 (验收脚本用, 不改变状态机内部逻辑)
+ipcMain.handle('behavior-force', async (_evt, payload) => {
+    if (!behaviorEngine) return { ok: false, error: 'engine not started' };
+    const action = payload && payload.action;
+    if (!action) return { ok: false, error: 'action required' };
+    if (mainWindow) mainWindow.webContents.send('set-action', action);
+    console.log(`[main] R141 behavior-force ${action}`);
+    return { ok: true, action, state: behaviorEngine.getState() };
 });
 
 // V0.0 R39: renderer-driven transparent-area passthrough.
@@ -348,6 +485,8 @@ ipcMain.handle('window-drag-start', (_evt) => {
     };
     // R113: drag-start 时启动 setInterval 轮询
     startDragPolling();
+    // R141 §四: 拖拽期间暂停自主漫游 (与 renderer 的 pointerdown 通知互为双保险)
+    if (behaviorEngine) behaviorEngine.setDragging(true);
     console.log(`[main] R113 DRAG_START win=(${bounds.x},${bounds.y},${bounds.width},${bounds.height}) mouseStart=(${mouse.x},${mouse.y})`);
     return { ok: true, start: dragStart };
 });
@@ -365,6 +504,11 @@ function stopDrag() {
         const final = mainWindow ? mainWindow.getBounds() : null;
         console.log(`[main] R113 DRAG_STOP final=(${final?.x},${final?.y}) size=${final?.width}x${final?.height} dragStarted=${dragStart.dragStarted}`);
         dragStart = null;
+        // R141: 拖拽结束 -> 同步窗口位置缓存 + 恢复自主行为 (带过渡延迟)
+        if (final) lastWindowBounds = { x: final.x, y: final.y, width: final.width, height: final.height };
+        if (behaviorEngine && behaviorEngine.isDragging()) {
+            behaviorEngine.setDragging(false);
+        }
     } else {
         console.log('[main] R113 DRAG_STOP (no active drag)');
     }

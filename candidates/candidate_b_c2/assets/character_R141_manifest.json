@@ -1,0 +1,130 @@
+{
+  "character_id": "default_scientist",
+  "version": "R141-RUNTIME",
+  "source_round": "R138",
+  "source_manifest": "/Users/musk123/Downloads/minimax工作文件夹/图文工作/character_animation_R138/08_MANIFEST/R138_manifest.json",
+  "a1_reference_sha256": "3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df",
+  "canvas_px": [1024, 1024],
+  "anchor": {
+    "stand": [0.5, 0.90],
+    "sit": [0.5, 0.86],
+    "lie": [0.5, 0.78]
+  },
+  "animation_order": [
+    "idle",
+    "walk_left",
+    "walk_right",
+    "sleep_enter",
+    "sleep_loop",
+    "wake_up"
+  ],
+  "actions": {
+    "idle": {
+      "frames": [
+        "character_R138/idle/idle_00_base.png",
+        "character_R138/idle/idle_01_inhale_peak.png",
+        "character_R138/idle/idle_02_exhale_mid.png",
+        "character_R138/idle/idle_03_exhale_low.png",
+        "character_R138/idle/idle_04_blink_half.png",
+        "character_R138/idle/idle_05_blink_closed.png"
+      ],
+      "frame_ms": 200,
+      "fps": 5,
+      "loop": true,
+      "anchor": "stand"
+    },
+    "walk_left": {
+      "frames": [
+        "character_R138/walk_left/walk_left_00_stand.png",
+        "character_R138/walk_left/walk_left_01_left_step.png",
+        "character_R138/walk_left/walk_left_02_pass.png",
+        "character_R138/walk_left/walk_left_03_right_step.png"
+      ],
+      "frame_ms": 130,
+      "fps": 7.69,
+      "loop": true,
+      "anchor": "stand"
+    },
+    "walk_right": {
+      "frames": [
+        "character_R138/walk_right/walk_right_00_stand.png",
+        "character_R138/walk_right/walk_right_01_right_step.png",
+        "character_R138/walk_right/walk_right_02_pass.png",
+        "character_R138/walk_right/walk_right_03_left_step.png"
+      ],
+      "frame_ms": 130,
+      "fps": 7.69,
+      "loop": true,
+      "anchor": "stand"
+    },
+    "sleep_enter": {
+      "frames": [
+        "character_R138/sleep_enter/sleep_enter_01_sit.png",
+        "character_R138/sleep_enter/sleep_enter_02_lie.png",
+        "character_R138/sleep_enter/sleep_enter_03_settled.png"
+      ],
+      "frame_ms": 600,
+      "fps": 1.67,
+      "loop": false,
+      "anchor": "sit"
+    },
+    "sleep_loop": {
+      "frames": [
+        "character_R138/sleep_loop/sleep_loop_00_base.png",
+        "character_R138/sleep_loop/sleep_loop_01_breath_in.png",
+        "character_R138/sleep_loop/sleep_loop_02_stable.png"
+      ],
+      "frame_ms": 700,
+      "fps": 1.43,
+      "loop": true,
+      "anchor": "lie"
+    },
+    "wake_up": {
+      "frames": [
+        "character_R138/wake_up/wake_up_00_lift.png",
+        "character_R138/wake_up/wake_up_01_sit_up.png",
+        "character_R138/wake_up/wake_up_02_stand.png"
+      ],
+      "frame_ms": 600,
+      "fps": 1.67,
+      "loop": false,
+      "anchor": "stand"
+    }
+  },
+  "behavior": {
+    "engine": "src/behavior_engine.js",
+    "state_machine": {
+      "states": ["IDLE", "WALK_LEFT", "WALK_RIGHT", "SLEEP_ENTER", "SLEEP_LOOP", "WAKE_UP", "DRAGGING"],
+      "transitions": [
+        "IDLE -> WALK_LEFT | WALK_RIGHT | SLEEP_ENTER (随机选择)",
+        "WALK_LEFT | WALK_RIGHT -> IDLE (走完距离 或 到达屏幕边缘转向)",
+        "SLEEP_ENTER -> SLEEP_LOOP (动画播完回调)",
+        "SLEEP_LOOP -> WAKE_UP (睡眠时长到)",
+        "WAKE_UP -> IDLE (动画播完回调)",
+        "任意状态 -> DRAGGING (用户拖拽)",
+        "DRAGGING -> IDLE (松开鼠标 + 过渡延迟)"
+      ],
+      "one_shot_animations": ["sleep_enter", "wake_up"],
+      "loop_animations": ["idle", "walk_left", "walk_right", "sleep_loop"]
+    },
+    "config": {
+      "idle_min_ms": 3000,
+      "idle_max_ms": 8000,
+      "walk_speed_px_per_sec": 30,
+      "walk_min_distance_px": 80,
+      "walk_max_distance_px": 250,
+      "walk_move_tick_ms": 33,
+      "sleep_min_ms": 20000,
+      "sleep_max_ms": 45000,
+      "sleep_probability": 0.3,
+      "walk_probability": 0.7,
+      "drag_resume_delay_ms": 800,
+      "edge_margin_px": 4
+    }
+  },
+  "notes": [
+    "R141 运行时 manifest: 帧路径相对本 manifest 所在目录 (assets/character_R141_manifest.json -> character_R138/...)",
+    "R138 六组动作 23 帧全部为 1024x1024 RGBA PNG",
+    "sleep_enter / wake_up 为一次性动画, 由 renderer 播完回报主进程"
+  ]
+}

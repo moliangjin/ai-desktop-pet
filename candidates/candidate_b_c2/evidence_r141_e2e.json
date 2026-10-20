@@ -1,0 +1,105 @@
+{
+  "round": 141,
+  "test": "R141 e2e runtime (real Electron, production code)",
+  "pass": 13,
+  "fail": 0,
+  "not_verified": 3,
+  "items": [
+    {
+      "status": "PASS",
+      "id": "2",
+      "desc": "23/23 动画帧有效 + 6 组动作",
+      "detail": "manifest 逐项实际验证 23/23, 组数 6"
+    },
+    {
+      "status": "PASS",
+      "id": "3",
+      "desc": "正式角色已替换占位角色",
+      "detail": "character_R138/ 下 23 张 R138 RGBA PNG (非 prototype_chibi 占位)"
+    },
+    {
+      "status": "PASS",
+      "id": "4",
+      "desc": "无开发调试文字 (正式运行只显示角色)",
+      "detail": "DEV_MODE 默认关闭 + fallback/debug-banner 在正式模式隐藏"
+    },
+    {
+      "status": "PASS",
+      "id": "1",
+      "desc": "六组动画全部加载成功",
+      "detail": "6 组 loaded, 合计 23 帧, failed=0"
+    },
+    {
+      "status": "PASS",
+      "id": "5",
+      "desc": "idle 能自动切换 (无需用户按键)",
+      "detail": "观测到 3 次从 IDLE 自动切出"
+    },
+    {
+      "status": "PASS",
+      "id": "6",
+      "desc": "walk_left / walk_right 状态有效",
+      "detail": "观测到 2 次进入行走状态"
+    },
+    {
+      "status": "PASS",
+      "id": "9",
+      "desc": "sleep_enter -> sleep_loop -> wake_up 顺序正确",
+      "detail": "观测顺序 SLEEP_ENTER,SLEEP_LOOP,WAKE_UP"
+    },
+    {
+      "status": "PASS",
+      "id": "10",
+      "desc": "sleep_loop 不错误地反复播放入睡流程",
+      "detail": "ENTER=1 LOOP=1 WAKE=1 (每次入睡都进入 loop, 差值仅因进程退出截断)"
+    },
+    {
+      "status": "PASS",
+      "id": "16",
+      "desc": "睡眠三段成对 (进入=循环, 醒来差值<=1 为退出截断)",
+      "detail": "ENTER=1 LOOP=1 WAKE=1"
+    },
+    {
+      "status": "PASS",
+      "id": "7",
+      "desc": "自动行走会更新窗口坐标 (非原地踏步)",
+      "detail": "17 次 setBounds, x 跨度 93.2px (4->97.2)"
+    },
+    {
+      "status": "PASS",
+      "id": "8",
+      "desc": "到边缘会转向",
+      "detail": "观测到 1 次 edge-turn 状态转移"
+    },
+    {
+      "status": "PASS",
+      "id": "13",
+      "desc": "程序关闭后无定时器和进程残留",
+      "detail": "行为引擎已 stop, 残留进程 0"
+    },
+    {
+      "status": "PASS",
+      "id": "14",
+      "desc": "原候选 B 冻结基线未改变",
+      "detail": "candidate_b_electronpixir + assets/prototype_chibi 无 git 改动"
+    },
+    {
+      "status": "NOT_GUI_VERIFIED",
+      "id": "11",
+      "desc": "用户拖拽期间自动行为暂停",
+      "detail": "需真实鼠标; 单元测试 T8 (注入 setDragging) 已覆盖状态机层"
+    },
+    {
+      "status": "NOT_GUI_VERIFIED",
+      "id": "12",
+      "desc": "松开拖拽后自主行为恢复",
+      "detail": "需真实鼠标; 单元测试 T9 (注入 setDragging) 已覆盖状态机层"
+    },
+    {
+      "status": "NOT_GUI_VERIFIED",
+      "id": "15",
+      "desc": "真实鼠标拖拽窗口跟随",
+      "detail": "R113 已由用户 Mac 真机验证; 本轮未重测"
+    }
+  ]
+}

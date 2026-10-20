@@ -19,8 +19,30 @@ const stage = document.getElementById('stage');
 const fallback = document.getElementById('fallback');
 const debugBanner = document.getElementById('debug-banner');
 
-console.log('[renderer] PIXI version:', PIXI && PIXI.VERSION);
-ipcRenderer.send('renderer-ready', { version: PIXI && PIXI.VERSION });
+// ====== R141 §五: 正式运行只显示桌宠角色, 无任何调试文字 ======
+// 开发调试能力放到明确的开发模式 (PET_DEV_MODE=1), 正式运行默认关闭.
+// 注意: 关闭调试 UI 不得破坏角色点击 / 拖拽 / 状态切换 — 下面只改文本与可见性,
+// 不动 canvas 与 sprite 事件绑定.
+const DEV_MODE = process.env.PET_DEV_MODE === '1';
+
+function devLog(msg) {
+    if (DEV_MODE) console.log(`[renderer][dev] ${msg}`);
+}
+function setFallbackText(msg) {
+    // 正式运行: 任何 fallback 文本都不显示 (避免 R104 preview 提示条残留)
+    if (DEV_MODE) {
+        fallback.textContent = msg;
+    } else {
+        fallback.textContent = '';
+    }
+}
+if (!DEV_MODE) {
+    if (fallback) fallback.style.display = 'none';
+    if (debugBanner) debugBanner.style.display = 'none';
+}
+
+console.log('[renderer] PIXI version:', PIXI.VERSION, 'dev_mode=', DEV_MODE);
+ipcRenderer.send('renderer-ready', { version: PIXI.VERSION, devMode: DEV_MODE });
 
 // ====== 共享状态 (R100 P0-1 修复: 全部 module-scope) ======
 let app_ = null;
@@ -194,6 +216,9 @@ function attachCanvasListeners(stageEl) {
 // ====== R100 P0-1 修复: tickerCallback 在 module-scope ======
 // 所有动画计时状态共享, 模式切换重建 canvas 后 tickerCallback 继续正常工作.
 // R104: sprite 不再被 drag 移动 (拖动整个 BrowserWindow, sprite 固定 canvas 中心)
+// R141: 支持 frame_ms 精确帧时长; 一次性动画播完回报主进程 (驱动状态机)
+let oneShotReported_ = false;      // 当前一次性动画是否已回报
+let oneShotHoldUntil_ = 0;         // 最后一帧需要停留多久才算播完
 function tickerCallback() {
     tick();
     // R104 P0-1: drag 期间 sprite 位置保持稳定 (BrowserWindow 移动, sprite 相对窗口位置不变)
@@ -201,11 +226,30 @@ function tickerCallback() {
     if (!meta || meta.frames.length === 0) {
         return;  // R100 P0-5: 无帧时 skip 切帧, 不假装
     }
-    const period = 1000 / (meta.fps || 8);
-    if (performance.now() - lastAdvanceAt >= period) {
+    // R141: 优先用 frame_ms (R138 manifest 提供), 回退 fps
+    const period = meta.frame_ms ? meta.frame_ms : (1000 / (meta.fps || 8));
+    const now = performance.now();
+    if (now - lastAdvanceAt >= period) {
         frameIdx = (frameIdx + 1) % meta.frames.length;
         sprite_.texture = meta.frames[frameIdx];
-        lastAdvanceAt = performance.now();
+        lastAdvanceAt = now;
+        // R141: 一次性动画 (sleep_enter / wake_up) 到最后一帧后停留一帧时长再回报
+        if (!meta.loop) {
+            if (frameIdx !== meta.frames.length - 1) {
+                oneShotReported_ = false;
+            } else if (!oneShotReported_) {
+                oneShotHoldUntil_ = now + period;
+            }
+        } else {
+            oneShotReported_ = false;
+        }
+    }
+    // R141: 一次性动画完成回报 (只报一次)
+    if (!meta.loop && !oneShotReported_ && oneShotHoldUntil_ > 0 && now >= oneShotHoldUntil_) {
+        oneShotReported_ = true;
+        oneShotHoldUntil_ = 0;
+        console.log(`[renderer] R141 animation-finished ${currentAction} (one-shot)`);
+        ipcRenderer.send('animation-finished', currentAction);
     }
 }
 
@@ -220,9 +264,13 @@ function bindSpriteEvents() {
         // R111: 不存 clientX/Y (坐标系混用 root cause), main 端用 screen.getCursorScreenPoint()
         dragIsWindowDrag_ = false;
         dragMoved_ = 0;
+        // R141: 保留 currentAction='drag' (R60 self-test 依赖, 且 R141 manifest 无 'drag' 动作
+        //   -> ticker 找不到帧会直接 return, 拖拽期间角色静止, 属预期行为)
         currentAction = 'drag';
         frameIdx = 0;
-        fallback.textContent = 'drag';
+        // R141 §四: 用户按住角色时立即暂停自主漫游 (不等 3px 拖动阈值)
+        ipcRenderer.send('behavior-drag-state', true);
+        setFallbackText('drag');
     });
     sprite_.on('pointerup', () => {
         console.log('[renderer] R111 DRAG_SPRITE_POINTERUP');
@@ -241,18 +289,29 @@ function endDrag() {
     dragIsWindowDrag_ = false;
     currentAction = 'idle';
     frameIdx = 0;
-    fallback.textContent = 'idle';
+    oneShotReported_ = false;
+    oneShotHoldUntil_ = 0;
+    lastAdvanceAt = performance.now();
+    // R141 §四: 松开鼠标后恢复自主行为 (main 侧带过渡延迟)
+    ipcRenderer.send('behavior-drag-state', false);
+    setFallbackText('idle');
 }
 
 // R104 P0-2: 动画预览 — 键盘 1-4 切 idle/walk/jump/drag
-//   用户无需打开 DevTools 即可验证 4 种动画
+//   R141 §五: 正式运行必须删除快捷键说明与调试 UI, 改为仅开发模式启用
 //   keydown 在 BrowserWindow focus 时触发 (frameless alwaysOnTop 桌宠需先点击)
 function setupAnimationPreviewKeys() {
+    if (!DEV_MODE) {
+        // R141: 正式运行不注册任何快捷键 (避免"不需要用户按数字键"的行为被误解为依赖按键)
+        return;
+    }
     const actionMap = {
         '1': 'idle',
-        '2': 'walk',
-        '3': 'jump',
-        '4': 'drag',
+        '2': 'walk_left',
+        '3': 'walk_right',
+        '4': 'sleep_loop',
+        '5': 'sleep_enter',
+        '6': 'wake_up',
     };
     window.addEventListener('keydown', (ev) => {
         // 数字键 (主键盘区 + 数字键盘区)
@@ -263,16 +322,18 @@ function setupAnimationPreviewKeys() {
                 currentAction = action;
                 frameIdx = 0;
                 lastAdvanceAt = performance.now();
-                fallback.textContent = `[R104 preview] ${action} (press 1=idle 2=walk 3=jump 4=drag)`;
-                console.log(`[renderer] R104 animation preview: ${action}`);
+                oneShotReported_ = false;
+                oneShotHoldUntil_ = 0;
+                setFallbackText(`[dev] ${action} (1=idle 2=walk_left 3=walk_right 4=sleep_loop 5=sleep_enter 6=wake_up)`);
+                console.log(`[renderer][dev] animation preview: ${action}`);
             } else {
-                console.warn(`[renderer] R104 preview refused: ${action} has no frames`);
-                fallback.textContent = `[R104 preview] ${action} NOT loaded (asset failure)`;
+                console.warn(`[renderer][dev] preview refused: ${action} has no frames`);
+                setFallbackText(`[dev] ${action} NOT loaded (asset failure)`);
             }
             ev.preventDefault();
         }
     });
-    console.log('[renderer] R104 animation preview ready (press 1/2/3/4 to switch idle/walk/jump/drag)');
+    console.log('[renderer][dev] animation preview keys enabled');
 }
 
 // ====== R100 P0-2/3/4 修复: applyModeToScene 重写 ======
@@ -319,7 +380,7 @@ function applyModeToScene(mode, opts) {
     if (!meta || meta.frames.length === 0) {
         const msg = `R100 FAIL: action=${currentAction} has no frames loaded (asset_load_total=${assetLoadTotal_} failed=${assetLoadFailed_})`;
         console.error(msg);
-        fallback.textContent = msg;
+        setFallbackText(msg);
         // 不创建 sprite, 阻止 fake PASS
         return { ok: false, error: msg };
     }
@@ -349,13 +410,13 @@ function applyModeToScene(mode, opts) {
     stageCssWidth = w;
     stageCssHeight = h;
     const centerLog = cx !== null ? `center=(${cx},${cy})` : `center=canvas_default`;
-    fallback.textContent = `[renderer] R100 mode=${mode} size=${w}x${h} scale=${sc.toFixed(2)} ${centerLog}`;
+    setFallbackText(`[renderer] R100 mode=${mode} size=${w}x${h} scale=${sc.toFixed(2)} ${centerLog}`);
     console.log(`[renderer] R100 mode=${mode} canvas=${w}x${h} scale=${sc.toFixed(3)} ${centerLog} hitArea=${JSON.stringify(sprite_.getBounds())}`);
     return { ok: true, mode, size: { w, h }, center: { x: cx, y: cy }, scale: sc };
 }
 
 ipcRenderer.on('manifest', async (_evt, payload) => {
-    fallback.textContent = '[renderer] loading manifest…';
+    setFallbackText('[renderer] loading manifest…');
     const { manifest, baseDir } = payload;
     currentMode_ = payload.initialMode || 'standard';
     // R102 P0-2: 记录 initial mode 供 R100 self-test 结束后恢复
@@ -380,7 +441,7 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     for (const action of order) {
         const a = manifest.actions[action];
         if (!a) {
-            fallback.textContent = `[renderer] missing action ${action}`;
+            setFallbackText(`[renderer] missing action ${action}`);
             continue;
         }
         const frames = [];
@@ -406,7 +467,13 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
                 failed++;
             }
         }
-        spritesByAction[action] = { frames, fps: a.fps || 8, loop: !!a.loop, failed };
+        spritesByAction[action] = {
+            frames,
+            fps: a.fps || 8,
+            frame_ms: a.frame_ms || null,   // R141: 精确帧时长 (优先于 fps)
+            loop: !!a.loop,
+            failed,
+        };
         assetLoadTotal_ += frames.length + failed;
         assetLoadFailed_ += failed;
         ipcRenderer.send('asset-report', { action, loaded: frames.length, failed, total: frames.length + failed });
@@ -416,7 +483,7 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     if (assetLoadFailed_ === assetLoadTotal_ && assetLoadTotal_ > 0) {
         const msg = `R100 FAIL: all ${assetLoadTotal_} frames failed to load from ${baseDir}`;
         console.error(msg);
-        fallback.textContent = msg;
+        setFallbackText(msg);
         return;  // 阻止后续 applyModeToScene 创建假 sprite
     }
 
@@ -441,7 +508,7 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     if (!initMeta || initMeta.frames.length === 0) {
         const msg = `R100 FAIL: initial action=${currentAction} has no frames after load`;
         console.error(msg);
-        fallback.textContent = msg;
+        setFallbackText(msg);
         return;
     }
     sprite_ = new PIXI.Sprite(initMeta.frames[0]);
@@ -460,7 +527,7 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     lastAdvanceAt = performance.now();
     app_.ticker.add(tickerCallback);
 
-    fallback.textContent = `[renderer] R100 mode=${currentMode_} playing ${currentAction}`;
+    setFallbackText(`[renderer] R100 mode=${currentMode_} playing ${currentAction}`);
 
     // R104 P0-2: 动画预览 — 用户无需 DevTools 即可切换 4 种动作
     setupAnimationPreviewKeys();
@@ -488,7 +555,11 @@ ipcRenderer.on('set-action', (_evt, action) => {
         currentAction = action;
         frameIdx = 0;
         lastAdvanceAt = performance.now();  // R100 P0-1: 重置计时
-        fallback.textContent = '[renderer] switched to ' + action;
+        // R141: 切换动作时重置一次性动画回报状态
+        oneShotReported_ = false;
+        oneShotHoldUntil_ = 0;
+        setFallbackText('[renderer] switched to ' + action);
+        console.log(`[renderer] R141 set-action ${action} loop=${!!spritesByAction[action].loop} frame_ms=${spritesByAction[action].frame_ms}`);
     } else {
         console.warn(`[renderer] set-action ${action} refused: empty frames`);
     }

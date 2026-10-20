@@ -1,74 +1,71 @@
 #!/bin/bash
 # candidates/candidate_b_c2/C2_Mac人工验收.command
 #
-# V0.0 R102 — C2 紧凑窗口 Mac 真机人工验收入口.
+# V0.0 R141 — 自主行为桌宠 Mac 真机人工验收入口
 #
-# 启动 candidate_b_c2 隔离版本.
-# 默认 compact 模式 (200x240) 启动, 验收 10 项.
+# 本轮目标: 银白短发科技研究员第一次真正具备自主待机、行走、睡觉和醒来的能力.
 #
-# 不调用任何系统鼠标注入工具.
-# 不请求辅助功能 / 屏幕录制权限.
-# 不修改用户系统隐私设置.
-# 不开启 SIP, 不绕过 macOS TCC.
-# 不需要 DevTools.
-# 不在用户模式运行会改变显示模式的内部自检 (R102 P0-2).
-# 不使用全局 pkill 误杀其他应用 (R102 P0-6).
+# 启动内容:
+#   - 正式角色 (R138 的 23 帧 RGBA PNG, 六组动画)
+#   - 自主行为引擎 (IDLE / WALK_LEFT / WALK_RIGHT / SLEEP_ENTER / SLEEP_LOOP / WAKE_UP / DRAGGING)
+#   - 紧凑窗口 200x240 (C2 授权方案)
 #
-# 退出: Cmd+Q 或关闭按钮.
-# 日志: /tmp/r102_c2_mac_acceptance_<ts>.log.
-# 退出码:
-#   0  = 正常退出 (用户 Cmd+Q 或 --quit-after 超时)
-#   2  = 参数错
-#   3  = manifest 缺失
-#   4  = electron 缺失
-#   10 = 资源加载全部失败
-#   130+ = electron 实际退出码
+# 不做:
+#   - 不打开 DevTools
+#   - 不在桌宠窗口内显示任何调试文字 (R141 §五: 正式运行只显示角色)
+#   - 不调用系统鼠标注入工具
+#   - 不请求辅助功能 / 屏幕录制权限
+#   - 不使用全局 pkill 误杀其他应用 (只 kill 本次启动的 PID)
+#   - 不修改用户系统隐私设置
+#
+# 用法:
+#   双击运行            → 正式模式 (自然速度, 正式状态机参数)
+#   ./C2_Mac人工验收.command fast  → 验收加速模式 (缩短等待时长, 状态机逻辑不变)
+#   ./C2_Mac人工验收.command standard → 256x256 标准窗口
+#
+# 退出: Cmd+Q
+# 日志: /tmp/r141_c2_mac_acceptance_<ts>.log
+# 退出码: 0=正常退出 2=参数错 3=manifest缺失 4=electron缺失 10=资源全部加载失败
 
 set +e
 cd "$(dirname "$0")"
-LOG="/tmp/r102_c2_mac_acceptance_$(date +%s).log"
+TS="$(date +%s)"
+LOG="/tmp/r141_c2_mac_acceptance_${TS}.log"
 
-# 节点模块若未建立 symlink, 自动建立
+MODE="compact"
+ACCEPT="off"
+for arg in "$@"; do
+    case "$arg" in
+        compact|standard) MODE="$arg" ;;
+        fast|acceptance)  ACCEPT="on" ;;
+        off|normal)       ACCEPT="off" ;;
+        *) echo "用法: $0 [compact|standard] [fast|off]"; exit 2 ;;
+    esac
+done
+
+# node_modules symlink 兜底
 if [ ! -e node_modules ]; then
     if [ -d ../candidate_b_electronpixir/node_modules ]; then
         ln -sf ../candidate_b_electronpixir/node_modules node_modules
     else
-        echo "[C2_Mac人工验收] FATAL: node_modules 不存在, 请先 cd 到候选 B 目录跑 npm install" | tee -a "$LOG"
+        echo "[验收] FATAL: node_modules 不存在" | tee -a "$LOG"
         exit 1
     fi
 fi
 
-# 解析参数
-MODE="${1:-compact}"
-case "$MODE" in
-    compact|standard) ;;
-    *)
-        echo "用法: $0 [compact|standard]"
-        echo "  compact  (默认) - 200x240 紧凑窗口, 减少桌面遮挡 27%"
-        echo "  standard        - 256x256 标准窗口 (R60 基线)"
-        exit 2
-        ;;
-esac
-
-# Manifest 路径
-MANIFEST="$(cd ../../assets/prototype_chibi && pwd)/manifest.json"
+MANIFEST="$(cd assets && pwd)/character_R141_manifest.json"
 if [ ! -f "$MANIFEST" ]; then
-    echo "[C2_Mac人工验收] FATAL: manifest 不存在: $MANIFEST" | tee -a "$LOG"
+    echo "[验收] FATAL: manifest 不存在: $MANIFEST" | tee -a "$LOG"
     exit 3
 fi
 
-# Electron binary
 ELECTRON="$(cd ../candidate_b_electronpixir && pwd)/node_modules/.bin/electron"
 if [ ! -x "$ELECTRON" ]; then
-    echo "[C2_Mac人工验收] FATAL: electron 不存在: $ELECTRON" | tee -a "$LOG"
+    echo "[验收] FATAL: electron 不存在: $ELECTRON" | tee -a "$LOG"
     exit 4
 fi
 
-# R102 P0-4: 准备变量保留 Electron 真实退出码
 ELECTRON_PID=""
-
-# R102 P0-6: 针对性进程清理 — 仅 kill 本次启动的 Electron PID
-# 不使用 pkill -f "Electron Helper" 等全局命令
 cleanup_electron() {
     if [ -n "$ELECTRON_PID" ] && kill -0 "$ELECTRON_PID" 2>/dev/null; then
         kill -TERM "$ELECTRON_PID" 2>/dev/null
@@ -80,74 +77,84 @@ cleanup_electron() {
 }
 trap cleanup_electron EXIT INT TERM
 
-echo "==========================================" | tee -a "$LOG"
-echo " R102 C2 Mac 真机人工验收" | tee -a "$LOG"
-echo "==========================================" | tee -a "$LOG"
-echo "  模式:        $MODE" | tee -a "$LOG"
-echo "  Manifest:    $MANIFEST" | tee -a "$LOG"
-echo "  Electron:    $ELECTRON" | tee -a "$LOG"
-echo "  日志文件:    $LOG" | tee -a "$LOG"
-echo "" | tee -a "$LOG"
-echo " 验收 10 项 (请逐一确认):" | tee -a "$LOG"
-echo "  1. 桌宠正常启动 (无窗口/控制台错误)" | tee -a "$LOG"
-echo "  2. 角色完整显示 (无裁切, 含 jump 跳起)" | tee -a "$LOG"
-echo "  3. 待机动画流畅" | tee -a "$LOG"
-echo "  4. 行走/跳跃/拖拽动画不裁切" | tee -a "$LOG"
-echo "  5. 单击角色有响应 (触发 drag 动作)" | tee -a "$LOG"
-echo "  6. 拖拽桌宠正常 (无跳跃/无卡死)" | tee -a "$LOG"
-echo "  7. 多次拖拽后位置正确" | tee -a "$LOG"
-echo "  8. 释放鼠标后不继续跟随" | tee -a "$LOG"
-echo "  9. 桌宠外侧点击 Finder 等普通应用时不会受到超出紧凑窗口范围的遮挡" | tee -a "$LOG"
-echo " 10. Cmd+Q 正常退出, 不残留窗口" | tee -a "$LOG"
-echo "" | tee -a "$LOG"
-echo " 模式切换 (高级):" | tee -a "$LOG"
-echo "  按 Cmd+Option+I 打开 DevTools, 在 Console 输入:" | tee -a "$LOG"
-echo "    await __setMode('compact')   - 切到 200x240" | tee -a "$LOG"
-echo "    await __setMode('standard')  - 切到 256x256" | tee -a "$LOG"
-echo "  切换会等待 main ack 完成才返回" | tee -a "$LOG"
-echo "" | tee -a "$LOG"
-echo " 启动中..." | tee -a "$LOG"
-echo "-------------------------------------------" | tee -a "$LOG"
+{
+echo "=========================================================="
+echo " R141 自主行为桌宠 — Mac 真机人工验收"
+echo "=========================================================="
+echo " 窗口模式:   $MODE (200x240 紧凑 / 256x256 标准)"
+echo " 加速模式:   $ACCEPT   (fast 只缩短等待时长, 不改状态机逻辑)"
+echo " 角色资源:   R138 23 帧 RGBA PNG (六组动画)"
+echo " Manifest:   $MANIFEST"
+echo " 日志文件:   $LOG"
+echo ""
+echo " 请在 60 秒内依次观察 (每项确认后再看下一项):"
+echo ""
+echo "  1. 桌宠出现          — 桌面上出现银白短发科技研究员, 窗口透明无白底"
+echo "  2. 自主待机          — 角色自行呼吸 + 眨眼, 无需点击任何按键"
+echo "  3. 自主行走          — 角色自己开始走, 且**桌面位置真的在移动**"
+echo "  4. 自动转向          — 走到屏幕边缘后自己掉头, 继续走"
+echo "  5. 自动休息睡觉      — 自己坐下躺下, 闭眼呼吸 (不会几秒就反复睡醒)"
+echo "  6. 自动醒来          — 自己抬头坐起站回, 恢复待机"
+echo "  7. 鼠标拖拽          — 按住拖动, 窗口跟随鼠标; 松开后过一会儿恢复自主活动"
+echo "  8. 正常退出          — Cmd+Q 退出, 桌面无残留窗口"
+echo ""
+echo " 观察要点:"
+echo "   · 桌宠窗口内不应出现任何调试文字/提示条/英文"
+echo "   · 行走时角色在动 + 桌面位置也在动 (不是原地踏步)"
+echo "   · 拖拽时桌面位置由你控制, 松手后角色会自己继续活动"
+echo ""
+echo " 启动中... (关闭窗口或 Cmd+Q 结束)"
+echo "----------------------------------------------------------"
+} | tee -a "$LOG"
 
-# R102 P0-2: 不设置 PET_R100_SELFTEST — 防止自检污染用户当前 mode
-# R102 P0-4: 用 PIPESTATUS[0] 保留 Electron 真实退出码 (避免 pipe 传 tee 改 $?)
-# R102 P0-5: --quit-after=<value> 形式 (R102 任务书验证)
+# 正式模式不使用 --acceptance (不进入测试模式); fast 模式才启用
+EXTRA=""
+if [ "$ACCEPT" = "on" ]; then
+    EXTRA="--acceptance"
+fi
+
 "$ELECTRON" "$(pwd)/src/main.js" \
     --manifest "$MANIFEST" \
     --mode "$MODE" \
+    $EXTRA \
     --quit-after=1800 \
-    > "$LOG" 2>&1
+    >> "$LOG" 2>&1
 ELECTRON_RC=$?
 
-# R102 P0-4: 直接取 Electron 真实退出码 (不再 pipe 到 tee 改 $?)
-echo "-------------------------------------------" | tee -a "$LOG"
-echo "[C2_Mac人工验收] 退出 rc=$ELECTRON_RC" | tee -a "$LOG"
+echo "----------------------------------------------------------" | tee -a "$LOG"
+echo "[验收] 退出 rc=$ELECTRON_RC" | tee -a "$LOG"
 
-# R102 §一-10: 资源加载失败必须明确 FAIL
-if grep -q "all 26 frames failed" "$LOG" 2>/dev/null; then
-    echo "[C2_Mac人工验收] FATAL: 26 帧全部加载失败" | tee -a "$LOG"
+# R141 §一-10: 资源加载失败必须明确 FAIL
+if grep -qE "all [0-9]+ frames failed" "$LOG" 2>/dev/null; then
+    echo "[验收] FATAL: 动画帧全部加载失败" | tee -a "$LOG"
     exit 10
 fi
-# 单独检查 (R100 §七 之后)
-if grep -qE "asset-report.*loaded=0 failed=[0-9]+" "$LOG" 2>/dev/null; then
-    zero_loaded=$(grep -cE "asset-report.*loaded=0 failed=[0-9]+" "$LOG")
-    if [ "$zero_loaded" -ge 4 ]; then
-        echo "[C2_Mac人工验收] FATAL: 至少 4 个动作 asset loaded=0, 拒绝宣布准备 PASS" | tee -a "$LOG"
-        exit 10
-    fi
+ZERO_LOADED=$(grep -cE -e "asset-report: [a-z_]+ loaded=0 failed=[0-9]+" "$LOG" 2>/dev/null)
+if [ "${ZERO_LOADED:-0}" -ge 1 ]; then
+    echo "[验收] FATAL: 有动作 loaded=0, 拒绝宣布准备 PASS" | tee -a "$LOG"
+    exit 10
 fi
 
-# 退出码映射
-#   0      = 正常 (用户 Cmd+Q)
-#   130+   = SIGINT/SIGTERM (用户强制)
-#   137    = SIGKILL (timeout kill)
-#   其它   = 异常
+# 行为引擎是否真的启动
+if ! grep -q "behavior engine started" "$LOG" 2>/dev/null; then
+    echo "[验收] FATAL: 自主行为引擎未启动" | tee -a "$LOG"
+    exit 11
+fi
+
+# 汇总行为观测
+echo "" | tee -a "$LOG"
+echo " 行为观测汇总:" | tee -a "$LOG"
+echo "   状态转移次数: $(grep -c -e 'R141 STATE' "$LOG" 2>/dev/null)" | tee -a "$LOG"
+echo "   窗口移动次数: $(grep -c -e 'R141 MOVE' "$LOG" 2>/dev/null)" | tee -a "$LOG"
+echo "   撞边转向次数: $(grep -c -e 'edge-turn' "$LOG" 2>/dev/null)" | tee -a "$LOG"
+echo "   睡眠序列:     ENTER=$(grep -cE -e 'R141 STATE [A-Z_]+ -> SLEEP_ENTER' "$LOG" 2>/dev/null) LOOP=$(grep -cE -e 'R141 STATE [A-Z_]+ -> SLEEP_LOOP' "$LOG" 2>/dev/null) WAKE=$(grep -cE -e 'R141 STATE [A-Z_]+ -> WAKE_UP' "$LOG" 2>/dev/null)" | tee -a "$LOG"
+echo "" | tee -a "$LOG"
+echo " 完整日志: $LOG" | tee -a "$LOG"
+
 if [ "$ELECTRON_RC" -eq 0 ]; then
-    echo "[C2_Mac人工验收] 正常退出" | tee -a "$LOG"
+    echo "[验收] 正常退出" | tee -a "$LOG"
 elif [ "$ELECTRON_RC" -ge 128 ]; then
     sig=$((ELECTRON_RC - 128))
-    echo "[C2_Mac人工验收] Electron 被信号 $sig 终止" | tee -a "$LOG"
+    echo "[验收] Electron 被信号 $sig 终止" | tee -a "$LOG"
 fi
-
-echo "[C2_Mac人工验收] 完整日志: $LOG"
 exit $ELECTRON_RC

@@ -18,9 +18,9 @@
 | 候选实现 | `candidates/candidate_b_c2/` |
 | QA 报告 | `docs/R158_QA_REPORT.md` |
 | 交付索引 | `docs/R158_DELIVERY_INDEX.md`（本文件） |
-| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R158_review.zip` |
-| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R158_review.zip.sha256` |
-| 备份 | `backup/V0.0_backup_<时间戳>_r158.zip` + 同名 `.sha256` |
+| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R158_review.zip`（89 文件 / 11,148,949 B） |
+| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R158_review.zip.sha256`（`932fdf39a53f1e58b5a774fa8294040b1870b27fa4e79a949d525495925ee9e8`） |
+| 备份 | `backup/V0.0_backup_20261021_062035_r158.zip`（179 文件 / 47,273,549 B）+ 同名 `.sha256`（`6d572a48d1815ee703c97ebe36120a7def6ef4f2755e5d3be1339d5ef58fdb04`） |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`（59 项） |
 | 运行时客观量化 | `candidates/candidate_b_c2/evidence_r158_preview/r156_runtime_verify.json`（23 项）+ `r158_runtime_verify.json`（6 项） |
 | 可观看运行预览 | `candidates/candidate_b_c2/evidence_r158_gifs/`（6 个 GIF + 1 张总览图） |

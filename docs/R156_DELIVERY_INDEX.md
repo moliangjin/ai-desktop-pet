@@ -18,13 +18,14 @@
 | 候选实现 | `candidates/candidate_b_c2/` |
 | QA 报告 | `docs/R156_QA_REPORT.md` |
 | 交付索引 | `docs/R156_DELIVERY_INDEX.md`（本文件） |
-| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R156_review.zip` |
+| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R156_review.zip`（101 文件 / 13,809,476 B） |
 | ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R156_review.zip.sha256` |
-| 备份 | `backup/V0.0_backup_<时间戳>_r156.zip` + 同名 `.sha256` |
+| 备份 | `backup/V0.0_backup_20261021_022335_r156.zip`（1308 文件 / 76,260,121 B）+ 同名 `.sha256`（`e544f95168a2f4f225caeb55442ed0dbe4c8a6e58cb1df2718570a7089151536`） |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`（57 项） |
 | 运行时客观量化 | `candidates/candidate_b_c2/evidence_r156_preview/r156_runtime_verify.json`（22 项） |
 | 可观看运行预览 | `candidates/candidate_b_c2/evidence_r156_gifs/`（10 个 GIF + 2 张总览图） |
 | 真实采集帧 | `candidates/candidate_b_c2/evidence_r156_preview/`（650 帧，仅 `preview_meta.json` / `run.log` / 校验 JSON 入库） |
+| 可视化产物副本 | `/Users/musk123/Downloads/minimax工作文件夹/图文工作/R156_*`（点击总览图 + 场景总览图 + 10 个 GIF） |
 | Mac 真机验收入口 | `candidates/candidate_b_c2/C2_Mac人工验收.command`（双击即用，已标注本轮 8 项重点） |
 
 **ZIP SHA256 不写在本索引内**（避免"改索引就改 ZIP 哈希"的循环自引用），写在 ZIP 旁边的独立 `.sha256` 文件。

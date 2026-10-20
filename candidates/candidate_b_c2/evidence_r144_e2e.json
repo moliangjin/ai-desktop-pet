@@ -1,0 +1,169 @@
+{
+  "round": 144,
+  "test": "R144 e2e runtime (real Electron, production code)",
+  "pass": 23,
+  "fail": 0,
+  "not_verified": 3,
+  "logs": {
+    "walk_scenario": "/tmp/r144_e2e_42312/main.log",
+    "sleep_scenario": "/tmp/r144_e2e_42312/sleep.log"
+  },
+  "items": [
+    {
+      "status": "PASS",
+      "id": "A1",
+      "desc": "23/23 动画帧路径真实有效 + 6 组动作",
+      "detail": "manifest 逐项实际验证 23/23, 组数 6"
+    },
+    {
+      "status": "PASS",
+      "id": "A2",
+      "desc": "R138 23 帧角色资产逐字节未变 (SHA256 比对 R138 交付清单)",
+      "detail": "23/23 帧哈希一致, 0 失配, 0 缺失"
+    },
+    {
+      "status": "PASS",
+      "id": "A3",
+      "desc": "A1 母版 SHA256 未变",
+      "detail": "3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df"
+    },
+    {
+      "status": "PASS",
+      "id": "A4",
+      "desc": "R113 拖拽核心代码逐字未改 (用户真机验证过的实现)",
+      "detail": "R113 拖拽核心 9/9 个区块逐字未改 (对比 6e35231)"
+    },
+    {
+      "status": "PASS",
+      "id": "A5",
+      "desc": "原候选 B 冻结基线未改变",
+      "detail": "candidate_b_electronpixir + assets/prototype_chibi 无 git 改动"
+    },
+    {
+      "status": "PASS",
+      "id": "A6",
+      "desc": "正式运行无调试文字 (界面只显示角色)",
+      "detail": "DEV_MODE 默认关闭 + fallback/debug-banner 正式模式隐藏"
+    },
+    {
+      "status": "PASS",
+      "id": "B0",
+      "desc": "Electron 真实启动并产生日志",
+      "detail": "日志 119 行"
+    },
+    {
+      "status": "PASS",
+      "id": "B1",
+      "desc": "六组动画全部加载成功 (23 帧)",
+      "detail": "6 组 loaded, 合计 23 帧, failed=0"
+    },
+    {
+      "status": "PASS",
+      "id": "B2",
+      "desc": "资源就绪握手: ASSETS_READY(23/23) 先于引擎启动",
+      "detail": "ready@行34 < engine@行37"
+    },
+    {
+      "status": "PASS",
+      "id": "B3",
+      "desc": "真实 PixiJS 变换矩阵下 23 帧 × 2 尺寸零裁切",
+      "detail": "[renderer:1] [R144 bounds self-test] SUMMARY frames=46 clipped=0 issues=0"
+    },
+    {
+      "status": "PASS",
+      "id": "B4",
+      "desc": "全部帧底边贴同一地面接触线 (脚底/地面接触点稳定)",
+      "detail": "46/46 帧 groundErr=0"
+    },
+    {
+      "status": "PASS",
+      "id": "B5",
+      "desc": "idle 能自动切换 (无需用户按键)",
+      "detail": "观测到 2 次从 IDLE 自动切出"
+    },
+    {
+      "status": "PASS",
+      "id": "B6",
+      "desc": "walk_left / walk_right 状态有效 (确定性行走场景)",
+      "detail": "观测到 2 次进入行走状态"
+    },
+    {
+      "status": "PASS",
+      "id": "B8",
+      "desc": "窗口坐标复核: 整数坐标 + actual==target + 真实位移==请求步长",
+      "detail": "17 次 setBounds, 不一致 0, 位移不符 0, 零步长 0, x 跨度 105px"
+    },
+    {
+      "status": "PASS",
+      "id": "B9",
+      "desc": "到屏幕边缘自动转向 (边界判定基于真实窗口位置)",
+      "detail": "观测到 1 次 edge-turn"
+    },
+    {
+      "status": "PASS",
+      "id": "B10",
+      "desc": "退出后无定时器/进程残留",
+      "detail": "引擎已 stop, 残留进程 0"
+    },
+    {
+      "status": "PASS",
+      "id": "C1",
+      "desc": "缺帧时明确报错且拒绝启动自主行为 (拒绝虚假 PASS)",
+      "detail": "ASSETS_ERROR 已报, 引擎未启动"
+    },
+    {
+      "status": "PASS",
+      "id": "C2",
+      "desc": "缺帧时 renderer 仍上报了就绪状态 (事实可见)",
+      "detail": "assets-ready 已上报并带错误信息"
+    },
+    {
+      "status": "PASS",
+      "id": "D1",
+      "desc": "慢速加载: 引擎在资源就绪后才启动, 且首次行为切换未丢失",
+      "detail": "ready@行35 < engine@行37, 后续自动切换 2 次"
+    },
+    {
+      "status": "PASS",
+      "id": "E1",
+      "desc": "重复 assets-ready 被忽略, 引擎只启动一次",
+      "detail": "engine started x1, duplicate ignored x1"
+    },
+    {
+      "status": "PASS",
+      "id": "F1",
+      "desc": "sleep_enter -> sleep_loop -> wake_up 顺序正确 (确定性睡眠场景)",
+      "detail": "观测顺序 SLEEP_ENTER,SLEEP_LOOP,WAKE_UP"
+    },
+    {
+      "status": "PASS",
+      "id": "F2",
+      "desc": "一次性动画完成事件每次只发一次 (与状态进入次数严格相等)",
+      "detail": "sleep_enter 回报 2/2, wake_up 回报 1/1"
+    },
+    {
+      "status": "PASS",
+      "id": "F3",
+      "desc": "末帧保持时长符合 frame_ms (600ms) 且未回卷到首帧",
+      "detail": "样本 3 次, 保持 600~610ms, 回卷 0 次"
+    },
+    {
+      "status": "NOT_GUI_VERIFIED",
+      "id": "G1",
+      "desc": "用户拖拽期间自动行为暂停 (真实鼠标)",
+      "detail": "需 Mac 真机; 单元测试 T8 + 引擎优先级已覆盖; R113 拖拽核心逐字未改 (A4)"
+    },
+    {
+      "status": "NOT_GUI_VERIFIED",
+      "id": "G2",
+      "desc": "松开拖拽后自主行为恢复 (真实鼠标)",
+      "detail": "需 Mac 真机; 单元测试 T9 已覆盖状态机层"
+    },
+    {
+      "status": "NOT_GUI_VERIFIED",
+      "id": "G3",
+      "desc": "真实鼠标拖拽窗口跟随 (真实鼠标)",
+      "detail": "R113 已由用户 Mac 真机验证; 本轮逐字未改核心代码, 但未重测真机"
+    }
+  ]
+}

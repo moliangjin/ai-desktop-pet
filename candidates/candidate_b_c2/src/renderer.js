@@ -14,6 +14,14 @@
 
 const { ipcRenderer } = require('electron');
 const PIXI = require('pixi.js');
+// R144: 三个纯逻辑生产模块 — renderer 与自动化测试调用的是同一份代码
+//   sprite_layout.js : 基于素材真实非透明 bbox 的缩放/锚点/地面线算法
+//   anim_clock.js    : 帧推进时钟 (一次性动画末帧停住 + 只报一次完成)
+//   asset_gate.js    : 资源就绪判定 (main 侧使用, renderer 只负责报告事实)
+const {
+    computeLayout, contentRectToScreen, isRectInsideCanvas,
+} = require('./sprite_layout.js');
+const { AnimationClock } = require('./anim_clock.js');
 
 const stage = document.getElementById('stage');
 const fallback = document.getElementById('fallback');
@@ -77,6 +85,12 @@ let oldPointerUpHandler_ = null;
 // R100 P0-5 修复: asset 加载统计 + 失败标记
 let assetLoadTotal_ = 0;
 let assetLoadFailed_ = 0;
+// ====== R144 新增 ======
+let manifest_ = null;      // 保留 manifest 供布局构建与边界自检
+let layout_ = null;        // 当前布局 (scale / anchor / 逐帧地面线 y)
+let animClock_ = new AnimationClock();  // R144 P0-2: 帧推进时钟 (生产模块)
+let assetsReadySent_ = false;           // R144 P0-3: assets-ready 只发一次
+const R144_T0_ = Date.now();            // R144: 相对时间戳基准 (供 e2e 核算末帧保持时长)
 
 const frameDeltas = [];
 function tick() {
@@ -217,8 +231,10 @@ function attachCanvasListeners(stageEl) {
 // 所有动画计时状态共享, 模式切换重建 canvas 后 tickerCallback 继续正常工作.
 // R104: sprite 不再被 drag 移动 (拖动整个 BrowserWindow, sprite 固定 canvas 中心)
 // R141: 支持 frame_ms 精确帧时长; 一次性动画播完回报主进程 (驱动状态机)
-let oneShotReported_ = false;      // 当前一次性动画是否已回报
-let oneShotHoldUntil_ = 0;         // 最后一帧需要停留多久才算播完
+// R144 P0-2: 帧推进逻辑整体移入生产模块 src/anim_clock.js
+//   - loop=false 时逐帧推进到末帧后**停住**, 不再用取模跳回首帧
+//   - 末帧保持一个 frame_ms 后只回报一次 animation-finished
+//   - 动作被切换/拖拽打断后, 旧的完成事件作废 (epoch 校验), 不得发过期事件
 function tickerCallback() {
     tick();
     // R104 P0-1: drag 期间 sprite 位置保持稳定 (BrowserWindow 移动, sprite 相对窗口位置不变)
@@ -226,30 +242,73 @@ function tickerCallback() {
     if (!meta || meta.frames.length === 0) {
         return;  // R100 P0-5: 无帧时 skip 切帧, 不假装
     }
-    // R141: 优先用 frame_ms (R138 manifest 提供), 回退 fps
-    const period = meta.frame_ms ? meta.frame_ms : (1000 / (meta.fps || 8));
-    const now = performance.now();
-    if (now - lastAdvanceAt >= period) {
-        frameIdx = (frameIdx + 1) % meta.frames.length;
+    // 动作与时钟不同步时 (例如拖拽结束后直接回到 idle) 立即对齐, 避免沿用旧的末帧状态
+    if (animClock_.action !== currentAction) {
+        animClock_.setAction(currentAction, meta, performance.now());
+    }
+    const res = animClock_.tick(performance.now());
+    lastAdvanceAt = animClock_.lastAdvanceAt;
+    if (res.changed) {
+        frameIdx = res.frameIndex;
         sprite_.texture = meta.frames[frameIdx];
-        lastAdvanceAt = now;
-        // R141: 一次性动画 (sleep_enter / wake_up) 到最后一帧后停留一帧时长再回报
-        if (!meta.loop) {
-            if (frameIdx !== meta.frames.length - 1) {
-                oneShotReported_ = false;
-            } else if (!oneShotReported_) {
-                oneShotHoldUntil_ = now + period;
-            }
-        } else {
-            oneShotReported_ = false;
+        // R144 P0-1: 逐帧把内容底边对齐到地面接触线 (姿态切换时脚底不跳动)
+        applyFramePosition(currentAction, frameIdx);
+        // R144 P0-2: 一次性动画到达末帧时打点 (带相对时间戳, 供 e2e 核算"末帧保持时长")
+        if (!meta.loop && res.frameIndex === meta.frames.length - 1) {
+            console.log(`[renderer] R144 oneshot last-frame ${res.action} index=${res.frameIndex}/${meta.frames.length - 1} t=+${Date.now() - R144_T0_}ms`);
         }
     }
-    // R141: 一次性动画完成回报 (只报一次)
-    if (!meta.loop && !oneShotReported_ && oneShotHoldUntil_ > 0 && now >= oneShotHoldUntil_) {
-        oneShotReported_ = true;
-        oneShotHoldUntil_ = 0;
-        console.log(`[renderer] R141 animation-finished ${currentAction} (one-shot)`);
-        ipcRenderer.send('animation-finished', currentAction);
+    if (res.finished) {
+        console.log(`[renderer] R144 animation-finished ${res.action} (one-shot, 末帧保持 ${meta.frame_ms}ms) t=+${Date.now() - R144_T0_}ms`);
+        ipcRenderer.send('animation-finished', res.action);
+    }
+}
+
+// ====== R144 P0-1: 布局构建与应用 ======
+// 依据 manifest.layout.frame_bboxes (由 08_R144_layout_builder.py 从真实 PNG 逐帧测量)
+// 计算: 全部帧共用的统一缩放 + 每帧内容底边对齐到同一条地面接触线。
+// 禁止逐帧改变角色大小来规避裁切 —— scale 全局唯一。
+
+function buildLayoutFor(manifest, canvasW, canvasH) {
+    const texture = (manifest && manifest.canvas_px && manifest.canvas_px[0]) || manifestCanvasSize_;
+    const order = (manifest && manifest.animation_order) || Object.keys((manifest && manifest.actions) || {});
+    const bboxes = (manifest && manifest.layout && manifest.layout.frame_bboxes) || {};
+    const frames = [];
+    for (const action of order) {
+        const a = manifest.actions[action];
+        if (!a) continue;
+        const boxes = bboxes[action] || [];
+        for (let i = 0; i < a.frames.length; i++) {
+            frames.push({ action, index: i, bbox: boxes[i] || null });
+        }
+    }
+    const margin = (manifest && manifest.layout && manifest.layout.margin_px);
+    return computeLayout({
+        canvasW, canvasH,
+        textureW: texture, textureH: texture,
+        frames,
+        margin: (typeof margin === 'number') ? margin : undefined,
+    });
+}
+
+// 把 sprite 的位置对齐到当前帧的地面接触线
+function applyFramePosition(action, index) {
+    if (!layout_ || !sprite_) return;
+    const arr = layout_.frameYByAction[action];
+    if (!arr || arr[index] === undefined) return;
+    sprite_.y = arr[index];
+}
+
+// 应用布局到 sprite (锚点 / 统一缩放 / 水平居中 / 当前帧地面线)
+function applyLayoutToSprite() {
+    if (!sprite_ || !layout_) return;
+    sprite_.anchor.set(layout_.anchor.x, layout_.anchor.y);
+    sprite_.scale.set(layout_.scale, layout_.scale);
+    sprite_.x = layout_.x;
+    applyFramePosition(currentAction, frameIdx);
+    console.log(`[renderer] R144 LAYOUT mode=${currentMode_} canvas=${layout_.canvasW}x${layout_.canvasH} scale=${layout_.scale.toFixed(6)} groundY=${layout_.groundY} margin=${layout_.margin} frames=${layout_.frameCount} missingBBox=${layout_.missingBBox}`);
+    if (layout_.missingBBox > 0) {
+        console.error(`[renderer] R144 LAYOUT_MISSING_BBOX count=${layout_.missingBBox} (已退化为整张纹理, 角色会偏小)`);
     }
 }
 
@@ -268,6 +327,9 @@ function bindSpriteEvents() {
         //   -> ticker 找不到帧会直接 return, 拖拽期间角色静止, 属预期行为)
         currentAction = 'drag';
         frameIdx = 0;
+        // R144 P0-2: 拖拽打断一次性动画 — 旧动画之后不得再发完成事件
+        animClock_.interrupt(performance.now());
+        lastAdvanceAt = performance.now();
         // R141 §四: 用户按住角色时立即暂停自主漫游 (不等 3px 拖动阈值)
         ipcRenderer.send('behavior-drag-state', true);
         setFallbackText('drag');
@@ -289,8 +351,8 @@ function endDrag() {
     dragIsWindowDrag_ = false;
     currentAction = 'idle';
     frameIdx = 0;
-    oneShotReported_ = false;
-    oneShotHoldUntil_ = 0;
+    // R144 P0-2: 拖拽结束回到 idle — 重置一次性动画状态, 旧动画的完成事件作废
+    animClock_.setAction('idle', spritesByAction['idle'], performance.now());
     lastAdvanceAt = performance.now();
     // R141 §四: 松开鼠标后恢复自主行为 (main 侧带过渡延迟)
     ipcRenderer.send('behavior-drag-state', false);
@@ -322,8 +384,9 @@ function setupAnimationPreviewKeys() {
                 currentAction = action;
                 frameIdx = 0;
                 lastAdvanceAt = performance.now();
-                oneShotReported_ = false;
-                oneShotHoldUntil_ = 0;
+                // R144 P0-2: 切换动作时重置一次性动画状态 (旧完成事件作废)
+                animClock_.setAction(action, spritesByAction[action], performance.now());
+                applyFramePosition(action, frameIdx);
                 setFallbackText(`[dev] ${action} (1=idle 2=walk_left 3=walk_right 4=sleep_loop 5=sleep_enter 6=wake_up)`);
                 console.log(`[renderer][dev] animation preview: ${action}`);
             } else {
@@ -385,18 +448,11 @@ function applyModeToScene(mode, opts) {
         return { ok: false, error: msg };
     }
     sprite_ = new PIXI.Sprite(meta.frames[0]);
-    sprite_.anchor.set(0.5, 0.9);
-    // R100 P0-4: sprite 屏幕中心
-    if (cx !== null && cy !== null) {
-        // main 传入中心 (BrowserWindow 中心)
-        sprite_.x = cx;
-        sprite_.y = cy;
-    } else {
-        sprite_.x = w / 2;
-        sprite_.y = h;
-    }
-    const sc = mode === 'compact' ? w / manifestCanvasSize_ : 1.0;
-    sprite_.scale.set(sc, sc);
+    // R144 P0-1: 改用"素材真实非透明范围"算出的布局
+    //   (旧: anchor(0.5,0.9) + y=h + sc=w/1024 → 200x240 裁切 3.7%~6.7%, 256x256 裁切 82%~99%)
+    //   (新: 23 帧统一缩放 + 每帧内容底边对齐同一条地面接触线)
+    layout_ = buildLayoutFor(manifest_, w, h);
+    applyLayoutToSprite();
     sprite_.interactive = true;
     sprite_.buttonMode = true;
     app_.stage.addChild(sprite_);
@@ -410,14 +466,15 @@ function applyModeToScene(mode, opts) {
     stageCssWidth = w;
     stageCssHeight = h;
     const centerLog = cx !== null ? `center=(${cx},${cy})` : `center=canvas_default`;
-    setFallbackText(`[renderer] R100 mode=${mode} size=${w}x${h} scale=${sc.toFixed(2)} ${centerLog}`);
-    console.log(`[renderer] R100 mode=${mode} canvas=${w}x${h} scale=${sc.toFixed(3)} ${centerLog} hitArea=${JSON.stringify(sprite_.getBounds())}`);
-    return { ok: true, mode, size: { w, h }, center: { x: cx, y: cy }, scale: sc };
+    setFallbackText(`[renderer] R144 mode=${mode} size=${w}x${h} scale=${layout_.scale.toFixed(4)} ${centerLog}`);
+    console.log(`[renderer] R144 mode=${mode} canvas=${w}x${h} scale=${layout_.scale.toFixed(6)} groundY=${layout_.groundY} ${centerLog} hitArea=${JSON.stringify(sprite_.getBounds())}`);
+    return { ok: true, mode, size: { w, h }, center: { x: cx, y: cy }, scale: layout_.scale };
 }
 
 ipcRenderer.on('manifest', async (_evt, payload) => {
     setFallbackText('[renderer] loading manifest…');
     const { manifest, baseDir } = payload;
+    manifest_ = manifest;   // R144: 保留 manifest 供布局构建与边界自检
     currentMode_ = payload.initialMode || 'standard';
     // R102 P0-2: 记录 initial mode 供 R100 self-test 结束后恢复
     originalMode_ = currentMode_;
@@ -438,6 +495,12 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     assetLoadFailed_ = 0;
     const path = require('path');
     const url = require('url');
+    // R144 P0-3: 慢速加载测试钩子 (只影响测试, 不改变生产加载逻辑)
+    const assetDelayMs = parseInt(process.env.PET_R144_ASSET_DELAY_MS || '0', 10) || 0;
+    if (assetDelayMs > 0) {
+        console.log(`[renderer] R144 ASSET_DELAY ${assetDelayMs}ms (测试钩子)`);
+        await new Promise((r) => setTimeout(r, assetDelayMs));
+    }
     for (const action of order) {
         const a = manifest.actions[action];
         if (!a) {
@@ -479,11 +542,36 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
         ipcRenderer.send('asset-report', { action, loaded: frames.length, failed, total: frames.length + failed });
         console.log(`[renderer] R100 asset-report ${action}: loaded=${frames.length} failed=${failed}`);
     }
+    // ====== R144 P0-3: 资源就绪报告 (renderer 只汇报事实, 判定在 main 侧 asset_gate) ======
+    const actionsReport = {};
+    for (const action of order) {
+        const m = spritesByAction[action];
+        actionsReport[action] = {
+            loaded: m ? m.frames.length : 0,
+            failed: m ? m.failed : 0,
+            total: m ? m.frames.length + m.failed : 0,
+        };
+    }
+    const assetReport = {
+        total: assetLoadTotal_,
+        loaded: assetLoadTotal_ - assetLoadFailed_,
+        failed: assetLoadFailed_,
+        actions: actionsReport,
+    };
+    function reportAssetsReady(extra) {
+        if (assetsReadySent_) return;   // R144: 只发一次 (重复 ready 由 main 侧忽略)
+        assetsReadySent_ = true;
+        const payload = Object.assign({}, assetReport, extra || {});
+        console.log(`[renderer] R144 assets-ready ${JSON.stringify(payload)}`);
+        ipcRenderer.send('assets-ready', payload);
+    }
+
     // R100 P0-5: 全 0 加载 → 阻止假装成功
     if (assetLoadFailed_ === assetLoadTotal_ && assetLoadTotal_ > 0) {
         const msg = `R100 FAIL: all ${assetLoadTotal_} frames failed to load from ${baseDir}`;
         console.error(msg);
         setFallbackText(msg);
+        reportAssetsReady({ ok: false, error: msg });   // R144: 明确报错, 拒绝虚假 PASS
         return;  // 阻止后续 applyModeToScene 创建假 sprite
     }
 
@@ -509,25 +597,36 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
         const msg = `R100 FAIL: initial action=${currentAction} has no frames after load`;
         console.error(msg);
         setFallbackText(msg);
+        reportAssetsReady({ ok: false, error: msg });   // R144: 明确报错, 拒绝虚假 PASS
         return;
     }
     sprite_ = new PIXI.Sprite(initMeta.frames[0]);
-    sprite_.anchor.set(0.5, 0.9);
-    sprite_.x = w / 2;
-    sprite_.y = h;
-    const sc = currentMode_ === 'compact' ? w / manifestCanvasSize_ : 1.0;
-    sprite_.scale.set(sc, sc);
+    // R144 P0-1: 与 applyModeToScene 同一套布局算法 (统一缩放 + 逐帧地面线对齐)
+    layout_ = buildLayoutFor(manifest_, w, h);
+    applyLayoutToSprite();
     sprite_.interactive = true;
     sprite_.buttonMode = true;
     app_.stage.addChild(sprite_);
-    console.log(`[renderer] R100 sprite enabled: mode=${currentMode_} canvas=${w}x${h} scale=${sc.toFixed(3)} hitArea=${JSON.stringify(sprite_.getBounds())}`);
+    console.log(`[renderer] R144 sprite enabled: mode=${currentMode_} canvas=${w}x${h} scale=${layout_.scale.toFixed(6)} groundY=${layout_.groundY} hitArea=${JSON.stringify(sprite_.getBounds())}`);
 
     bindSpriteEvents();
     attachCanvasListeners(app_.view);
     lastAdvanceAt = performance.now();
+    frameIdx = 0;
+    animClock_.setAction(currentAction, spritesByAction[currentAction], performance.now());
     app_.ticker.add(tickerCallback);
 
-    setFallbackText(`[renderer] R100 mode=${currentMode_} playing ${currentAction}`);
+    setFallbackText(`[renderer] R144 mode=${currentMode_} playing ${currentAction}`);
+
+    // ====== R144 P0-3: 资源全部就绪 → 通知 main ======
+    //   main 收到并通过 asset_gate 判定后才启动自主行为状态机
+    reportAssetsReady({ ok: true });
+
+    // R144: 重复 ready 测试钩子 (只影响测试; main 侧必须忽略重复消息)
+    if (process.env.PET_R144_DUP_READY === '1') {
+        console.log('[renderer] R144 assets-ready DUPLICATE (测试钩子)');
+        ipcRenderer.send('assets-ready', Object.assign({}, assetReport, { ok: true }));
+    }
 
     // R104 P0-2: 动画预览 — 用户无需 DevTools 即可切换 4 种动作
     setupAnimationPreviewKeys();
@@ -548,6 +647,10 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     if (process.env.PET_R111_IPC === '1') {
         setTimeout(() => runR111DragTest(), 1000);
     }
+    // R144: 真实 PixiJS 变换矩阵下核算 23 帧可见像素边界
+    if (process.env.PET_R144_SELFTEST === '1') {
+        setTimeout(() => runR144BoundsSelfTest(), 800);
+    }
 });
 
 ipcRenderer.on('set-action', (_evt, action) => {
@@ -555,11 +658,12 @@ ipcRenderer.on('set-action', (_evt, action) => {
         currentAction = action;
         frameIdx = 0;
         lastAdvanceAt = performance.now();  // R100 P0-1: 重置计时
-        // R141: 切换动作时重置一次性动画回报状态
-        oneShotReported_ = false;
-        oneShotHoldUntil_ = 0;
+        // R144 P0-2: 切换动作时重置一次性动画回报状态 (旧完成事件作废)
+        animClock_.setAction(action, spritesByAction[action], performance.now());
+        // R144 P0-1: 新动作首帧对齐到地面接触线
+        applyFramePosition(action, frameIdx);
         setFallbackText('[renderer] switched to ' + action);
-        console.log(`[renderer] R141 set-action ${action} loop=${!!spritesByAction[action].loop} frame_ms=${spritesByAction[action].frame_ms}`);
+        console.log(`[renderer] R144 set-action ${action} loop=${!!spritesByAction[action].loop} frame_ms=${spritesByAction[action].frame_ms} frames=${spritesByAction[action].frames.length}`);
     } else {
         console.warn(`[renderer] set-action ${action} refused: empty frames`);
     }
@@ -861,5 +965,80 @@ async function runR107DragIPCTest() {
         console.log('[R107 drag-ipc-test] PASS');
     } else {
         console.log('[R107 drag-ipc-test] FAIL:', issues.join('; '));
+    }
+}
+
+// R144: 真实 PixiJS 变换矩阵下的 23 帧可见像素边界核算
+// 依据 R144 P0-1: "每一帧按实际 PixiJS 变换矩阵核算可见像素边界",
+//                "在正式生产渲染参数下验证全部 23 帧"
+// 做法: 用生产布局模块算出 scale/anchor/position → 建真实 PIXI.Sprite →
+//       取 sprite.worldTransform (PixiJS 自己的矩阵) 把内容 bbox 四角映射到屏幕 →
+//       判定是否越出画布, 并核对底边是否贴在地面接触线上。
+async function runR144BoundsSelfTest() {
+    console.log('[R144 bounds self-test] START');
+    const issues = [];
+    let totalFrames = 0;
+    let clippedFrames = 0;
+    if (!manifest_) {
+        console.error('[R144 bounds self-test] FAIL: manifest 未加载');
+        console.log('[R144 bounds self-test] SUMMARY frames=0 clipped=0 issues=1');
+        return;
+    }
+    const modes = [
+        ['compact', compactWidth_, compactHeight_],
+        ['standard', standardSize_, standardSize_],
+    ];
+    for (const [mode, w, h] of modes) {
+        const layout = buildLayoutFor(manifest_, w, h);
+        for (const action of Object.keys(spritesByAction)) {
+            const meta = spritesByAction[action];
+            const rects = layout.rectsByAction[action] || [];
+            for (let i = 0; i < meta.frames.length; i++) {
+                const sp = new PIXI.Sprite(meta.frames[i]);
+                sp.anchor.set(layout.anchor.x, layout.anchor.y);
+                sp.scale.set(layout.scale, layout.scale);
+                sp.x = layout.x;
+                sp.y = layout.frameYByAction[action][i];
+                // PixiJS 7.4.3: 游离 DisplayObject 必须走 temp-parent 机制才能算 worldTransform
+                //   (与 PixiJS 自己的 ObjectRendererSystem.render 完全一致的调用序列)
+                const cacheParent = sp.enableTempParent();
+                sp.updateTransform();
+                sp.disableTempParent(cacheParent);
+                const rect = rects[i];
+                // PixiJS 7.4.3 语义 (重要):
+                //   anchor 作用在**顶点层** —— Sprite._calculateVertices 用
+                //   w1 = -anchor.x * orig.width 把纹理四角整体平移,
+                //   worldTransform 本身只含 position/scale (pivot 默认为 0)。
+                //   因此"纹理像素 (u,v) → 屏幕"必须先减掉 anchor 偏移:
+                //       local = (u - ax*W, v - ay*H);  screen = worldTransform.apply(local)
+                //   这与 sprite_layout.js 使用的公式完全一致。
+                const tex = meta.frames[i];
+                const origW = tex.orig.width;
+                const origH = tex.orig.height;
+                const ax = layout.anchor.x;
+                const ay = layout.anchor.y;
+                // PixiJS 7.4.3: Matrix.apply 收的是 Point 对象
+                const tl = sp.worldTransform.apply(new PIXI.Point(rect.left - ax * origW, rect.top - ay * origH));
+                const br = sp.worldTransform.apply(new PIXI.Point(rect.right - ax * origW, rect.bottom - ay * origH));
+                const inside = tl.x >= -0.01 && tl.y >= -0.01 && br.x <= w + 0.01 && br.y <= h + 0.01;
+                const groundErr = Math.abs(br.y - layout.groundY);
+                totalFrames++;
+                if (!inside) {
+                    clippedFrames++;
+                    issues.push(`${mode}/${action}[${i}] 越界 screen=(${tl.x.toFixed(2)},${tl.y.toFixed(2)})-(${br.x.toFixed(2)},${br.y.toFixed(2)}) canvas=${w}x${h}`);
+                }
+                if (groundErr > 0.01) {
+                    issues.push(`${mode}/${action}[${i}] 地面接触线偏差 ${groundErr.toFixed(4)}px`);
+                }
+                console.log(`[R144 bounds self-test] ${mode} ${action}[${i}] screen=(${tl.x.toFixed(2)},${tl.y.toFixed(2)})-(${br.x.toFixed(2)},${br.y.toFixed(2)}) inside=${inside} groundErr=${groundErr.toFixed(4)}`);
+            }
+        }
+        console.log(`[R144 bounds self-test] MODE ${mode} canvas=${w}x${h} scale=${layout.scale.toFixed(6)} groundY=${layout.groundY} margin=${layout.margin}`);
+    }
+    console.log(`[R144 bounds self-test] SUMMARY frames=${totalFrames} clipped=${clippedFrames} issues=${issues.length}`);
+    if (issues.length === 0 && clippedFrames === 0) {
+        console.log('[R144 bounds self-test] PASS — 23 帧在两种画布尺寸下均完整显示');
+    } else {
+        console.log('[R144 bounds self-test] FAIL:', issues.join('; '));
     }
 }

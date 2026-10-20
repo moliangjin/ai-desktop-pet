@@ -1,7 +1,7 @@
 #!/bin/bash
 # candidates/candidate_b_c2/C2_Mac人工验收.command
 #
-# V0.0 R141 — 自主行为桌宠 Mac 真机人工验收入口
+# V0.0 R144 — 运行时阻断修复版 (R141 自主行为桌宠 + R144 裁切/单次动画/资源握手/坐标复核)入口
 #
 # 本轮目标: 银白短发科技研究员第一次真正具备自主待机、行走、睡觉和醒来的能力.
 #
@@ -98,6 +98,12 @@ echo "  6. 自动醒来          — 自己抬头坐起站回, 恢复待机"
 echo "  7. 鼠标拖拽          — 按住拖动, 窗口跟随鼠标; 松开后过一会儿恢复自主活动"
 echo "  8. 正常退出          — Cmd+Q 退出, 桌面无残留窗口"
 echo ""
+echo "  R144 新增观察点 (重点看这几条):"
+echo "   · 角色**完整显示**  — 脚底不被窗口边缘切掉; 躺下时整段身体都在窗口内"
+echo "   · 姿态切换**不跳动** — 站→坐→躺→起, 脚底始终贴在同一条地面线上"
+echo "   · 一次性动画**不闪回首帧** — 入睡/醒来播完后停在末帧, 不会突然闪回第一帧"
+echo "   · 行走时桌面位置**平滑移动** — 低速不再原地踏步"
+echo ""
 echo " 观察要点:"
 echo "   · 桌宠窗口内不应出现任何调试文字/提示条/英文"
 echo "   · 行走时角色在动 + 桌面位置也在动 (不是原地踏步)"
@@ -141,11 +147,21 @@ if ! grep -q "behavior engine started" "$LOG" 2>/dev/null; then
     exit 11
 fi
 
+# R144 P0-3: 资源未就绪必须明确 FAIL (拒绝虚假 PASS)
+if grep -q "R144 ASSETS_ERROR" "$LOG" 2>/dev/null; then
+    echo "[验收] FATAL: 资源未就绪, 自主行为按设计未启动 (R144 ASSETS_ERROR)" | tee -a "$LOG"
+    exit 10
+fi
+if ! grep -q "R144 ASSETS_READY" "$LOG" 2>/dev/null; then
+    echo "[验收] FATAL: 未收到资源就绪握手" | tee -a "$LOG"
+    exit 10
+fi
+
 # 汇总行为观测
 echo "" | tee -a "$LOG"
 echo " 行为观测汇总:" | tee -a "$LOG"
 echo "   状态转移次数: $(grep -c -e 'R141 STATE' "$LOG" 2>/dev/null)" | tee -a "$LOG"
-echo "   窗口移动次数: $(grep -c -e 'R141 MOVE' "$LOG" 2>/dev/null)" | tee -a "$LOG"
+echo "   窗口移动次数: $(grep -c -e 'R14[14] MOVE' "$LOG" 2>/dev/null)" | tee -a "$LOG"
 echo "   撞边转向次数: $(grep -c -e 'edge-turn' "$LOG" 2>/dev/null)" | tee -a "$LOG"
 echo "   睡眠序列:     ENTER=$(grep -cE -e 'R141 STATE [A-Z_]+ -> SLEEP_ENTER' "$LOG" 2>/dev/null) LOOP=$(grep -cE -e 'R141 STATE [A-Z_]+ -> SLEEP_LOOP' "$LOG" 2>/dev/null) WAKE=$(grep -cE -e 'R141 STATE [A-Z_]+ -> WAKE_UP' "$LOG" 2>/dev/null)" | tee -a "$LOG"
 echo "" | tee -a "$LOG"

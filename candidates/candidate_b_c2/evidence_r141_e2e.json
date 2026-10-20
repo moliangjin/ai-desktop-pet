@@ -63,13 +63,13 @@
       "status": "PASS",
       "id": "7",
       "desc": "自动行走会更新窗口坐标 (非原地踏步)",
-      "detail": "17 次 setBounds, x 跨度 93.2px (4->97.2)"
+      "detail": "18 次 setBounds, x 跨度 39.0px (5->44)"
     },
     {
       "status": "PASS",
       "id": "8",
       "desc": "到边缘会转向",
-      "detail": "观测到 1 次 edge-turn 状态转移"
+      "detail": "观测到 2 次 edge-turn 状态转移"
     },
     {
       "status": "PASS",

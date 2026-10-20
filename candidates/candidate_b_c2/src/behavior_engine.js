@@ -209,20 +209,26 @@ class BehaviorEngine {
 
         const step = this.config.walk_speed_px_per_sec * dtSec;
         const move = step * this._walkDirection;
-        this._walkRemaining -= step;
 
-        let canMove = true;
         let edgeTurned = false;
+        let actualMoved = null;
         try {
             // onMove 返回 { blocked: true } 表示撞到屏幕边界
             const res = this.onMove(move, this.state);
-            if (res && res.blocked) {
-                canMove = false;
-                edgeTurned = true;
+            if (res) {
+                if (res.blocked) {
+                    edgeTurned = true;
+                }
+                // R144 P1: 优先采用主进程 setBounds 后 getBounds 复核出的**真实**位移.
+                //   小数位移累计后可能为 0 (还没凑够 1px), 此时不应凭空扣减剩余距离.
+                if (typeof res.moved === 'number') {
+                    actualMoved = Math.abs(res.moved);
+                }
             }
         } catch (e) {
-            canMove = false;
+            // 异常时保持原有行为 (不误判撞边), 距离按请求步长计
         }
+        this._walkRemaining -= (actualMoved === null) ? step : actualMoved;
 
         if (edgeTurned) {
             // 撞边: 转向 (反向继续走), 重新计算剩余距离

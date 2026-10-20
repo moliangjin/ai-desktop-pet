@@ -20,12 +20,15 @@ const path = require('path');
 const fs = require('fs');
 // R141: 最小自主生活行为引擎 (纯逻辑, main 与测试共用同一份代码)
 const { BehaviorEngine, STATES } = require('./behavior_engine');
+// R144: 资源就绪判定 (main 与测试共用同一份代码)
+const { evaluateAssetReadiness, REQUIRED_ACTIONS } = require('./asset_gate');
 
 const args = process.argv.slice(1);
 let manifestPath = null, winSize = 256, winX = 200, winY = 200;
 let initialMode = 'standard';
 let quitAfter = null, perfOut = null;
 let acceptanceMode = false;    // R141 §九: 验收加速模式 (不改变正式状态机逻辑)
+let sleepProbabilityOverride = null;   // R144: 行为概率覆盖 (0=只走, 1=只睡), 供确定性验收脚本使用
 for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--manifest' && args[i+1]) manifestPath = args[++i];
@@ -40,6 +43,8 @@ for (let i = 0; i < args.length; i++) {
     // R141 §九: 验收加速模式 (只缩短时长参数, 不改变状态机逻辑)
     else if (a === '--acceptance') acceptanceMode = true;
     else if (a === '--acceptance-mode' && args[i+1]) acceptanceMode = (args[++i] !== 'off');
+    // R144: 行为概率覆盖 — 只改 manifest 配置里的概率值, 不改状态机逻辑
+    else if (a === '--sleep-probability' && args[i+1]) sleepProbabilityOverride = parseFloat(args[++i]);
 }
 
 if (!manifestPath) {
@@ -66,6 +71,8 @@ let behaviorEngine = null;
 let behaviorConfig = null;
 let lastWindowBounds = null;   // 上次写入的窗口位置 (避免无变化时重复 setBounds)
 let moveWindowLogAt_ = 0;      // 移动日志节流
+// R144 P1: 小数位移累计器 (低速移动时避免每次取整把位移吃掉)
+let moveRemainder_ = { x: 0, y: 0 };
 
 function clampToWorkArea(x, y, w, h) {
     const rect = mainWindow.getBounds();
@@ -85,30 +92,53 @@ function clampToWorkArea(x, y, w, h) {
 }
 
 // R141 §六 4/5: 平滑移动 + 不高频写入无变化位置
+// R144 P1 修复:
+//   1) 引擎给的是小数位移 (30px/s * 33ms ≈ 0.99px), 原来直接 setBounds(小数)
+//      会被系统取整 → 窗口几乎不动 (低速丢步). 现在先累计, 凑够 1px 才移动.
+//   2) setBounds 之后用 getBounds 复核**真实**位置, 日志与边界判定都用真实值.
 function moveWindowBy(dx, dy) {
-    if (!mainWindow || behaviorEngine && behaviorEngine.getState() === STATES.DRAGGING) {
+    if (!mainWindow) return { blocked: true, reason: 'no window' };
+    if (behaviorEngine && behaviorEngine.getState() === STATES.DRAGGING) {
         return { blocked: true, reason: 'dragging' };
     }
     const rect = mainWindow.getBounds();
-    const targetX = rect.x + dx;
-    const targetY = rect.y + dy;
+    // R144 P1: 小数位移累计 — Electron setBounds 需要整数坐标
+    moveRemainder_.x += dx;
+    moveRemainder_.y += dy;
+    const stepX = Math.trunc(moveRemainder_.x);
+    const stepY = Math.trunc(moveRemainder_.y);
+    moveRemainder_.x -= stepX;
+    moveRemainder_.y -= stepY;
+    if (stepX === 0 && stepY === 0) {
+        // 不足 1px: 保留到下一次累计, 不产生无效 setBounds
+        return { blocked: false, moved: 0, accumulated: true, x: rect.x, y: rect.y };
+    }
+    const targetX = rect.x + stepX;
+    const targetY = rect.y + stepY;
     const clamped = clampToWorkArea(targetX, targetY, rect.width, rect.height);
     // 撞边检测: 目标位置被夹住, 说明到达屏幕边缘
-    const blocked = Math.abs(clamped.x - targetX) > 0.5 || Math.abs(clamped.y - targetY) > 0.5;
+    const wouldBlock = Math.abs(clamped.x - targetX) > 0.5 || Math.abs(clamped.y - targetY) > 0.5;
     // 无变化则不写 (避免高频无意义 setBounds)
     if (lastWindowBounds &&
         lastWindowBounds.x === clamped.x && lastWindowBounds.y === clamped.y) {
-        return { blocked, moved: 0, clamped: true };
+        return { blocked: wouldBlock, moved: 0, clamped: true, x: clamped.x, y: clamped.y };
     }
     mainWindow.setBounds({ x: clamped.x, y: clamped.y, width: rect.width, height: rect.height });
-    lastWindowBounds = { x: clamped.x, y: clamped.y, width: rect.width, height: rect.height };
-    // R141: 移动日志 (节流 200ms) — 用于验证"真实窗口位置变化", 不是原地踏步
+    // R144 P1: setBounds 之后立即 getBounds 复核真实位置 (系统可能再取整/夹紧)
+    const actual = mainWindow.getBounds();
+    const movedX = actual.x - rect.x;
+    const movedY = actual.y - rect.y;
+    lastWindowBounds = { x: actual.x, y: actual.y, width: actual.width, height: actual.height };
+    // R144 P1: 边界判定基于**复核后的真实窗口位置** —— 实际没动 = 撞到屏幕边缘。
+    //   (不再用"目标被夹住"判定, 否则起点在区外时第一步行走会被误判成撞边)
+    const actualBlocked = (movedX === 0 && movedY === 0);
+    // R141: 移动日志 (节流 200ms) — 记录真实位置与真实位移
     const now = Date.now();
     if (!moveWindowLogAt_ || (now - moveWindowLogAt_) > 200) {
         moveWindowLogAt_ = now;
-        console.log(`[main] R141 MOVE x=${clamped.x} y=${clamped.y} dx=${dx.toFixed(2)} state=${behaviorEngine ? behaviorEngine.getState() : 'n/a'}`);
+        console.log(`[main] R144 MOVE x=${actual.x} y=${actual.y} target=(${clamped.x},${clamped.y}) actual=(${actual.x},${actual.y}) moved=(${movedX},${movedY}) step=(${stepX},${stepY}) dx=${dx.toFixed(3)} blocked=${actualBlocked} state=${behaviorEngine ? behaviorEngine.getState() : 'n/a'}`);
     }
-    return { blocked, moved: dx, x: clamped.x, y: clamped.y };
+    return { blocked: actualBlocked, moved: movedX, requested: stepX, x: actual.x, y: actual.y };
 }
 
 function createBehaviorEngine(config) {
@@ -183,6 +213,26 @@ function createWindow() {
     mainWindow.setOpacity(0.999);
     mainWindow.setIgnoreMouseEvents(false);
 
+    // R144 P1: 初始位置先夹进屏幕工作区。
+    //   否则"起点在区外"会让第一步行走被边界判定误当成撞边 (表现为开局莫名掉头)。
+    try {
+        const wa = screen.getDisplayMatching({
+            x: winX, y: winY, width: startSize.w, height: startSize.h,
+        }).workArea;
+        const margin = 4;
+        const maxX = Math.max(wa.x + margin, wa.x + wa.width - startSize.w - margin);
+        const maxY = Math.max(wa.y + margin, wa.y + wa.height - startSize.h - margin);
+        const initX = Math.max(wa.x + margin, Math.min(winX, maxX));
+        const initY = Math.max(wa.y + margin, Math.min(winY, maxY));
+        if (initX !== winX || initY !== winY) {
+            mainWindow.setBounds({ x: initX, y: initY, width: startSize.w, height: startSize.h });
+            console.log(`[main] R144 initial position clamped (${winX},${winY}) -> (${initX},${initY}) workArea=(${wa.x},${wa.y},${wa.width},${wa.height})`);
+        }
+        lastWindowBounds = { x: initX, y: initY, width: startSize.w, height: startSize.h };
+    } catch (e) {
+        console.error(`[main] R144 initial position clamp failed: ${e?.message}`);
+    }
+
     mainWindow.on('ready-to-show', () => {
         console.log('[main] window ready-to-show');
     });
@@ -219,19 +269,18 @@ function createWindow() {
             standardSize: { w: STANDARD_SIZE, h: STANDARD_SIZE },
         });
 
-        // R141: 启动自主行为引擎 (等 renderer 加载完资源再启动, 避免动画未就绪)
-        const behavior = (data && data.behavior) || {};
-        const cfg = Object.assign({}, behavior.config || {});
-        if (acceptanceMode) {
-            // R141 §九: 验收模式只加速状态触发, 不改状态机逻辑 (只缩短时长参数)
-            cfg.idle_min_ms = 1200; cfg.idle_max_ms = 2500;
-            cfg.sleep_min_ms = 4000; cfg.sleep_max_ms = 7000;
-            cfg.walk_min_distance_px = 40; cfg.walk_max_distance_px = 120;
-            console.log('[main] R141 ACCEPTANCE_MODE (加速参数, 状态机逻辑不变)');
-        }
-        behaviorEngine = createBehaviorEngine(cfg);
-        behaviorEngine.start();
-        console.log(`[main] R141 behavior engine started state=${behaviorEngine.getState()}`);
+        // R144 P0-3: 这里**不再**启动行为引擎。
+        //   renderer 仍在异步加载 23 帧, 必须等它上报 assets-ready 且通过
+        //   asset_gate 判定后才启动, 否则状态机可能在资源就绪前要求切动作。
+        manifestBehaviorConfig_ = data;
+        console.log('[main] R144 manifest sent, waiting for renderer assets-ready');
+
+        // R144: 看门狗 — renderer 迟迟不上报资源就绪时明确报错 (不静默等待)
+        assetsWatchdog_ = setTimeout(() => {
+            if (!assetsReadyHandled_) {
+                console.error(`[main] R144 ASSETS_TIMEOUT renderer 20s 内未上报 assets-ready, 自主行为未启动`);
+            }
+        }, 20000);
     });
 
     if (quitAfter) {
@@ -251,6 +300,7 @@ app.on('window-all-closed', () => {
         behaviorEngine = null;
         console.log('[main] R141 behavior engine stopped (window-all-closed)');
     }
+    if (assetsWatchdog_) { clearTimeout(assetsWatchdog_); assetsWatchdog_ = null; }
     stopDragPolling();
     app.quit();
 });
@@ -262,6 +312,7 @@ app.on('before-quit', () => {
         behaviorEngine = null;
         console.log('[main] R141 behavior engine stopped (before-quit)');
     }
+    if (assetsWatchdog_) { clearTimeout(assetsWatchdog_); assetsWatchdog_ = null; }
     stopDragPolling();
 });
 
@@ -290,6 +341,55 @@ ipcMain.on('asset-report', (_evt, report) => {
     console.log(`[main] asset-report: ${report.action} loaded=${report.loaded} failed=${report.failed}`);
 });
 
+// ====== R144 P0-3: 资源就绪握手 ======
+// renderer 加载完 6 组 23 帧并确认可播放后上报 assets-ready;
+// main 通过 asset_gate 判定后才启动自主行为状态机。
+// 缺帧 → 明确报错并拒绝启动 (拒绝虚假 PASS); 重复 ready → 忽略。
+let assetsReadyHandled_ = false;
+let assetsWatchdog_ = null;
+let manifestBehaviorConfig_ = null;
+let assetsError_ = null;
+
+function startBehaviorEngine() {
+    if (behaviorEngine) return false;   // 幂等: 重复 ready 不得重复启动
+    const behavior = (manifestBehaviorConfig_ && manifestBehaviorConfig_.behavior) || {};
+    const cfg = Object.assign({}, behavior.config || {});
+    if (acceptanceMode) {
+        // R141 §九: 验收模式只加速状态触发, 不改状态机逻辑 (只缩短时长参数)
+        cfg.idle_min_ms = 1200; cfg.idle_max_ms = 2500;
+        cfg.sleep_min_ms = 4000; cfg.sleep_max_ms = 7000;
+        cfg.walk_min_distance_px = 40; cfg.walk_max_distance_px = 120;
+        console.log('[main] R141 ACCEPTANCE_MODE (加速参数, 状态机逻辑不变)');
+    }
+    if (sleepProbabilityOverride !== null) {
+        // R144: 概率覆盖 (只改配置值, 不改状态机逻辑), 让验收脚本可确定性复现
+        cfg.sleep_probability = sleepProbabilityOverride;
+        console.log(`[main] R144 sleep-probability override=${sleepProbabilityOverride}`);
+    }
+    behaviorEngine = createBehaviorEngine(cfg);
+    behaviorEngine.start();
+    console.log(`[main] R144 behavior engine started state=${behaviorEngine.getState()}`);
+    return true;
+}
+
+ipcMain.on('assets-ready', (_evt, report) => {
+    if (assetsReadyHandled_) {
+        console.log(`[main] R144 ASSETS_READY_DUPLICATE ignored (loaded=${report && report.loaded})`);
+        return;
+    }
+    assetsReadyHandled_ = true;
+    if (assetsWatchdog_) { clearTimeout(assetsWatchdog_); assetsWatchdog_ = null; }
+    const verdict = evaluateAssetReadiness(report, REQUIRED_ACTIONS);
+    if (!verdict.ok) {
+        assetsError_ = report;
+        console.error(`[main] R144 ASSETS_ERROR 资源未就绪, 拒绝启动自主行为: ${verdict.errors.join(' | ')}`);
+        console.error(`[main] R144 ASSETS_ERROR report=${JSON.stringify(report)}`);
+        return;   // 明确报错, 拒绝虚假 PASS
+    }
+    console.log(`[main] R144 ASSETS_READY loaded=${verdict.loaded}/${verdict.total} actions=${REQUIRED_ACTIONS.join(',')}`);
+    startBehaviorEngine();
+});
+
 ipcMain.on('action-switch', (_evt, action) => {
     if (mainWindow) {
         mainWindow.webContents.send('set-action', action);
@@ -307,6 +407,8 @@ ipcMain.on('animation-finished', (_evt, action) => {
 
 // 拖拽与自主行为协调 (R141 §四)
 ipcMain.on('behavior-drag-state', (_evt, dragging) => {
+    // R144 P1: 拖拽打断后清空小数位移累计, 避免拖拽期间的残留位移被继续使用
+    if (dragging) { moveRemainder_.x = 0; moveRemainder_.y = 0; }
     if (!behaviorEngine) return;
     behaviorEngine.setDragging(!!dragging);
     console.log(`[main] R141 behavior drag-state=${!!dragging} state=${behaviorEngine.getState()}`);

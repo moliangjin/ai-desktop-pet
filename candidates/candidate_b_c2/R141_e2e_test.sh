@@ -173,8 +173,11 @@ else
 fi
 
 # ---------- 测试 7: 自动行走更新窗口坐标 ----------
-MOVE_CNT=$(grep -c -e "R141 MOVE" "$LOG" 2>/dev/null)
-MOVE_XS=$(grep -oE -e "R141 MOVE x=[0-9.-]+" "$LOG" 2>/dev/null | grep -oE -e "x=[0-9.-]+" | cut -d= -f2)
+# R144: MOVE 日志格式升级为 "R144 MOVE x=.. y=.. target=(..) actual=(..) moved=(..) step=(..)"
+#       x/y 现在是 setBounds 后 getBounds 复核出的**真实**坐标, 仍为整数。
+#       故此处放宽标签匹配 (R141|R144), x 提取规则保持不变。
+MOVE_CNT=$(grep -c -e "R14[14] MOVE" "$LOG" 2>/dev/null)
+MOVE_XS=$(grep -oE -e "R14[14] MOVE x=[0-9.-]+" "$LOG" 2>/dev/null | grep -oE -e "x=[0-9.-]+" | cut -d= -f2)
 X_MIN=$(echo "$MOVE_XS" | sort -n | head -1)
 X_MAX=$(echo "$MOVE_XS" | sort -n | tail -1)
 X_SPAN=$(python3 -c "

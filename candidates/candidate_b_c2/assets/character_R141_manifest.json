@@ -1,14 +1,26 @@
 {
   "character_id": "default_scientist",
-  "version": "R141-RUNTIME",
+  "version": "R144-RUNTIME",
   "source_round": "R138",
   "source_manifest": "/Users/musk123/Downloads/minimax工作文件夹/图文工作/character_animation_R138/08_MANIFEST/R138_manifest.json",
   "a1_reference_sha256": "3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df",
-  "canvas_px": [1024, 1024],
+  "canvas_px": [
+    1024,
+    1024
+  ],
   "anchor": {
-    "stand": [0.5, 0.90],
-    "sit": [0.5, 0.86],
-    "lie": [0.5, 0.78]
+    "stand": [
+      0.5,
+      0.9
+    ],
+    "sit": [
+      0.5,
+      0.86
+    ],
+    "lie": [
+      0.5,
+      0.78
+    ]
   },
   "animation_order": [
     "idle",
@@ -94,7 +106,15 @@
   "behavior": {
     "engine": "src/behavior_engine.js",
     "state_machine": {
-      "states": ["IDLE", "WALK_LEFT", "WALK_RIGHT", "SLEEP_ENTER", "SLEEP_LOOP", "WAKE_UP", "DRAGGING"],
+      "states": [
+        "IDLE",
+        "WALK_LEFT",
+        "WALK_RIGHT",
+        "SLEEP_ENTER",
+        "SLEEP_LOOP",
+        "WAKE_UP",
+        "DRAGGING"
+      ],
       "transitions": [
         "IDLE -> WALK_LEFT | WALK_RIGHT | SLEEP_ENTER (随机选择)",
         "WALK_LEFT | WALK_RIGHT -> IDLE (走完距离 或 到达屏幕边缘转向)",
@@ -104,8 +124,16 @@
         "任意状态 -> DRAGGING (用户拖拽)",
         "DRAGGING -> IDLE (松开鼠标 + 过渡延迟)"
       ],
-      "one_shot_animations": ["sleep_enter", "wake_up"],
-      "loop_animations": ["idle", "walk_left", "walk_right", "sleep_loop"]
+      "one_shot_animations": [
+        "sleep_enter",
+        "wake_up"
+      ],
+      "loop_animations": [
+        "idle",
+        "walk_left",
+        "walk_right",
+        "sleep_loop"
+      ]
     },
     "config": {
       "idle_min_ms": 3000,
@@ -126,5 +154,168 @@
     "R141 运行时 manifest: 帧路径相对本 manifest 所在目录 (assets/character_R141_manifest.json -> character_R138/...)",
     "R138 六组动作 23 帧全部为 1024x1024 RGBA PNG",
     "sleep_enter / wake_up 为一次性动画, 由 renderer 播完回报主进程"
-  ]
+  ],
+  "layout": {
+    "source": "R144 08_R144_layout_builder.py — 真实 PNG alpha 通道逐帧测量",
+    "bbox_convention": "PIL getbbox 约定 [left, top, right, bottom], right/bottom 为开区间, 单位=纹素",
+    "margin_px": 4,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.9
+    },
+    "scale_rule": "全局统一缩放: scale = min over 23 frames of fit; 逐帧禁止改大小",
+    "ground_rule": "每帧内容底边贴 canvasH - margin_px (同一地面接触线)",
+    "frame_bboxes": {
+      "idle": [
+        [
+          329,
+          37,
+          704,
+          987
+        ],
+        [
+          320,
+          39,
+          721,
+          987
+        ],
+        [
+          329,
+          37,
+          704,
+          987
+        ],
+        [
+          329,
+          37,
+          704,
+          987
+        ],
+        [
+          320,
+          37,
+          704,
+          987
+        ],
+        [
+          320,
+          37,
+          704,
+          987
+        ]
+      ],
+      "walk_left": [
+        [
+          320,
+          37,
+          704,
+          987
+        ],
+        [
+          299,
+          37,
+          733,
+          987
+        ],
+        [
+          306,
+          37,
+          718,
+          987
+        ],
+        [
+          301,
+          38,
+          723,
+          987
+        ]
+      ],
+      "walk_right": [
+        [
+          320,
+          37,
+          715,
+          987
+        ],
+        [
+          320,
+          37,
+          704,
+          987
+        ],
+        [
+          301,
+          37,
+          723,
+          989
+        ],
+        [
+          307,
+          37,
+          717,
+          987
+        ]
+      ],
+      "sleep_enter": [
+        [
+          338,
+          38,
+          721,
+          1002
+        ],
+        [
+          23,
+          279,
+          993,
+          725
+        ],
+        [
+          44,
+          299,
+          997,
+          747
+        ]
+      ],
+      "sleep_loop": [
+        [
+          68,
+          265,
+          966,
+          747
+        ],
+        [
+          63,
+          344,
+          980,
+          744
+        ],
+        [
+          49,
+          330,
+          977,
+          691
+        ]
+      ],
+      "wake_up": [
+        [
+          36,
+          271,
+          994,
+          693
+        ],
+        [
+          312,
+          39,
+          718,
+          925
+        ],
+        [
+          320,
+          37,
+          704,
+          987
+        ]
+      ]
+    }
+  }
 }

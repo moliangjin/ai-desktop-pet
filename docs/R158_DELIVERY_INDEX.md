@@ -4,7 +4,7 @@
 > **对应任务书**：R158（修复点击互动视觉质量，承接 R156）
 > **作者**：MiniMax（Mavis）
 > **上一交付**：R156 `59851cd` / 索引 `75114f8` / 实现 `5905cf1`
-> **本轮实现提交**：`947396fab68487b4d97cc1855b5442f9e0e0ba14`
+> **本轮实现提交**：`b7400709f4055a4f8a5dd04ca1f74fc3435fe766`
 > **状态**：`ENGINEERING_GATE = PASS` / `VISUAL_GATE = PASS`（沙箱内真实 Electron 运行 + 像素级客观测量）/ **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** / `V0_0_RELEASE_STATUS = NOT_FROZEN`
 > **范围声明**：本轮未进入 V0.1；未重做角色/C1；未新增语音/记忆/AI 聊天；未做系统鼠标注入；**未充值 i2i**；未做 180° 转身的伪实现；未批量重做旧动作。R156 的床/月亮/被子、小沙发、办公场景**原样保留未重做**。
 
@@ -18,9 +18,9 @@
 | 候选实现 | `candidates/candidate_b_c2/` |
 | QA 报告 | `docs/R158_QA_REPORT.md` |
 | 交付索引 | `docs/R158_DELIVERY_INDEX.md`（本文件） |
-| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R158_review.zip`（89 文件 / 11,148,951 B） |
-| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R158_review.zip.sha256`（`b400c62be1e6d2c3a92ce04cbed00a8ea642f95c2a274c17d9a35c7d8f99cd7a`） |
-| 备份 | `backup/V0.0_backup_20261021_061729_r158.zip`（179 文件 / 47,273,554 B）+ 同名 `.sha256`（`9f4b80fbb985926290686b336eccabdb8ba7b857f3a51f77278c0e445cc9eec8`） |
+| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R158_review.zip` |
+| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R158_review.zip.sha256` |
+| 备份 | `backup/V0.0_backup_<时间戳>_r158.zip` + 同名 `.sha256` |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`（59 项） |
 | 运行时客观量化 | `candidates/candidate_b_c2/evidence_r158_preview/r156_runtime_verify.json`（23 项）+ `r158_runtime_verify.json`（6 项） |
 | 可观看运行预览 | `candidates/candidate_b_c2/evidence_r158_gifs/`（6 个 GIF + 1 张总览图） |

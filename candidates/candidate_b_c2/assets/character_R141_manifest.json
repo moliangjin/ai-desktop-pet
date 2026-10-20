@@ -1,6 +1,6 @@
 {
   "character_id": "default_scientist",
-  "version": "R148-RUNTIME",
+  "version": "R153-RUNTIME",
   "source_round": "R138",
   "source_manifest": "/Users/musk123/Downloads/minimax工作文件夹/图文工作/character_animation_R138/08_MANIFEST/R138_manifest.json",
   "a1_reference_sha256": "3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df",
@@ -48,12 +48,10 @@
         "enabled": true,
         "base_index": 0,
         "blink_sequence": [
-          4,
           5
         ],
         "blink_frame_ms": [
-          90,
-          110
+          130
         ],
         "blink_interval_ms": [
           1600,
@@ -62,10 +60,12 @@
         "excluded_frames": [
           1,
           2,
-          3
+          3,
+          4
         ],
-        "note": "R147: idle_01_inhale_peak 胸腔剧烈膨胀(实测外扩 26px), 运行时不再播放; 改稳定站姿 + 自然眨眼(1.6~3.4s 随机间隔, 远慢于 R141 的 1.2s 机械循环)"
-      }
+        "note": "R153: blink_sequence 由 [4,5] 改为 [5] —— idle_04 并不是眨眼帧, 它是**右手横在胸前**的姿势, 站立时每 1.6~3.4s 抽手到胸前会被读成\"莫名抬手\"; idle_05 是纯闭眼且手臂下垂。idle_04 与胸腔膨胀帧 1/2/3 一并列入永不播放的排除帧"
+      },
+      "note": "R153: 播放序列 = 稳定站姿(idle_00) + 自然眨眼(idle_05); idle_01/02/03 (胸腔膨胀) 与 idle_04 (手放胸前) 永不播放"
     },
     "walk_left": {
       "frames": [
@@ -79,12 +79,12 @@
       "loop": true,
       "anchor": "stand",
       "lean": {
-        "skew_x": 0.085,
+        "skew_x": 0.0,
         "pivot_y": 921.6,
         "direction": -1,
-        "note": "R147: 保留原 4 帧(迈步方向本就正确); 叠加整体向左倾斜, 身体与腿一起朝移动方向倾, 纹理不镜像"
+        "note": "R153: 整体错切归零 —— R147 的方向倾斜在正面 3/4 视角下被用户读作\"身体明显前倾像要摔倒\"; R148 已把步态本身修对 (落地脚/鞋尖朝正确方向), 方向不再需要靠剪切表达, 归零后重心端正"
       },
-      "note": "R147/R148: 4 帧为已确认**方向正确**的向左步态 (落地脚在左、鞋尖朝左, 由 18_R148_direction_verify.py 客观测量确认); 叠加整体向左倾斜, 纹理本身不镜像"
+      "note": "R147/R148: 4 帧为已确认**方向正确**的向左步态 (落地脚在左、鞋尖朝左, 由 18_R148_direction_verify.py 客观测量确认); R153 去掉整体倾斜, 重心端正"
     },
     "walk_right": {
       "frames": [
@@ -98,10 +98,10 @@
       "loop": true,
       "anchor": "stand",
       "lean": {
-        "skew_x": -0.11,
+        "skew_x": 0.0,
         "pivot_y": 921.6,
         "direction": 1,
-        "note": "R147: 保留原 4 帧; 叠加整体向右倾斜(实测净倾斜与 walk_left 对称: 左 -13px / 右 +12px)"
+        "note": "R153: 同 walk_left, 整体错切归零 (同上); R148 的派生镜像帧自带正确的迈步方向"
       },
       "frame_source": {
         "derived_from": "character_R138/walk_left/ (R147 已确认其迈步方向正确)",
@@ -109,7 +109,7 @@
         "script": "17_R148_mirror_derive.py",
         "verify": "18_R148_direction_verify.py (鞋尖几何客观测量)"
       },
-      "note": "R148: 原 R138 walk_right 4 帧的落脚脚/鞋尖与 walk_left 同向 (均朝左), 向右移动时观感为倒退; 改为由\"已确认正确\"的 walk_left 4 帧整体水平镜像派生, 并把胸口烧瓶徽章归位回角色自己的左胸 (不镜像), 保证两个方向服装/徽章一致"
+      "note": "R148: 由 walk_left 4 帧整体水平镜像 + 徽章归位派生 (落脚脚在右、鞋尖朝右); R153 去掉整体倾斜, 重心端正"
     },
     "sleep_enter": {
       "frames": [
@@ -120,7 +120,9 @@
       "frame_ms": 600,
       "fps": 1.67,
       "loop": false,
-      "anchor": "sit"
+      "anchor": "sit",
+      "frame_blend_ms": 320,
+      "frame_blend_ms_note": "R153: 帧级溶解 320ms —— sleep_enter 第 0 帧本身就是坐姿, 动作级溶解是\"坐→坐\"(无变化); 真正的躺姿出现在换帧那一瞬, 用帧级溶解把它变成渐变过渡 (修复\"坐下瞬间变成躺姿\")"
     },
     "sleep_loop": {
       "frames": [
@@ -142,7 +144,9 @@
       "frame_ms": 600,
       "fps": 1.67,
       "loop": false,
-      "anchor": "stand"
+      "anchor": "stand",
+      "frame_blend_ms": 280,
+      "frame_blend_ms_note": "R153: 帧级溶解 280ms —— 躺→坐起→站 的两处大姿态变化都走渐变"
     }
   },
   "behavior": {
@@ -194,9 +198,11 @@
   },
   "notes": [
     "R141 运行时 manifest: 帧路径相对本 manifest 所在目录 (assets/character_R141_manifest.json -> character_R138/...)",
-    "R138 六组动作 23 帧全部为 1024x1024 RGBA PNG",
+    "R138 六组动作 23 帧全部为 1024x1024 RGBA PNG (R153 起**逐字节未变**)",
     "sleep_enter / wake_up 为一次性动画, 由 renderer 播完回报主进程",
-    "R148: walk_right 运行时使用 4 张派生帧 (character_R138_derived/walk_right_mirror/), 由已确认方向正确的 walk_left 4 帧整体水平镜像 + 徽章归位生成; R138 原始 23 帧全部保留在 character_R138/ 内且字节未变, 其中原 walk_right 4 帧不再被引用"
+    "R148: walk_right 运行时使用 4 张派生帧 (character_R138_derived/walk_right_mirror/)",
+    "R153: 新增 action_library 段 (9 个新动作, 12 张新烘焙帧在 character_R153/); 核心 6 组动作的帧槽位仍是 23 个互不相同的文件",
+    "R153: 行走整体错切归零 (用户反馈\"身体前倾像摔倒\"), 方向由 R148 的步态本身承担"
   ],
   "layout": {
     "source": "R144 08_R144_layout_builder.py — 真实 PNG alpha 通道逐帧测量",
@@ -358,6 +364,108 @@
           704,
           987
         ]
+      ],
+      "look_around": [
+        [
+          338,
+          37,
+          709,
+          987
+        ],
+        [
+          324,
+          37,
+          694,
+          987
+        ]
+      ],
+      "tilt_head": [
+        [
+          338,
+          36,
+          711,
+          987
+        ],
+        [
+          322,
+          37,
+          692,
+          987
+        ]
+      ],
+      "head_nod": [
+        [
+          334,
+          35,
+          699,
+          987
+        ],
+        [
+          326,
+          42,
+          702,
+          987
+        ]
+      ],
+      "happy": [
+        [
+          338,
+          36,
+          710,
+          987
+        ]
+      ],
+      "blink_soft": [
+        [
+          329,
+          37,
+          704,
+          987
+        ],
+        [
+          329,
+          37,
+          704,
+          987
+        ]
+      ],
+      "stretch": [
+        [
+          320,
+          39,
+          721,
+          987
+        ]
+      ],
+      "sit_rest": [
+        [
+          338,
+          38,
+          721,
+          1002
+        ]
+      ],
+      "doze": [
+        [
+          338,
+          38,
+          721,
+          1002
+        ]
+      ],
+      "sleep_breath": [
+        [
+          49,
+          330,
+          977,
+          691
+        ],
+        [
+          49,
+          330,
+          977,
+          691
+        ]
       ]
     }
   },
@@ -377,5 +485,146 @@
       "status": "保留在 character_R138/walk_right/, 字节未改动; R148 起不再被 manifest 引用",
       "reason": "其步向与 walk_left 同向, 直接播放会造成\"向右移动却向左迈步\"的倒退观感"
     }
+  },
+  "action_library": {
+    "enabled": true,
+    "round": "R153",
+    "note": "R153 新增动作库: 每个动作都有独立帧资源与独立语义 (禁止重命名/重复播放/整体旋转虚增)。所有新帧由 22_R153_pose_bake.py 基于现有素材做**局部**处理生成: 眼部区域合成 / 头部连续权重场弯曲 / 胸口软遮罩微缩",
+    "actions": {
+      "look_around": {
+        "frames": [
+          "character_R153/glance_left.png",
+          "character_R153/glance_right.png"
+        ],
+        "frame_ms": [
+          800,
+          800
+        ],
+        "loop": true,
+        "anchor": "stand",
+        "desc": "左右张望: 头部局部横移 + 微缩 + 微旋 (连续权重场变形, 非整体旋转)",
+        "source": "R153 局部烘焙"
+      },
+      "tilt_head": {
+        "frames": [
+          "character_R153/head_tilt.png",
+          "character_R153/head_tilt_other.png"
+        ],
+        "frame_ms": [
+          950,
+          950
+        ],
+        "loop": true,
+        "anchor": "stand",
+        "desc": "歪头观察: 头部绕颈部支点 ±11° 局部弯曲",
+        "source": "R153 局部烘焙"
+      },
+      "head_nod": {
+        "frames": [
+          "character_R153/head_nod.png",
+          "character_R153/head_nod_back.png"
+        ],
+        "frame_ms": [
+          260,
+          380
+        ],
+        "loop": false,
+        "anchor": "stand",
+        "desc": "点头回应: 头部下移+压扁 → 抬起回位 (两帧, 非定格)",
+        "source": "R153 局部烘焙",
+        "frame_blend_ms": 180
+      },
+      "happy": {
+        "frames": [
+          "character_R153/happy.png"
+        ],
+        "frame_ms": [
+          700
+        ],
+        "loop": false,
+        "anchor": "stand",
+        "desc": "开心反馈: 歪头 + 眯眼笑 (点击时使用)",
+        "source": "R153 局部烘焙"
+      },
+      "blink_soft": {
+        "frames": [
+          "character_R153/blink_half.png",
+          "character_R153/blink_closed.png"
+        ],
+        "frame_ms": [
+          130,
+          170
+        ],
+        "loop": false,
+        "anchor": "stand",
+        "desc": "柔和眨眼: 仅换眼部区域, 手臂始终自然下垂",
+        "source": "R153 局部烘焙"
+      },
+      "stretch": {
+        "frames": [
+          "character_R138/idle/idle_01_inhale_peak.png"
+        ],
+        "frame_ms": [
+          1000
+        ],
+        "loop": false,
+        "anchor": "stand",
+        "desc": "伸懒腰: 复用 R138 idle_01 (双臂抬起), 仅在\"醒来后伸展\"这一明确语义下播放",
+        "source": "R138 既有帧 (语义化复用)"
+      },
+      "sit_rest": {
+        "frames": [
+          "character_R138/sleep_enter/sleep_enter_01_sit.png"
+        ],
+        "frame_ms": [
+          1500
+        ],
+        "loop": true,
+        "anchor": "sit",
+        "desc": "坐下休息: 复用 R138 坐姿, 作为独立活动持续一段时间",
+        "source": "R138 既有帧 (语义化复用)"
+      },
+      "doze": {
+        "frames": [
+          "character_R153/doze_sit.png"
+        ],
+        "frame_ms": [
+          1600
+        ],
+        "loop": true,
+        "anchor": "sit",
+        "desc": "困倦打盹: 坐姿 + 闭眼 (仅换眼部区域)",
+        "source": "R153 局部烘焙"
+      },
+      "sleep_breath": {
+        "frames": [
+          "character_R153/sleep_breath_in.png",
+          "character_R153/sleep_breath_out.png"
+        ],
+        "frame_ms": [
+          1500,
+          1500
+        ],
+        "loop": true,
+        "anchor": "lie",
+        "desc": "躺姿呼吸: 仅胸口软遮罩区域垂直微缩, 头顶与脚底固定",
+        "source": "R153 局部烘焙"
+      }
+    }
+  },
+  "r153_action_naturalness": {
+    "issues_from_user": [
+      "启动/点击时莫名抬手、手放胸前 → 根因: idle_04 是手放胸前的姿势却被当作眨眼帧使用",
+      "坐下后瞬间变成躺姿 → 根因: sleep_enter 只有 sit→lie→settled 三帧, 无过渡",
+      "行走时身体明显前倾像要摔倒 → 根因: R147 的整体错切 skew_x",
+      "动作太少、行为重复 → 根因: 只有 6 组动作 + 机械的 走→停→睡→醒 循环"
+    ],
+    "fixes": [
+      "眨眼序列改为 [5] (纯闭眼, 手臂下垂); idle_04 列入永不播放",
+      "点击反馈改为 R153 烘焙的\"歪头+眯眼笑\" (happy), 不再复用手放胸前帧",
+      "行走 skew_x 归零",
+      "新增 action_library 9 个动作; 引擎改为加权活动池 + 不重复上次 + 自然停顿",
+      "新增动作过渡交叉溶解 (sit→lie / doze→lie 等), 消除姿态瞬切"
+    ]
   }
 }

@@ -64,11 +64,29 @@ class AnimationClock {
         this.lastAdvanceAt = (nowMs !== undefined ? nowMs : this.now());
     }
 
-    /** 帧时长 (ms): 优先 frame_ms, 回退 fps */
-    period(meta) {
+    /**
+     * 帧时长 (ms): 优先 frame_ms, 回退 fps
+     *
+     * R153 修复: frame_ms 允许是**每帧时长数组** (如 blink_soft [95,135] = 闭眼快/睁眼慢)。
+     *   旧实现直接 `return m.frame_ms` → 数组参与数值比较会变成 NaN,
+     *   `now - lastAdvanceAt >= NaN` 恒为 false ⇒ **帧永远不推进, 动画静止**。
+     *   (R153 实测: 9 个库动作里有 5 个多帧动作全部被冻住)
+     *
+     * @param {object} [meta]
+     * @param {number} [frameIndex] 取哪一帧的时长 (缺省取当前帧)
+     */
+    period(meta, frameIndex) {
         const m = meta || this.meta;
         if (!m) return 0;
-        if (m.frame_ms) return m.frame_ms;
+        const fm = m.frame_ms;
+        if (Array.isArray(fm)) {
+            const idx = (frameIndex === undefined || frameIndex === null)
+                ? (this.frameIndex || 0) : frameIndex;
+            const v = fm[idx];
+            if (typeof v === 'number' && isFinite(v) && v > 0) return v;
+            return 1000 / (m.fps || 8);
+        }
+        if (typeof fm === 'number' && isFinite(fm) && fm > 0) return fm;
         return 1000 / (m.fps || 8);
     }
 
@@ -89,7 +107,7 @@ class AnimationClock {
         if (!meta || !Array.isArray(meta.frames) || meta.frames.length === 0) {
             return out;
         }
-        const period = this.period(meta);
+        const period = this.period(meta, this.frameIndex);
         const last = meta.frames.length - 1;
 
         if (now - this.lastAdvanceAt >= period) {
@@ -105,7 +123,8 @@ class AnimationClock {
                 out.changed = true;
                 if (this.frameIndex === last) {
                     // 到达末帧 → 保持一个 frame_ms 后回报完成
-                    this.oneShotHoldUntil = now + period;
+                    // (保持时长取**末帧自己**的时长, 数组 frame_ms 时才正确)
+                    this.oneShotHoldUntil = now + this.period(meta, this.frameIndex);
                     this.oneShotReported = false;
                     this.oneShotEpoch = this.epoch;
                 }

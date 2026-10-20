@@ -201,11 +201,14 @@ test('B3 睡眠状态点击 → 走 wake_up 一次性动画, 不瞬移成站姿'
     assert.strictEqual(engine.getState(), STATES.WAKE_UP, '睡眠点击后应进入 WAKE_UP');
     assert.ok(actions.includes('wake_up'), `应下发 wake_up 动作, 实际 ${JSON.stringify(actions)}`);
     assert.ok(!actions.includes('idle'), '睡眠点击不得直接下发 idle (那是瞬移)');
-    // wake_up 播完 → 回到 idle
+    // wake_up 播完 → R153: 先伸懒腰 (有语义的收尾), 再回站立
     engine.onAnimationFinished('wake_up');
+    assert.strictEqual(engine.getState(), STATES.GESTURE, '醒来后应进入 GESTURE(伸懒腰)');
+    assert.ok(actions.includes('stretch'), `醒来后应下发 stretch 动作, 实际 ${JSON.stringify(actions)}`);
+    assert.ok(!actions.includes('idle'), '伸懒腰完成前不得下发 idle');
+    clock.advance(3000);
     assert.strictEqual(engine.getState(), STATES.IDLE);
     assert.ok(actions.includes('idle'));
-    clock.advance(100);
     engine.stop();
 });
 
@@ -272,10 +275,19 @@ test('B7 点击期间行走被暂停, 反馈结束后继续走完 (不被 walk �
 });
 
 // ====== C. 自然待机 ======
-test('C1 待机不再播放胸部膨胀帧 (idle_01 不进入播放序列)', () => {
+test('C1 待机不再播放胸部膨胀帧, 也不再播放"手放胸前"帧 (R153)', () => {
     const spec = MANIFEST.actions.idle.director;
     assert.ok(spec && spec.enabled, 'manifest 必须启用 idle director');
-    assert.deepStrictEqual(spec.excluded_frames, [1, 2, 3], '膨胀帧 1 与回落帧 2/3 必须被排除');
+    // R153: 排除帧从 [1,2,3] 扩到 [1,2,3,4]
+    //   1 = 双臂抬起(伸懒腰源) 2/3 = 胸腔回落实帧 4 = **右手横在胸前**
+    // 4 帧被误当成"半眨眼"帧使用 → 站立时每 1.6~3.4s 抽手到胸前 (用户反馈"莫名抬手")
+    assert.deepStrictEqual(spec.excluded_frames, [1, 2, 3, 4],
+        '膨胀帧 1/2/3 与"手放胸前"帧 4 必须被排除');
+    // 眨眼序列只能用"纯闭眼笑"帧 5
+    assert.deepStrictEqual(spec.blink_sequence, [5],
+        `眨眼序列应为 [5] (纯闭眼笑), 实际 ${JSON.stringify(spec.blink_sequence)}`);
+    assert.ok(!spec.blink_sequence.includes(4), '眨眼序列不得包含"手放胸前"帧 4');
+
     const dir = new IdleDirector({ spec, random: () => 0.5, now: () => 0 });
     dir.setAction('idle', 0);
     const played = new Set();
@@ -285,7 +297,9 @@ test('C1 待机不再播放胸部膨胀帧 (idle_01 不进入播放序列)', () 
     }
     assert.ok(!played.has(1), 'idle_01_inhale_peak 绝不能被播放');
     assert.ok(!played.has(2) && !played.has(3), '回落帧不应被播放');
+    assert.ok(!played.has(4), '"手放胸前"帧绝不能被播放 (用户反馈"莫名抬手")');
     assert.ok(played.has(0), '稳定站姿必须被使用');
+    assert.ok(played.has(5), '眨眼帧 5 必须被使用');
 });
 
 test('C2 眨眼间隔不是 1.2s 机械循环 (1.6~3.4s 随机)', () => {
@@ -369,7 +383,12 @@ test('C4 待机期间角色轮廓不发生整体伸缩 (只切换站姿与眨眼
 // (由已确认方向正确的 walk_left 整体水平镜像 + 徽章归位生成)。
 // R147 原本担心的"只改名就宣称通过"由 R148 的**逐像素镜像校验**接管
 // (见 tests/r148_walk_direction.test.js 与 18_R148_direction_verify.py)。
-test('D1 manifest: walk_left 用原始帧 / walk_right 用派生镜像帧, 且倾斜方向相反', () => {
+//
+// R153 修订: 行走**不再施加整体错切** (skew_x 归零) ——
+//   用户真机反馈"行走时身体明显前倾, 像要摔倒", 根因就是 R147/R148 用
+//   ±0.085/±0.11 的整体错切表达方向, 整个身体偏离垂直轴。
+//   方向已由 R148 的派生镜像帧承载, 错切不再必要 (详见 tests/r148_walk_direction.test.js T6)。
+test('D1 manifest: walk_left 用原始帧 / walk_right 用派生镜像帧, 且行走不施加整体错切', () => {
     const wl = MANIFEST.actions.walk_left, wr = MANIFEST.actions.walk_right;
     assert.strictEqual(wl.frames.length, 4);
     assert.strictEqual(wr.frames.length, 4);
@@ -381,56 +400,36 @@ test('D1 manifest: walk_left 用原始帧 / walk_right 用派生镜像帧, 且�
     // 两组**不是同一批文件** (不是改名, 也不是同一套帧)
     const setL = new Set(wl.frames);
     assert.ok(wr.frames.every(f => !setL.has(f)), 'walk_right 不得复用 walk_left 的帧文件');
-    // 倾斜方向相反
-    assert.ok(wl.lean.skew_x > 0, 'walk_left 应向左倾斜 (k>0)');
-    assert.ok(wr.lean.skew_x < 0, 'walk_right 应向右倾斜 (k<0)');
+    // R153: 错切归零 (修复"前倾像摔倒"), 方向元数据保留
+    assert.strictEqual(wl.lean.skew_x, 0, 'walk_left 不得再施加整体错切');
+    assert.strictEqual(wr.lean.skew_x, 0, 'walk_right 不得再施加整体错切');
     assert.strictEqual(wl.lean.direction, -1);
     assert.strictEqual(wr.lean.direction, 1);
 });
 
-test('D2 倾斜后角色确实朝各自移动方向倾斜 (屏幕坐标实测)', () => {
-    const frames = [];
-    for (const action of MANIFEST.animation_order) {
-        const a = MANIFEST.actions[action];
-        const lean = (a.lean && typeof a.lean.skew_x === 'number') ? a.lean.skew_x : 0;
-        const boxes = MANIFEST.layout.frame_bboxes[action];
-        for (let i = 0; i < a.frames.length; i++) {
-            frames.push({ action, index: i, bbox: boxes[i], skew_x: lean });
-        }
-    }
-    const layout = computeLayout({
-        canvasW: 200, canvasH: 240,
-        textureW: MANIFEST.canvas_px[0], textureH: MANIFEST.canvas_px[1],
-        frames, margin: MANIFEST.layout.margin_px,
-    });
-    // 用"上半身中心 x" 相对 "下半身中心 x" 判断倾斜方向
-    const torsoShift = (action) => {
-        const boxes = MANIFEST.layout.frame_bboxes[action];
-        const mid = Math.floor(boxes.length / 2);
-        const b = boxes[mid];
-        const headMid = (b[0] + b[2]) / 2;
-        const feetY = b[3];
-        const headY = b[1];
-        const rect = { left: b[0], top: b[1], right: b[2], bottom: b[3] };
-        const scr = frameScreenRect(layout, action, mid);
-        // 上半身取 bbox 顶部 30% 的水平中心, 下半身取底部 30%
-        const topRect = { left: b[0], top: b[1], right: b[2], bottom: b[1] + (b[3] - b[1]) * 0.3 };
-        const botRect = { left: b[0], top: b[3] - (b[3] - b[1]) * 0.3, right: b[2], bottom: b[3] };
-        const k = layout.skewByAction[action];
-        const cosT = Math.sqrt(Math.max(0, 1 - k * k));
-        const W = MANIFEST.canvas_px[0], H = MANIFEST.canvas_px[1];
-        const ax = layout.anchor.x, ay = layout.anchor.y;
-        const cx = (r) => {
-            const lx = (r.left + r.right) / 2 - ax * W;
-            const ly = (r.top + r.bottom) / 2 - ay * H;
-            return layout.x + layout.scale * (lx + k * ly);
-        };
-        return cx(topRect) - cx(botRect);
-    };
-    const shiftL = torsoShift('walk_left');
-    const shiftR = torsoShift('walk_right');
-    assert.ok(shiftL < 0, `walk_left 上半身应偏左 (负), 实际 ${shiftL.toFixed(2)}px`);
-    assert.ok(shiftR > 0, `walk_right 上半身应偏右 (正), 实际 ${shiftR.toFixed(2)}px`);
+test('D2 行走帧像素级测量: 左右两组躯干偏心相反且站姿端正 (不靠坐标符号自证)', () => {
+    const { measureGroup } = require(path.join(CAND, 'tests', 'r153_png.js'));
+    const L = measureGroup(MANIFEST.actions.walk_left.frames, path.join(CAND, 'assets'));
+    const R = measureGroup(MANIFEST.actions.walk_right.frames, path.join(CAND, 'assets'));
+
+    // 站姿端正门槛: 上半身偏心 < 身高的 3% (绝对值)
+    assert.ok(L.maxAbsRatio < 0.03,
+        `walk_left 躯干偏心 ${(L.maxAbsRatio * 100).toFixed(2)}% 身高, 超门槛 3%`);
+    assert.ok(R.maxAbsRatio < 0.03,
+        `walk_right 躯干偏心 ${(R.maxAbsRatio * 100).toFixed(2)}% 身高, 超门槛 3%`);
+
+    // 左右两组符号相反 (镜像派生的几何必然) —— 独立几何测量的交叉校验
+    assert.ok(L.meanRatio < 0, `walk_left 偏心应为负, 实际 ${L.meanRatio}`);
+    assert.ok(R.meanRatio > 0, `walk_right 偏心应为正, 实际 ${R.meanRatio}`);
+    assert.ok(Math.abs(L.meanRatio + R.meanRatio) < 1e-6,
+        `镜像派生两组偏心应严格反号: L=${L.meanRatio} R=${R.meanRatio}`);
+
+    // R153 的姿态测量产物 (Python 独立实现) 结论必须为 PASS
+    const ev = JSON.parse(fs.readFileSync(path.join(CAND, 'evidence_r153_posture.json'), 'utf8'));
+    assert.strictEqual(ev.verdict, 'PASS', '25_R153_walk_posture_verify.py 判定必须为 PASS');
+    assert.ok(ev.summary.reduction_ratio <= ev.reduction_ratio_limit,
+        `前倾量降幅应达标: ${JSON.stringify(ev.summary)}`);
+    assert.ok(fs.existsSync(path.join(CAND, ev.compare_png)), '姿态对比图缺失');
 });
 
 test('D3 倾斜纳入布局后 200x240 仍零裁切 (不靠缩小角色规避)', () => {

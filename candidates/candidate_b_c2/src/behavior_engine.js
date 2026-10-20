@@ -17,6 +17,11 @@
 
 'use strict';
 
+// R153 新增: 生活化活动策略 (纯逻辑, 与渲染器/自动化测试共用同一份)
+const {
+    ACTION_CATALOG, GESTURE_DURATION_MS, pickGesture,
+} = require('./action_library.js');
+
 const DEFAULT_CONFIG = Object.freeze({
     idle_min_ms: 3000,
     idle_max_ms: 8000,
@@ -26,10 +31,27 @@ const DEFAULT_CONFIG = Object.freeze({
     walk_move_tick_ms: 33,
     sleep_min_ms: 20000,
     sleep_max_ms: 45000,
-    sleep_probability: 0.3,
-    walk_probability: 0.7,
+    // R153: 睡眠触发频率大幅降低 (0.3 → 0.10), 并与"短暂打盹"分层
+    sleep_probability: 0.10,
+    walk_probability: 0.62,
     drag_resume_delay_ms: 800,
     edge_margin_px: 4,
+    // R153: 生活化活动参数
+    gesture_probability: 0.46,      // 站立小动作 (张望/歪头/点头/伸展/开心)
+    sit_probability: 0.22,          // 坐下休息
+    doze_probability: 0.22,         // 困倦打盹 (短暂, 不躺下)
+    gesture_min_ms: 1600,
+    gesture_max_ms: 3400,
+    sit_min_ms: 6000,
+    sit_max_ms: 13000,
+    doze_min_ms: 7000,
+    doze_max_ms: 15000,
+    sleep_shift_min_ms: 7000,       // 睡眠中"偶尔姿态微调"的最小间隔
+    sleep_shift_max_ms: 15000,      // 睡眠中"偶尔姿态微调"的最大间隔
+    sleep_shift_duration_ms: 4200,  // 一次姿态微调持续时长
+    stretch_after_wake: true,       // 醒来后伸个懒腰
+    activity_repeat_penalty: 0.25,   // 连续做同一类活动的权重折扣
+    no_sleep_after_wake_ms: 45000,  // 醒来后这段时间内不再触发睡眠 (避免 睡→醒→睡)
 });
 
 const STATES = Object.freeze({
@@ -40,6 +62,10 @@ const STATES = Object.freeze({
     SLEEP_LOOP: 'SLEEP_LOOP',
     WAKE_UP: 'WAKE_UP',
     DRAGGING: 'DRAGGING',
+    // R153: 生活化状态
+    GESTURE: 'GESTURE',   // 站立小动作 (张望/歪头/点头/伸展/开心)
+    SIT: 'SIT',           // 坐下休息
+    DOZE: 'DOZE',         // 困倦打盹 (坐着)
 });
 
 // 状态优先级: 数值越大优先级越高. DRAGGING 最高 (用户操作永远优先).
@@ -48,6 +74,9 @@ const STATE_PRIORITY = Object.freeze({
     SLEEP_LOOP: 1,
     SLEEP_ENTER: 2,
     WAKE_UP: 2,
+    GESTURE: 2,
+    SIT: 2,
+    DOZE: 2,
     WALK_LEFT: 3,
     WALK_RIGHT: 3,
     DRAGGING: 10,
@@ -63,9 +92,13 @@ const STATE_ACTION = Object.freeze({
     WALK_LEFT: 'walk_left',
     WALK_RIGHT: 'walk_right',
     SLEEP_ENTER: 'sleep_enter',
-    SLEEP_LOOP: 'sleep_loop',
+    SLEEP_LOOP: 'sleep_breath',
     WAKE_UP: 'wake_up',
     DRAGGING: 'idle',
+    // R153
+    GESTURE: 'idle',     // 实际动作由 _startGesture 单独下发
+    SIT: 'sit_rest',
+    DOZE: 'doze',
 });
 
 class BehaviorEngine {
@@ -107,6 +140,11 @@ class BehaviorEngine {
         this._walkStartedAt = 0;
         this._walkTarget = 0;
         this._lastMoveAt = 0;
+        // R153: 生活化状态记忆 (避免连续重复同一种活动)
+        this._lastActivity = null;      // 上一次的活动类别 (gesture/walk/sit/doze/sleep)
+        this._lastGesture = null;       // 上一次的站立小动作
+        this._wokeAt = -Infinity;       // 最近一次醒来的时间戳 (-Infinity = 从未醒来)
+        this._sleepShiftTimer = null;   // 睡眠中"偶尔姿态微调"的计时器
         this.transitionLog = [];
     }
 
@@ -130,6 +168,7 @@ class BehaviorEngine {
         if (this._moveTimer !== null) { this._clearInterval(this._moveTimer); this._moveTimer = null; }
         if (this._pendingResume !== null) { this._clearTimeout(this._pendingResume); this._pendingResume = null; }
         if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
+        if (this._sleepShiftTimer !== null) { this._clearTimeout(this._sleepShiftTimer); this._sleepShiftTimer = null; }
     }
 
     // ---------- 内部工具 ----------
@@ -172,14 +211,115 @@ class BehaviorEngine {
             this._scheduleIdle();
             return;
         }
-        const pSleep = this.config.sleep_probability;
-        const r = this._random();
-        if (r < pSleep) {
-            this._enterSleep();
-        } else {
-            const dir = this._random() < 0.5 ? -1 : 1;
-            this._startWalk(dir);
+        // R153: 不再是"走/睡"二选一, 而是从 5 类生活活动里按权重挑 (会重复判定见 _pickActivity)
+        const kind = this._pickActivity();
+        switch (kind) {
+            case 'gesture': this._startGesture(); break;
+            case 'walk': {
+                const dir = this._random() < 0.5 ? -1 : 1;
+                this._startWalk(dir);
+                break;
+            }
+            case 'sit': this._startSit(); break;
+            case 'doze': this._startDoze(); break;
+            case 'sleep': this._enterSleep(); break;
+            default: this._scheduleIdle();
         }
+    }
+
+    /**
+     * R153: 加权活动池。
+     *   · 5 类生活活动: 站立小动作 / 散步 / 坐下休息 / 困倦打盹 / 躺下睡觉
+     *   · 对"刚做过的同类活动"打折 (activity_repeat_penalty) → 不会连着做同一件事
+     *   · 刚睡醒不久不再立刻睡 (避免 走→睡→醒→睡 的机械循环)
+     * @returns {'gesture'|'walk'|'sit'|'doze'|'sleep'}
+     */
+    _pickActivity() {
+        const cfg = this.config;
+        const items = [
+            { kind: 'gesture', w: cfg.gesture_probability },
+            { kind: 'walk', w: cfg.walk_probability },
+            { kind: 'sit', w: cfg.sit_probability },
+            { kind: 'doze', w: cfg.doze_probability },
+            { kind: 'sleep', w: cfg.sleep_probability },
+        ].map((it) => {
+            let w = it.w;
+            if (it.kind === this._lastActivity) w *= cfg.activity_repeat_penalty;
+            if (it.kind === 'sleep' && (this._now() - this._wokeAt) < cfg.no_sleep_after_wake_ms) w = 0;
+            return { kind: it.kind, w };
+        });
+        const total = items.reduce((s, it) => s + it.w, 0);
+        if (total <= 0) return 'gesture';
+        let r = this._random() * total;
+        for (const it of items) {
+            r -= it.w;
+            if (r <= 0) return it.kind;
+        }
+        return items[items.length - 1].kind;
+    }
+
+    /**
+     * R153: 站立小动作 (张望/歪头/点头/伸懒腰/开心)。
+     * 动作由 action_library.pickGesture 决定 —— 带权重且不重复上一次。
+     */
+    _startGesture(actionName) {
+        const action = actionName || pickGesture(this._random, this._lastGesture);
+        this._lastGesture = action;
+        this._lastActivity = 'gesture';
+        this._transition(STATES.GESTURE, 'idle-decision');
+        this._setAction(action);
+        const spec = ACTION_CATALOG[action] || {};
+        const base = GESTURE_DURATION_MS[action] || 1200;
+        // 一次性动作播完即止; 循环动作至少跑满一个周期, 再叠加随机时长
+        const ms = spec.loop === false
+            ? Math.round(base * 1.15)
+            : Math.round(base + this._randInt(0, this.config.gesture_max_ms - this.config.gesture_min_ms) * 0.5);
+        this._timer = this._setTimeout(() => {
+            this._timer = null;
+            if (!this._running || this._dragging) return;
+            if (this.state !== STATES.GESTURE) return;
+            this._transition(STATES.IDLE, 'gesture-complete');
+            this._setAction('idle');
+            this._scheduleIdle();
+        }, ms);
+        return action;
+    }
+
+    /** R153: 坐下休息 (可衔接打盹) */
+    _startSit() {
+        this._lastActivity = 'sit';
+        this._transition(STATES.SIT, 'idle-decision');
+        this._setAction('sit_rest');
+        const ms = this._randInt(this.config.sit_min_ms, this.config.sit_max_ms);
+        this._timer = this._setTimeout(() => {
+            this._timer = null;
+            if (!this._running || this._dragging) return;
+            if (this.state !== STATES.SIT) return;
+            // 坐久了有时会迷糊过去 (打盹), 否则起身回到站立
+            if (this._random() < 0.45) {
+                this._startDoze();
+            } else {
+                this._transition(STATES.IDLE, 'sit-complete');
+                this._setAction('idle');
+                this._scheduleIdle();
+            }
+        }, ms);
+    }
+
+    /** R153: 困倦打盹 (坐着闭眼, 短暂) —— 与"躺下长睡"区分 */
+    _startDoze() {
+        this._lastActivity = 'doze';
+        this._transition(STATES.DOZE, 'idle-decision');
+        this._setAction('doze');
+        const ms = this._randInt(this.config.doze_min_ms, this.config.doze_max_ms);
+        this._timer = this._setTimeout(() => {
+            this._timer = null;
+            if (!this._running || this._dragging) return;
+            if (this.state !== STATES.DOZE) return;
+            this._transition(STATES.IDLE, 'doze-complete');
+            this._setAction('idle');
+            this._scheduleIdle();
+        }, ms);
     }
 
     /**
@@ -192,6 +332,7 @@ class BehaviorEngine {
     }
 
     _startWalk(dir, distancePx) {
+        this._lastActivity = 'walk';
         this._walkDirection = dir >= 0 ? 1 : -1;
         // 新的一次行走不受此前"点击反馈暂停"的影响 (否则会走不起来)
         this._movePaused = false;
@@ -284,6 +425,7 @@ class BehaviorEngine {
     }
 
     _enterSleep() {
+        this._lastActivity = 'sleep';
         this._transition(STATES.SLEEP_ENTER, 'idle-decision');
         this._setAction('sleep_enter');
         // 注意: sleep_enter 是一次性动画, 等 renderer 回调 onAnimationFinished('sleep_enter')
@@ -292,10 +434,14 @@ class BehaviorEngine {
     _onSleepEnterFinished() {
         if (this.state !== STATES.SLEEP_ENTER) return false;
         this._transition(STATES.SLEEP_LOOP, 'sleep_enter-finished');
-        this._setAction('sleep_loop');
+        // R153: 用"躺姿呼吸"(胸口局部微缩)作为睡眠主循环, 取代原来 3 个大幅换姿势的帧
+        //       (原来 700ms 一换, 观感是"睡姿乱抽动", 且用户反馈"几乎没有变化")
+        this._setAction('sleep_breath');
+        this._scheduleSleepShift();
         const ms = this._randInt(this.config.sleep_min_ms, this.config.sleep_max_ms);
         this._timer = this._setTimeout(() => {
             this._timer = null;
+            this._clearSleepShift();
             if (this.state !== STATES.SLEEP_LOOP) return;
             this._transition(STATES.WAKE_UP, 'sleep-duration-elapsed');
             this._setAction('wake_up');
@@ -304,8 +450,51 @@ class BehaviorEngine {
         return true;
     }
 
+    /**
+     * R153: 睡眠期间"偶尔姿态微调" —— 隔一段时间换成另一组睡姿, 几秒后换回呼吸。
+     * 这样长时间睡眠不再是"一张图不动", 也不是"每 0.7s 抽动一次"。
+     */
+    _scheduleSleepShift() {
+        this._clearSleepShift();
+        const wait = this._randInt(this.config.sleep_shift_min_ms, this.config.sleep_shift_max_ms);
+        this._sleepShiftTimer = this._setTimeout(() => {
+            this._sleepShiftTimer = null;
+            if (!this._running || this.state !== STATES.SLEEP_LOOP) return;
+            this._setAction('sleep_loop');          // R138 的 3 个睡姿 (偶尔换个睡姿)
+            this._sleepShiftTimer = this._setTimeout(() => {
+                this._sleepShiftTimer = null;
+                if (!this._running || this.state !== STATES.SLEEP_LOOP) return;
+                this._setAction('sleep_breath');
+                this._scheduleSleepShift();
+            }, this.config.sleep_shift_duration_ms);
+        }, wait);
+    }
+
+    _clearSleepShift() {
+        if (this._sleepShiftTimer !== null) {
+            this._clearTimeout(this._sleepShiftTimer);
+            this._sleepShiftTimer = null;
+        }
+    }
+
     _onWakeUpFinished() {
         if (this.state !== STATES.WAKE_UP) return false;
+        this._wokeAt = this._now();
+        // R153: 醒来后伸个懒腰 (有语义的收尾动作), 再回到站立
+        if (this.config.stretch_after_wake) {
+            this._transition(STATES.GESTURE, 'wake_up-finished');
+            this._setAction('stretch');
+            const ms = Math.round((GESTURE_DURATION_MS.stretch || 1000) * 1.2);
+            this._timer = this._setTimeout(() => {
+                this._timer = null;
+                if (!this._running || this._dragging) return;
+                if (this.state !== STATES.GESTURE) return;
+                this._transition(STATES.IDLE, 'stretch-complete');
+                this._setAction('idle');
+                this._scheduleIdle();
+            }, ms);
+            return true;
+        }
         this._transition(STATES.IDLE, 'wake_up-finished');
         this._setAction('idle');
         this._scheduleIdle();
@@ -450,6 +639,7 @@ class BehaviorEngine {
     _clearPendingTimers() {
         if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
         if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
+        this._clearSleepShift();
         if (this._pendingResume !== null) { this._clearTimeout(this._pendingResume); this._pendingResume = null; }
     }
 
@@ -470,6 +660,9 @@ class BehaviorEngine {
             hasMoveTimer: this._moveTimer !== null,
             hasHoldTimer: this._holdTimer !== null,
             movePaused: this._movePaused,
+            lastActivity: this._lastActivity,
+            lastGesture: this._lastGesture,
+            hasSleepShiftTimer: this._sleepShiftTimer !== null,
             pendingTimerCount: [this._timer, this._moveTimer, this._holdTimer, this._pendingResume]
                 .filter((t) => t !== null).length,
             transitionLog: this.transitionLog.slice(-20),

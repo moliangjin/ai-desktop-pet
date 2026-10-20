@@ -1,0 +1,248 @@
+{
+  "metric": "上半身重心相对下半身重心的水平偏移 / 角色身高 (像素级测量, 非坐标符号)",
+  "lean_ratio_limit": 0.03,
+  "reduction_ratio_limit": 0.45,
+  "current_manifest_skew": {
+    "walk_left": 0.0,
+    "walk_right": 0.0
+  },
+  "groups": {
+    "walk_left_R148_skew": {
+      "frames": [
+        {
+          "height_px": 949,
+          "upper_cx": 515.4,
+          "lower_cx": 521.36,
+          "lean_px": -5.96,
+          "lean_ratio": -0.00628,
+          "lean_deg": -0.36,
+          "frame": "character_R138/walk_left/walk_left_00_stand.png",
+          "lean_ratio_with_skew": -0.06482,
+          "lean_deg_with_skew": -3.709
+        },
+        {
+          "height_px": 949,
+          "upper_cx": 515.37,
+          "lower_cx": 527.8,
+          "lean_px": -12.43,
+          "lean_ratio": -0.0131,
+          "lean_deg": -0.75,
+          "frame": "character_R138/walk_left/walk_left_01_left_step.png",
+          "lean_ratio_with_skew": -0.07204,
+          "lean_deg_with_skew": -4.121
+        },
+        {
+          "height_px": 949,
+          "upper_cx": 515.38,
+          "lower_cx": 531.16,
+          "lean_px": -15.77,
+          "lean_ratio": -0.01662,
+          "lean_deg": -0.952,
+          "frame": "character_R138/walk_left/walk_left_02_pass.png",
+          "lean_ratio_with_skew": -0.07583,
+          "lean_deg_with_skew": -4.336
+        },
+        {
+          "height_px": 948,
+          "upper_cx": 519.05,
+          "lower_cx": 532.86,
+          "lean_px": -13.81,
+          "lean_ratio": -0.01456,
+          "lean_deg": -0.834,
+          "frame": "character_R138/walk_left/walk_left_03_right_step.png",
+          "lean_ratio_with_skew": -0.07367,
+          "lean_deg_with_skew": -4.214
+        }
+      ],
+      "source_lean_ratio_mean": 0.01264,
+      "source_lean_ratio_max": 0.01662,
+      "skew_lean_ratio_mean": 0.07159,
+      "skew_lean_ratio_max": 0.07583,
+      "skew_lean_deg_mean": 4.095
+    },
+    "walk_right_R148_skew": {
+      "frames": [
+        {
+          "height_px": 949,
+          "upper_cx": 507.6,
+          "lower_cx": 501.64,
+          "lean_px": 5.96,
+          "lean_ratio": 0.00628,
+          "lean_deg": 0.36,
+          "frame": "character_R138_derived/walk_right_mirror/walk_right_m_00.png",
+          "lean_ratio_with_skew": 0.0822,
+          "lean_deg_with_skew": 4.699
+        },
+        {
+          "height_px": 949,
+          "upper_cx": 507.63,
+          "lower_cx": 495.2,
+          "lean_px": 12.43,
+          "lean_ratio": 0.0131,
+          "lean_deg": 0.75,
+          "frame": "character_R138_derived/walk_right_mirror/walk_right_m_01.png",
+          "lean_ratio_with_skew": 0.08951,
+          "lean_deg_with_skew": 5.115
+        },
+        {
+          "height_px": 949,
+          "upper_cx": 507.62,
+          "lower_cx": 491.84,
+          "lean_px": 15.77,
+          "lean_ratio": 0.01662,
+          "lean_deg": 0.952,
+          "frame": "character_R138_derived/walk_right_mirror/walk_right_m_02.png",
+          "lean_ratio_with_skew": 0.09332,
+          "lean_deg_with_skew": 5.332
+        },
+        {
+          "height_px": 948,
+          "upper_cx": 503.95,
+          "lower_cx": 490.14,
+          "lean_px": 13.81,
+          "lean_ratio": 0.01456,
+          "lean_deg": 0.834,
+          "frame": "character_R138_derived/walk_right_mirror/walk_right_m_03.png",
+          "lean_ratio_with_skew": 0.09127,
+          "lean_deg_with_skew": 5.215
+        }
+      ],
+      "source_lean_ratio_mean": 0.01264,
+      "source_lean_ratio_max": 0.01662,
+      "skew_lean_ratio_mean": 0.08908,
+      "skew_lean_ratio_max": 0.09332,
+      "skew_lean_deg_mean": 5.09
+    },
+    "walk_left_R153_k0": {
+      "frames": [
+        {
+          "height_px": 949,
+          "upper_cx": 515.4,
+          "lower_cx": 521.36,
+          "lean_px": -5.96,
+          "lean_ratio": -0.00628,
+          "lean_deg": -0.36,
+          "frame": "character_R138/walk_left/walk_left_00_stand.png",
+          "lean_ratio_with_skew": -0.00628,
+          "lean_deg_with_skew": -0.36
+        },
+        {
+          "height_px": 949,
+          "upper_cx": 515.37,
+          "lower_cx": 527.8,
+          "lean_px": -12.43,
+          "lean_ratio": -0.0131,
+          "lean_deg": -0.75,
+          "frame": "character_R138/walk_left/walk_left_01_left_step.png",
+          "lean_ratio_with_skew": -0.0131,
+          "lean_deg_with_skew": -0.75
+        },
+        {
+          "height_px": 949,
+          "upper_cx": 515.38,
+          "lower_cx": 531.16,
+          "lean_px": -15.77,
+          "lean_ratio": -0.01662,
+          "lean_deg": -0.952,
+          "frame": "character_R138/walk_left/walk_left_02_pass.png",
+          "lean_ratio_with_skew": -0.01662,
+          "lean_deg_with_skew": -0.952
+        },
+        {
+          "height_px": 948,
+          "upper_cx": 519.05,
+          "lower_cx": 532.86,
+          "lean_px": -13.81,
+          "lean_ratio": -0.01456,
+          "lean_deg": -0.834,
+          "frame": "character_R138/walk_left/walk_left_03_right_step.png",
+          "lean_ratio_with_skew": -0.01456,
+          "lean_deg_with_skew": -0.834
+        }
+      ],
+      "source_lean_ratio_mean": 0.01264,
+      "source_lean_ratio_max": 0.01662,
+      "skew_lean_ratio_mean": 0.01264,
+      "skew_lean_ratio_max": 0.01662,
+      "skew_lean_deg_mean": 0.724
+    },
+    "walk_right_R153_k0": {
+      "frames": [
+        {
+          "height_px": 949,
+          "upper_cx": 507.6,
+          "lower_cx": 501.64,
+          "lean_px": 5.96,
+          "lean_ratio": 0.00628,
+          "lean_deg": 0.36,
+          "frame": "character_R138_derived/walk_right_mirror/walk_right_m_00.png",
+          "lean_ratio_with_skew": 0.00628,
+          "lean_deg_with_skew": 0.36
+        },
+        {
+          "height_px": 949,
+          "upper_cx": 507.63,
+          "lower_cx": 495.2,
+          "lean_px": 12.43,
+          "lean_ratio": 0.0131,
+          "lean_deg": 0.75,
+          "frame": "character_R138_derived/walk_right_mirror/walk_right_m_01.png",
+          "lean_ratio_with_skew": 0.0131,
+          "lean_deg_with_skew": 0.75
+        },
+        {
+          "height_px": 949,
+          "upper_cx": 507.62,
+          "lower_cx": 491.84,
+          "lean_px": 15.77,
+          "lean_ratio": 0.01662,
+          "lean_deg": 0.952,
+          "frame": "character_R138_derived/walk_right_mirror/walk_right_m_02.png",
+          "lean_ratio_with_skew": 0.01662,
+          "lean_deg_with_skew": 0.952
+        },
+        {
+          "height_px": 948,
+          "upper_cx": 503.95,
+          "lower_cx": 490.14,
+          "lean_px": 13.81,
+          "lean_ratio": 0.01456,
+          "lean_deg": 0.834,
+          "frame": "character_R138_derived/walk_right_mirror/walk_right_m_03.png",
+          "lean_ratio_with_skew": 0.01456,
+          "lean_deg_with_skew": 0.834
+        }
+      ],
+      "source_lean_ratio_mean": 0.01264,
+      "source_lean_ratio_max": 0.01662,
+      "skew_lean_ratio_mean": 0.01264,
+      "skew_lean_ratio_max": 0.01662,
+      "skew_lean_deg_mean": 0.724
+    }
+  },
+  "summary": {
+    "old_max_lean_ratio": 0.09332,
+    "new_max_lean_ratio": 0.01662,
+    "reduction_ratio": 0.1781,
+    "old_max_lean_deg": 5.09
+  },
+  "compare_png": "evidence_r153_posture/posture_compare.png",
+  "checks": [
+    {
+      "name": "manifest 行走错切已归零",
+      "pass": true,
+      "detail": "walk_left.skew_x=0.0 walk_right.skew_x=0.0"
+    },
+    {
+      "name": "归零后上半身偏心 < 身高的 3% (站姿端正)",
+      "pass": true,
+      "detail": "实测最大 |lean_ratio| = 0.01662 (门槛 0.03)"
+    },
+    {
+      "name": "相对 R148 旧错切的前倾量降至 45% 以下",
+      "pass": true,
+      "detail": "旧最大 0.09332 → 新最大 0.01662, 保留比例 17.8%"
+    }
+  ],
+  "verdict": "PASS"
+}

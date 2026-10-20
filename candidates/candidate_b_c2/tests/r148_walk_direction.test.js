@@ -212,12 +212,41 @@ test('T5 manifest 的 walk_right bbox 与派生帧真实 bbox 一致 (地面线/
     }
 });
 
-// ====== T6: 倾斜方向仍然相反 ======
-test('T6 倾斜方向相反: walk_left 向左 (k>0) / walk_right 向右 (k<0)', () => {
-    assert.ok(wl.lean.skew_x > 0, 'walk_left 应向左倾斜');
-    assert.ok(wr.lean.skew_x < 0, 'walk_right 应向右倾斜');
-    assert.strictEqual(wl.lean.direction, -1);
-    assert.strictEqual(wr.lean.direction, 1);
+// ====== T6: 行走不再施加整体错切 (R153) + 像素级站姿端正 ======
+// R153 用户真机反馈: "行走时身体明显前倾, 像要摔倒"
+// 根因: R147/R148 用**整体水平错切** (skew_x = ±0.085/±0.11) 表达行走方向,
+//       整个身体偏离垂直轴, 在 200x240 紧凑窗口里观感就是"上半身往前栽"。
+// R148 已经用**派生镜像帧**把"迈步方向"修对了 (鞋尖几何客观测量 PASS),
+//       方向表达不再依赖错切 ⇒ R153 把 walk_*.lean.skew_x 归零。
+//
+// 判定方式: 对**真实像素**测量"上半身重心相对下半身重心的水平偏移 / 身高",
+//           不依赖坐标符号、动画名或本测试自身的 PASS。
+test('T6 行走不施加整体错切 (k=0), 且像素级测量左右两组躯干偏心相反且站姿端正', () => {
+    // 1) manifest 层: 错切归零, 方向元数据保留
+    assert.strictEqual(wl.lean.skew_x, 0, 'walk_left 不应再施加整体错切 (R153 修复"前倾像摔倒")');
+    assert.strictEqual(wr.lean.skew_x, 0, 'walk_right 不应再施加整体错切');
+    assert.strictEqual(wl.lean.direction, -1, 'walk_left 方向元数据应保留为 -1');
+    assert.strictEqual(wr.lean.direction, 1, 'walk_right 方向元数据应保留为 1');
+
+    // 2) 像素层: 真实帧的躯干偏心
+    const { measureGroup } = require(path.join(CAND, 'tests', 'r153_png.js'));
+    const L = measureGroup(wl.frames, ASSETS);
+    const R = measureGroup(wr.frames, ASSETS);
+
+    // 站姿端正门槛: 上半身偏心 < 身高的 3%
+    assert.ok(L.maxAbsRatio < 0.03,
+        `walk_left 躯干偏心过大 ${(L.maxAbsRatio * 100).toFixed(2)}% 身高 (门槛 3%)`);
+    assert.ok(R.maxAbsRatio < 0.03,
+        `walk_right 躯干偏心过大 ${(R.maxAbsRatio * 100).toFixed(2)}% 身高 (门槛 3%)`);
+
+    // 左右两组符号必须相反 (walk_right 是 walk_left 的整体镜像派生 ⇒ 偏心必然反号)
+    // 这是**独立几何测量**得到的交叉校验, 不是"看动画名"
+    assert.ok(L.signs.every(s => s === -1),
+        `walk_left 各帧偏心应同号, 实际 ${L.signs.join(',')}`);
+    assert.ok(R.signs.every(s => s === 1),
+        `walk_right 各帧偏心应同号, 实际 ${R.signs.join(',')}`);
+    assert.ok(Math.abs(L.meanRatio + R.meanRatio) < 1e-6,
+        `镜像派生两组偏心应严格反号: L=${L.meanRatio} R=${R.meanRatio}`);
 });
 
 // ====== T7: 23 个帧槽位仍是 23 个互不相同的文件 ======

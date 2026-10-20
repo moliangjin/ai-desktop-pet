@@ -1,0 +1,200 @@
+{
+  "round": "R153",
+  "techniques": [
+    "face_swap",
+    "head_transform",
+    "torso_breath"
+  ],
+  "items": [
+    {
+      "file": "blink_half.png",
+      "source": "idle_00_base.png",
+      "donor": "idle_04_blink_half.png",
+      "swapped_px": 8383,
+      "bbox": [
+        329,
+        37,
+        704,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 idle_00_base 底图逐像素一致"
+    },
+    {
+      "file": "blink_closed.png",
+      "source": "idle_00_base.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 9130,
+      "bbox": [
+        329,
+        37,
+        704,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 idle_00_base 底图逐像素一致"
+    },
+    {
+      "file": "doze_sit.png",
+      "source": "sleep_enter_01_sit.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 24799,
+      "bbox": [
+        338,
+        38,
+        721,
+        1002
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 sleep_enter_01_sit 底图逐像素一致"
+    },
+    {
+      "file": "head_tilt.png",
+      "source": "idle_00_base.png",
+      "transform": {
+        "dx": 0,
+        "dy": 0,
+        "scale": 1.0,
+        "rotate": 11.0
+      },
+      "bbox": [
+        338,
+        36,
+        711,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "head_tilt_other.png",
+      "source": "idle_00_base.png",
+      "transform": {
+        "dx": 0,
+        "dy": 0,
+        "scale": 1.0,
+        "rotate": -11.0
+      },
+      "bbox": [
+        322,
+        37,
+        692,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "head_nod.png",
+      "source": "idle_00_base.png",
+      "transform": {
+        "dx": 0,
+        "dy": 9,
+        "scale": 0.97,
+        "rotate": 0.0
+      },
+      "bbox": [
+        334,
+        35,
+        699,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "head_nod_back.png",
+      "source": "idle_00_base.png",
+      "transform": {
+        "dx": 0,
+        "dy": -6,
+        "scale": 1.0,
+        "rotate": -3.0
+      },
+      "bbox": [
+        326,
+        42,
+        702,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "glance_left.png",
+      "source": "idle_00_base.png",
+      "transform": {
+        "dx": -11,
+        "dy": 2,
+        "scale": 0.985,
+        "rotate": -3.0
+      },
+      "bbox": [
+        338,
+        37,
+        709,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "glance_right.png",
+      "source": "idle_00_base.png",
+      "transform": {
+        "dx": 11,
+        "dy": 2,
+        "scale": 0.985,
+        "rotate": 3.0
+      },
+      "bbox": [
+        324,
+        37,
+        694,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "happy.png",
+      "source": "_tmp_happy_tilt.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 25014,
+      "bbox": [
+        338,
+        36,
+        710,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 tilt 底图逐像素一致"
+    },
+    {
+      "file": "sleep_breath_in.png",
+      "source": "sleep_loop_02_stable.png",
+      "chest_box": [
+        300,
+        430,
+        700,
+        700
+      ],
+      "amount": 0.045,
+      "bbox": [
+        49,
+        330,
+        977,
+        691
+      ],
+      "note": "仅胸口软遮罩区域垂直微缩, 头顶/脚底固定"
+    },
+    {
+      "file": "sleep_breath_out.png",
+      "source": "sleep_loop_02_stable.png",
+      "chest_box": [
+        300,
+        430,
+        700,
+        700
+      ],
+      "amount": -0.03,
+      "bbox": [
+        49,
+        330,
+        977,
+        691
+      ],
+      "note": "仅胸口软遮罩区域垂直微缩, 头顶/脚底固定"
+    }
+  ]
+}

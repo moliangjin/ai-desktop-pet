@@ -26,6 +26,9 @@ const {
 } = require('./sprite_layout.js');
 const { AnimationClock } = require('./anim_clock.js');
 const { IdleDirector } = require('./idle_director.js');
+// R153 新增纯逻辑生产模块:
+//   action_library.js : 动作目录 + 站立小动作池 + 动作过渡策略 (渲染器与引擎共用同一份)
+const { transitionBlendMs } = require('./action_library.js');
 // R147: 点击/拖拽判定 (纯逻辑, 与自动化测试共用同一份代码)
 const {
     classifyPress, isClickReaction, isDragEnd, releasesPress,
@@ -179,6 +182,9 @@ let clickReaction_ = null;   // 点击反馈状态 (轻微弹跳 + 眨眼)
 let pressInfo_ = null;       // 本次按下的计时/位移记录 (区分 CLICK 与 DRAG)
 let pressAction_ = null;     // 按下**之前**的动作名 (用于睡眠点击唤醒判定)
 let lastPressKind_ = null;   // 最近一次按下的判定结论 (CLICK/DRAG/HOLD/CANCEL)
+// R153: 动作过渡 (交叉溶解) —— 消除"坐下瞬间变成躺姿"的姿态瞬切
+let spritePrev_ = null;      // 过渡用的第二层 sprite (在主 sprite 之下)
+let blend_ = null;           // { startAt, durationMs, fromY }
 // CLICK 判定阈值来自纯逻辑模块 click_policy.js (与自动化测试同一份代码)
 const R147_CLICK_MAX_MS = CLICK_MAX_MS;   // 按住超过 400ms 不算单击
 const R147_CLICK_MAX_PX = CLICK_MAX_PX;   // 累计位移达到 3px 即判定为拖拽
@@ -186,6 +192,10 @@ const R147_DRAG_THRESHOLD_PX = DRAG_THRESHOLD_PX;
 const R147_CLICK_DURATION_MS = 620;  // 点击反馈总时长
 const R147_CLICK_BUMP_PX = 9;        // 点击反馈的轻微弹跳峰值 (屏幕像素)
 const R147_CLICK_HOLD_MS = 700;      // 通知主进程"暂缓自主行为"的时长
+// R153: 点击反馈改为"歪头眯眼笑" (R147 的眨眼式反馈用的是 idle_04 —— 那是"手放胸前"的姿势)
+const R153_CLICK_DURATION_MS = 780;   // 点击反馈总时长
+const R153_CLICK_HAPPY_MS = 430;      // 前 430ms 保持"歪头眯眼笑"
+const R153_CLICK_BUMP_PX = 7;         // 点击反馈的轻微弹跳峰值 (屏幕像素)
 
 const frameDeltas = [];
 function tick() {
@@ -320,6 +330,8 @@ function attachCanvasListeners(stageEl) {
 //   - 动作被切换/拖拽打断后, 旧的完成事件作废 (epoch 校验), 不得发过期事件
 function tickerCallback() {
     tick();
+    // R153: 动作过渡溶解 (优先于一切, 保证过渡不被其它逻辑打断)
+    updateBlend(performance.now());
     // R104 P0-1: drag 期间 sprite 位置保持稳定 (BrowserWindow 移动, sprite 相对窗口位置不变)
     const meta = spritesByAction[currentAction];
     if (!meta || meta.frames.length === 0) {
@@ -350,10 +362,34 @@ function tickerCallback() {
     const res = animClock_.tick(now);
     lastAdvanceAt = animClock_.lastAdvanceAt;
     if (res.changed) {
+        const prevIdx = frameIdx;
         frameIdx = res.frameIndex;
-        sprite_.texture = meta.frames[frameIdx];
-        // R144 P0-1: 逐帧把内容底边对齐到地面接触线 (姿态切换时脚底不跳动)
-        applyFramePosition(currentAction, frameIdx);
+        // R153: **帧级**交叉溶解。
+        //   根因 (实测): sleep_enter 的第 0 帧本身就是**坐姿**, 所以"sit→sleep_enter"的
+        //   动作级溶解实际是"坐→坐"(无视觉变化); 真正的躺姿出现在动画**换帧**那一瞬,
+        //   是硬切 → 用户看到的仍是"坐下瞬间变成躺姿"。
+        //   这里让一次性动画内部的换帧也走溶解, 坐→躺才是真正的渐变过渡。
+        const frameBlendMs = (meta.frame_blend_ms && meta.frame_blend_ms > 0)
+            ? meta.frame_blend_ms : 0;
+        if (frameBlendMs > 0 && sprite_ && ensurePrevSprite()) {
+            const oldTexture = sprite_.texture;
+            const oldY = sprite_.y;
+            sprite_.texture = meta.frames[frameIdx];
+            applyFramePosition(currentAction, frameIdx);      // 新帧的地面接触线
+            spritePrev_.texture = oldTexture;
+            spritePrev_.x = sprite_.x;
+            spritePrev_.y = oldY;
+            spritePrev_.scale.set(sprite_.scale.x, sprite_.scale.y);
+            spritePrev_.anchor.set(sprite_.anchor.x, sprite_.anchor.y);
+            spritePrev_.alpha = 1;
+            sprite_.alpha = 0;
+            blend_ = { startAt: performance.now(), durationMs: frameBlendMs, fromY: oldY, toY: sprite_.y };
+            console.log(`[renderer] R153 FRAME_BLEND ${currentAction} ${prevIdx} -> ${frameIdx} (${frameBlendMs}ms)`);
+        } else {
+            sprite_.texture = meta.frames[frameIdx];
+            // R144 P0-1: 逐帧把内容底边对齐到地面接触线 (姿态切换时脚底不跳动)
+            applyFramePosition(currentAction, frameIdx);
+        }
         // R144 P0-2: 一次性动画到达末帧时打点 (带相对时间戳, 供 e2e 核算"末帧保持时长")
         if (!meta.loop && res.frameIndex === meta.frames.length - 1) {
             console.log(`[renderer] R144 oneshot last-frame ${res.action} index=${res.frameIndex}/${meta.frames.length - 1} t=+${Date.now() - R144_T0_}ms`);
@@ -375,16 +411,19 @@ function buildLayoutFor(manifest, canvasW, canvasH) {
     const order = (manifest && manifest.animation_order) || Object.keys((manifest && manifest.actions) || {});
     const bboxes = (manifest && manifest.layout && manifest.layout.frame_bboxes) || {};
     const frames = [];
-    for (const action of order) {
-        const a = manifest.actions[action];
-        if (!a) continue;
+    const pushAction = (action, a) => {
+        if (!a) return;
         const boxes = bboxes[action] || [];
         // R147: 方向倾斜 (整体朝向) — 同一动作内所有帧共享同一个错切因子
         const lean = (a.lean && typeof a.lean.skew_x === 'number') ? a.lean.skew_x : 0;
         for (let i = 0; i < a.frames.length; i++) {
             frames.push({ action, index: i, bbox: boxes[i] || null, skew_x: lean });
         }
-    }
+    };
+    for (const action of order) pushAction(action, manifest.actions && manifest.actions[action]);
+    // R153: 动作库里的动作同样要参与布局 (地面线 / 统一缩放 / 零裁切核算)
+    const libActions = (manifest && manifest.action_library && manifest.action_library.actions) || {};
+    for (const action of Object.keys(libActions)) pushAction(action, libActions[action]);
     const margin = (manifest && manifest.layout && manifest.layout.margin_px);
     return computeLayout({
         canvasW, canvasH,
@@ -409,15 +448,19 @@ function applyFramePosition(action, index) {
 }
 
 /**
- * R147: 统一的动作切换入口 —— 首帧立即显示 + 地面线同步 + 方向倾斜 + 待机导演重置。
+ * R153: 统一的动作切换入口 —— 首帧立即显示 + 地面线同步 + 方向倾斜 + 待机导演重置
+ *                            + **动作过渡交叉溶解** (消除"坐下瞬间变成躺姿"的瞬切)
  *
  * 修复的是 GPT 在 R144 独立审查里记录的老问题:
  *   "切换 set-action 时 frameIdx 设为 0, 但 Sprite.texture 未立即更新"
  * → 这里在切换的**同一时刻**就把 texture 换成目标动作的第 0 帧, 并同步地面线,
  *   一次性动画播完也不会闪回首帧 (由 anim_clock 保证不回卷)。
  *
+ * R153 新增: 姿态族差别大的切换 (坐→躺 / 躺→坐) 用**交叉溶解**过渡,
+ *   由 action_library.transitionBlendMs 决定时长; 同姿态族 (走→站) 立即切换更利落。
+ *
  * @param {string} action
- * @param {{immediate?:boolean}} [opts] immediate=true 时立即应用首帧 (默认 true)
+ * @param {{immediate?:boolean, blendMs?:number}} [opts] blendMs 显式指定溶解时长 (缺省按策略)
  * @returns {boolean} 是否切换成功
  */
 function applyAction(action, opts = {}) {
@@ -426,7 +469,14 @@ function applyAction(action, opts = {}) {
         console.warn(`[renderer] applyAction refused: ${action} has no frames`);
         return false;
     }
-    const changed = (currentAction !== action);
+    const prevAction = currentAction;
+    const changed = (prevAction !== action);
+    // 过渡前先记住旧纹理与旧地面线 (溶解用)
+    const oldTexture = sprite_ ? sprite_.texture : null;
+    const oldY = sprite_ ? sprite_.y : 0;
+    const blendMs = (typeof opts.blendMs === 'number')
+        ? opts.blendMs
+        : transitionBlendMs(prevAction, action);
     currentAction = action;
     frameIdx = 0;
     lastAdvanceAt = performance.now();
@@ -450,33 +500,89 @@ function applyAction(action, opts = {}) {
             if (sprite_ && meta.frames[baseIdx]) sprite_.texture = meta.frames[baseIdx];
             applyFramePosition('idle', baseIdx);
         }
+        // R153: 交叉溶解过渡 (姿态族差别大时)
+        if (changed && blendMs > 0 && oldTexture && sprite_ && ensurePrevSprite()) {
+            spritePrev_.texture = oldTexture;
+            spritePrev_.x = sprite_.x;
+            spritePrev_.y = oldY;
+            spritePrev_.scale.set(sprite_.scale.x, sprite_.scale.y);
+            spritePrev_.anchor.set(sprite_.anchor.x, sprite_.anchor.y);
+            spritePrev_.alpha = 1;
+            sprite_.alpha = 0;
+            blend_ = { startAt: performance.now(), durationMs: blendMs, fromY: oldY };
+            console.log(`[renderer] R153 BLEND ${prevAction} -> ${action} (${blendMs}ms)`);
+        } else if (sprite_) {
+            sprite_.alpha = 1;
+        }
     }
     return true;
 }
 
 /**
- * R147: 点击反馈 —— 轻微弹跳 + 眨眼 (约 620ms)。
- * 素材复用: idle 的 blink_half / blink_closed 两帧 (不新增动作资源, 不改身份/服装)。
+ * R153: 确保过渡用的第二层 sprite 存在 (放在主 sprite 之下)。
+ */
+function ensurePrevSprite() {
+    if (!app_ || !app_.stage) return false;
+    if (!spritePrev_) {
+        spritePrev_ = new PIXI.Sprite(PIXI.Texture.EMPTY);
+        spritePrev_.alpha = 0;
+        spritePrev_.interactive = false;
+    }
+    if (spritePrev_.parent !== app_.stage) {
+        app_.stage.addChild(spritePrev_);
+        app_.stage.setChildIndex(spritePrev_, 0);
+    }
+    return true;
+}
+
+/**
+ * R153: 推进交叉溶解 (由 ticker 调用)。
+ */
+function updateBlend(now) {
+    if (!blend_ || !sprite_ || !spritePrev_) return false;
+    const t = Math.min(1, (now - blend_.startAt) / blend_.durationMs);
+    sprite_.alpha = t;
+    spritePrev_.alpha = 1 - t;
+    // 旧层保持旧地面线, 新层从旧地面线滑到新地面线
+    // (帧级溶解时目标地面线由 blend_.toY 给出, 避免被下一帧的 applyFramePosition 冲掉)
+    const targetY = (typeof blend_.toY === 'number') ? blend_.toY : sprite_.y;
+    sprite_.y = blend_.fromY + (targetY - blend_.fromY) * t;
+    spritePrev_.y = blend_.fromY;
+    if (t >= 1) {
+        blend_ = null;
+        sprite_.alpha = 1;
+        spritePrev_.alpha = 0;
+    }
+    return true;
+}
+
+/**
+ * R153: 点击反馈 —— "歪头 + 眯眼笑" (action_library 的 happy 动作)。
+ *
+ * R153 变更 (用户真机反馈"点击后重复手放胸前的动作"):
+ *   旧实现用 idle 的第 4/5 帧做眨眼反馈, 而 **idle_04 是右手横在胸前的姿势** (不是眨眼帧),
+ *   于是每次点击都会把手放到胸前, 缺乏含义。
+ *   新实现改用 R153 局部烘焙的 happy 帧 (歪头 + 眯眼笑) + 一个轻微弹跳, 动作有明确含义。
  */
 function startClickReaction() {
-    const idleMeta = spritesByAction['idle'];
-    if (!idleMeta || idleMeta.frames.length < 6) {
-        console.warn('[renderer] R147 CLICK_REACTION skipped: idle frames incomplete');
+    const happyMeta = spritesByAction['happy'];
+    if (!happyMeta || happyMeta.frames.length === 0) {
+        console.warn('[renderer] R153 CLICK_REACTION skipped: happy action not loaded');
         return false;
     }
+    const idleMeta = spritesByAction['idle'];
     clickReaction_ = {
         startAt: performance.now(),
-        durationMs: R147_CLICK_DURATION_MS,
-        base: idleMeta.frames[0],
-        blinkHalf: idleMeta.frames[4],
-        blinkClosed: idleMeta.frames[5],
+        durationMs: R153_CLICK_DURATION_MS,
+        happy: happyMeta.frames[0],
+        base: (idleMeta && idleMeta.frames.length) ? idleMeta.frames[0] : null,
     };
-    console.log(`[renderer] R147 CLICK_REACTION start duration=${R147_CLICK_DURATION_MS}ms bump=${R147_CLICK_BUMP_PX}px`);
+    console.log(`[renderer] R153 CLICK_REACTION start (歪头眯眼笑) duration=${R153_CLICK_DURATION_MS}ms bump=${R153_CLICK_BUMP_PX}px`);
     return true;
 }
 
 /**
- * R147: 推进点击反馈。返回 true 表示反馈仍在进行 (ticker 应让位给反馈)。
+ * R153: 推进点击反馈。返回 true 表示反馈仍在进行 (ticker 应让位给反馈)。
  */
 function updateClickReaction(now) {
     if (!clickReaction_) return false;
@@ -488,17 +594,16 @@ function updateClickReaction(now) {
             sprite_.texture = meta.frames[Math.min(frameIdx, meta.frames.length - 1)];
             applyFramePosition(currentAction, frameIdx);
         }
-        console.log(`[renderer] R147 CLICK_REACTION end t=+${Date.now() - R144_T0_}ms`);
+        console.log(`[renderer] R153 CLICK_REACTION end t=+${Date.now() - R144_T0_}ms`);
         return false;
     }
     if (!sprite_) return true;
-    // 眨眼: 0~90ms 半闭, 90~200ms 全闭, 之后回到站姿
-    if (el < 90) sprite_.texture = clickReaction_.blinkHalf;
-    else if (el < 200) sprite_.texture = clickReaction_.blinkClosed;
-    else sprite_.texture = clickReaction_.base;
-    // 轻微弹跳: 抛物线, 峰值 R147_CLICK_BUMP_PX, 结束回到地面线
+    // 前 420ms 保持"歪头眯眼笑", 之后回到站姿
+    if (el < R153_CLICK_HAPPY_MS) sprite_.texture = clickReaction_.happy;
+    else if (clickReaction_.base) sprite_.texture = clickReaction_.base;
+    // 轻微弹跳: 抛物线, 峰值 R153_CLICK_BUMP_PX
     const t = Math.min(1, el / clickReaction_.durationMs);
-    const bump = Math.sin(Math.PI * t) * R147_CLICK_BUMP_PX;
+    const bump = Math.sin(Math.PI * t) * R153_CLICK_BUMP_PX;
     const arr = layout_ && layout_.frameYByAction['idle'];
     const baseY = (arr && arr[0] !== undefined) ? arr[0] : (sprite_.y + bump);
     sprite_.y = baseY - bump;
@@ -729,6 +834,9 @@ function applyModeToScene(mode, opts) {
     sprite_.interactive = true;
     sprite_.buttonMode = true;
     app_.stage.addChild(sprite_);
+    // R153: 场景重建 → 过渡状态复位 (旧 sprite 已随旧 app 销毁)
+    blend_ = null;
+    spritePrev_ = null;
     // R100 P0-3: 重建后重绑 sprite 事件 + canvas 全局事件
     bindSpriteEvents();
     attachCanvasListeners(app_.view);
@@ -744,6 +852,41 @@ function applyModeToScene(mode, opts) {
     setFallbackText(`[renderer] R144 mode=${mode} size=${w}x${h} scale=${layout_.scale.toFixed(4)} ${centerLog}`);
     console.log(`[renderer] R144 mode=${mode} canvas=${w}x${h} scale=${layout_.scale.toFixed(6)} groundY=${layout_.groundY} ${centerLog} hitArea=${JSON.stringify(sprite_.getBounds())}`);
     return { ok: true, mode, size: { w, h }, center: { x: cx, y: cy }, scale: layout_.scale };
+}
+
+/**
+ * R153: 加载一组动作的帧纹理 (核心 6 组与动作库共用同一份实现)。
+ * @param {object} a manifest 里的动作定义 (frames: 相对路径数组)
+ * @param {string} baseDir 资源根目录
+ * @returns {Promise<{frames: Array, failed: number}>}
+ */
+async function loadActionFrames(a, baseDir) {
+    const path = require('path');
+    const url = require('url');
+    const frames = [];
+    let failed = 0;
+    for (const rel of (a.frames || [])) {
+        if (rel.startsWith('/') || rel.split('/').includes('..')) {
+            failed++;
+            continue;
+        }
+        const abs = path.join(baseDir, rel);
+        // R100: 显式 file:// URL — PIXI.Assets 在中文/空格路径下用 file:// 更可靠
+        const fileUrl = url.pathToFileURL(abs).toString();
+        try {
+            const texture = await PIXI.Assets.load(fileUrl);
+            if (texture && texture.baseTexture && texture.baseTexture.valid) {
+                frames.push(texture);
+            } else {
+                console.warn(`[renderer] R100 asset load invalid: ${fileUrl}`);
+                failed++;
+            }
+        } catch (e) {
+            console.warn(`[renderer] R100 asset load failed: ${fileUrl} ${e?.message || e}`);
+            failed++;
+        }
+    }
+    return { frames, failed };
 }
 
 ipcRenderer.on('manifest', async (_evt, payload) => {
@@ -786,40 +929,56 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
             setFallbackText(`[renderer] missing action ${action}`);
             continue;
         }
-        const frames = [];
-        let failed = 0;
-        for (const rel of a.frames) {
-            if (rel.startsWith('/') || rel.split('/').includes('..')) {
-                failed++;
-                continue;
-            }
-            const abs = path.join(baseDir, rel);
-            // R100: 显式 file:// URL — PIXI.Assets 在中文/空格路径下用 file:// 更可靠
-            const fileUrl = url.pathToFileURL(abs).toString();
-            try {
-                const texture = await PIXI.Assets.load(fileUrl);
-                if (texture && texture.baseTexture && texture.baseTexture.valid) {
-                    frames.push(texture);
-                } else {
-                    console.warn(`[renderer] R100 asset load invalid: ${fileUrl}`);
-                    failed++;
-                }
-            } catch (e) {
-                console.warn(`[renderer] R100 asset load failed: ${fileUrl} ${e?.message || e}`);
-                failed++;
-            }
-        }
+        const { frames, failed } = await loadActionFrames(a, baseDir);
         spritesByAction[action] = {
             frames,
             fps: a.fps || 8,
             frame_ms: a.frame_ms || null,   // R141: 精确帧时长 (优先于 fps)
             loop: !!a.loop,
+            // R153: 帧级溶解时长 (一次性动画内部换帧, 如 坐→躺)
+            frame_blend_ms: a.frame_blend_ms || 0,
             failed,
         };
         assetLoadTotal_ += frames.length + failed;
         assetLoadFailed_ += failed;
         ipcRenderer.send('asset-report', { action, loaded: frames.length, failed, total: frames.length + failed });
         console.log(`[renderer] R100 asset-report ${action}: loaded=${frames.length} failed=${failed}`);
+    }
+
+    // ====== R153: 动作库加载 (新增动作, 与核心 6 组**分开**上报) ======
+    // 核心 6 组的 "assets-ready 23/23" 契约保持不变 (资产门禁口径不动);
+    // 动作库走独立的 library-assets-ready 上报, 缺帧同样明确报错、不假装成功。
+    const libSpec = (manifest.action_library && manifest.action_library.enabled)
+        ? (manifest.action_library.actions || {}) : {};
+    const libNames = Object.keys(libSpec);
+    let libLoaded = 0;
+    let libFailed = 0;
+    for (const action of libNames) {
+        const a = libSpec[action];
+        const { frames, failed } = await loadActionFrames(a, baseDir);
+        spritesByAction[action] = {
+            frames,
+            fps: a.fps || 8,
+            frame_ms: a.frame_ms || null,
+            loop: !!a.loop,
+            frame_blend_ms: a.frame_blend_ms || 0,
+            failed,
+        };
+        libLoaded += frames.length;
+        libFailed += failed;
+        ipcRenderer.send('library-asset-report', { action, loaded: frames.length, failed, total: frames.length + failed });
+        console.log(`[renderer] R153 library-asset-report ${action}: loaded=${frames.length} failed=${failed}`);
+    }
+    const libraryReady = {
+        ok: libFailed === 0 && libNames.length > 0,
+        actions: libNames.length,
+        loaded: libLoaded,
+        failed: libFailed,
+    };
+    ipcRenderer.send('library-assets-ready', libraryReady);
+    console.log(`[renderer] R153 library-assets-ready ${JSON.stringify(libraryReady)}`);
+    if (libNames.length > 0 && libFailed > 0) {
+        console.error(`[renderer] R153 LIBRARY_ASSET_ERROR ${libFailed} 帧加载失败`);
     }
     // ====== R144 P0-3: 资源就绪报告 (renderer 只汇报事实, 判定在 main 侧 asset_gate) ======
     const actionsReport = {};
@@ -886,6 +1045,9 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     sprite_.interactive = true;
     sprite_.buttonMode = true;
     app_.stage.addChild(sprite_);
+    // R153: 场景重建 → 过渡状态复位 (旧 sprite 已随旧 app 销毁)
+    blend_ = null;
+    spritePrev_ = null;
     console.log(`[renderer] R144 sprite enabled: mode=${currentMode_} canvas=${w}x${h} scale=${layout_.scale.toFixed(6)} groundY=${layout_.groundY} hitArea=${JSON.stringify(sprite_.getBounds())}`);
 
     bindSpriteEvents();

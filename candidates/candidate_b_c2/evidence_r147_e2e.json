@@ -1,7 +1,7 @@
 {
   "round": 147,
   "test": "R147 e2e runtime (real Electron, production code)",
-  "pass": 18,
+  "pass": 28,
   "fail": 0,
   "not_verified": 0,
   "items": [
@@ -32,38 +32,38 @@
     {
       "status": "PASS",
       "id": "TB1",
-      "desc": "全部单元测试通过 (R144 的 38 项 + R147 新增 28 项)",
-      "detail": "passed=66 failed=0 (共 66 项)"
+      "desc": "全部单元测试通过 (R141/R144/R147/R148/R153 共 8 份)",
+      "detail": "passed=101 failed=0 (共 101 项)"
     },
     {
       "status": "PASS",
       "id": "TC1",
       "desc": "运行时自检 PASS (首帧同步/地面线/方向倾斜/待机无膨胀帧/点击可见反馈)",
-      "detail": "issues=0 | peakBump=9.0px"
+      "detail": "issues=0 | peakBump=7.0px"
     },
     {
       "status": "PASS",
       "id": "TC2",
-      "desc": "待机只出现站姿与眨眼帧 (膨胀帧 1/2/3 从未播放)",
-      "detail": "idle frames seen = [0,4,5]"
+      "desc": "待机只出现站姿(0)与眨眼帧(5); 膨胀帧1/2/3 与'手放胸前'帧4 从未播放 (R153)",
+      "detail": "idle frames seen = [0,5]"
     },
     {
       "status": "PASS",
       "id": "TC3",
       "desc": "200x240 真实 PixiJS 矩阵下 23 帧零裁切 (含方向倾斜)",
-      "detail": "frames=46 clipped=0 issues=0"
+      "detail": "frames=74 clipped=0 issues=0"
     },
     {
       "status": "PASS",
       "id": "TD1",
-      "desc": "运行时左右行走施加了反向倾斜 (walk_left 左 / walk_right 右)",
-      "detail": "walk_left skew=0.085, walk_right skew=-0.11"
+      "desc": "运行时左右行走不再施加整体错切 (R153 修复'前倾像摔倒')",
+      "detail": "walk_left skew=0, walk_right skew=0"
     },
     {
       "status": "PASS",
       "id": "TD2",
       "desc": "单击被判定为 CLICK 且触发了可见反馈 (真实 pointer 事件路径)",
-      "detail": "kind=CLICK elapsed=92ms dist=0.0px | duration=620ms bump=9px"
+      "detail": "kind=CLICK elapsed=92ms dist=0.0px | duration=780ms bump=7px"
     },
     {
       "status": "PASS",
@@ -80,14 +80,14 @@
     {
       "status": "PASS",
       "id": "TD5",
-      "desc": "待机眨眼按随机间隔发生 (非 1.2s 机械循环)",
-      "detail": "眨眼 3 次, gaps=2550,2610 count=3"
+      "desc": "待机眨眼用 frame=5 (纯闭眼, 手臂下垂), frame=4 '手放胸前'零出现",
+      "detail": "眨眼 2 次, 手放胸前帧出现 0 次, gaps=2809 count=2"
     },
     {
       "status": "PASS",
       "id": "TE1",
       "desc": "真实撞到屏幕边缘后动作方向同步反向 (窗口真的掉头)",
-      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -32 (6 次 MOVE) → 转向后 78 (50 次 MOVE)"
+      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -32 (6 次 MOVE) → 转向后 77 (50 次 MOVE)"
     },
     {
       "status": "PASS",
@@ -99,19 +99,79 @@
       "status": "PASS",
       "id": "TG2",
       "desc": "真实单击帧弹跳幅度肉眼可见",
-      "detail": "9px"
+      "detail": "7px"
     },
     {
       "status": "PASS",
       "id": "TG3",
       "desc": "真实行走帧的上半身倾斜方向正确 (左负右正)",
-      "detail": "walk_left 均值=-13.02 (32/32 帧为负) / walk_right 均值=+16.29 (0/32 帧为负)"
+      "detail": "walk_left 均值=-2.29 (32/32 帧为负) / walk_right 均值=+2.30 (1/32 帧为负)"
     },
     {
       "status": "PASS",
       "id": "TG4",
       "desc": "可观看的运行时预览 GIF 齐备 (左右走/点击/待机/唤醒)",
       "detail": "5 个 GIF 位于 evidence_r147_preview/"
+    },
+    {
+      "status": "PASS",
+      "id": "TH0",
+      "desc": "R153 运行时客观量化 6 项全部通过 (行走姿态/坐躺渐变/动作确实在动/动作互不相同/点击闭眼笑/呼吸起伏)",
+      "detail": "PASS"
+    },
+    {
+      "status": "PASS",
+      "id": "TH1",
+      "desc": "行走躯干偏心: 左右符号相反且 < 身高的 3% (修复\"前倾像摔倒\")",
+      "detail": "walk_left 均值=-0.01227 walk_right 均值=+0.01229 最大绝对值=0.01689 门槛=0.03"
+    },
+    {
+      "status": "PASS",
+      "id": "TH2",
+      "desc": "坐→躺之间存在多帧渐变 (修复\"坐下瞬间变成躺姿\")",
+      "detail": "中间态帧 8 帧 (门槛 ≥3) [{\"frame\": 2, \"d_sit\": 3.246, \"d_lie\": 63.966}, {\"frame\": 3, \"d_sit\": 3.622, \"d_lie\": 63.827}, {\"frame\": 11, \"d_sit\": 23.8, \"d_lie\": 78.467}, {\"frame\": 12, \"d_sit\": 27.061, \"d_lie\": 73.155}, {\"frame\": 13, \"d_sit\": 31.591, \"d_lie\": 66.325}, {\"frame\": 14, \"d_sit\": 35.86, \"d_lie\": 58.651}, {\"frame\": 15, \"d_sit\": 40.365, \"d_lie\": 45.656}, {\"frame\": 16, \"d_sit\": 44.527, \"d_lie\": 30.766}]"
+    },
+    {
+      "status": "PASS",
+      "id": "TH3",
+      "desc": "多帧库动作在真实运行时确实逐帧推进 (防 anim_clock 每帧时长回归)",
+      "detail": "各动作最大\"变化像素数\" {\"look_around\": 2698, \"tilt_head\": 3040, \"head_nod\": 9015, \"blink_soft\": 8842, \"sleep_breath\": 1705} (门槛 ≥25); 静止的动作: 无"
+    },
+    {
+      "status": "PASS",
+      "id": "TH4",
+      "desc": "9 个库动作彼此画面不同 (无\"改名即新动作\")",
+      "detail": "最小差异对 = sit_rest vs doze = 0.674 (门槛 0.35)"
+    },
+    {
+      "status": "PASS",
+      "id": "TH5",
+      "desc": "点击反馈用\"闭眼笑\" (虹膜像素接近 happy 参照, 明显低于睁眼待机)",
+      "detail": "点击段虹膜像素 min=9 / happy 参照 min=9 / 待机 min=90"
+    },
+    {
+      "status": "PASS",
+      "id": "TH6",
+      "desc": "睡眠期间有可见呼吸起伏, 且幅度不过大",
+      "detail": "最大帧间差=0.8552 (需 >0.05), 身高=71px, 粗估比例=0.0002 (门槛 <0.02)"
+    },
+    {
+      "status": "PASS",
+      "id": "TH7",
+      "desc": "帧级溶解在真实运行时生效 (sleep_enter 换帧走渐变)",
+      "detail": "1 次 FRAME_BLEND sleep_enter"
+    },
+    {
+      "status": "PASS",
+      "id": "TH8",
+      "desc": "动作库 9 个新动作在真实运行时全部加载成功",
+      "detail": "R153 library-assets-ready {\"ok\":true,\"actions\":9,\"loaded\":14,\"failed\":0}"
+    },
+    {
+      "status": "PASS",
+      "id": "TH9",
+      "desc": "R153 动作预览 GIF 齐备 (可直接观看)",
+      "detail": "16 个 GIF 位于 evidence_r153_gifs/"
     }
   ]
 }

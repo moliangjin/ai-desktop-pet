@@ -516,6 +516,45 @@ async function runPreviewSequence() {
     await sleep_(150);
     summary.edge_turn = await captureFrames('edge_turn', 90, 55);
 
+    // ====== 场景 7 (R153): 动作库巡礼 — 9 个新增动作逐个采集真实运行帧 =====
+    // 目的: 让用户能**看到**每个新动作在真实运行时 (200x240 紧凑窗口) 长什么样,
+    //       而不是只信一份"动作表"。
+    // [动作, 采集帧数, 帧间隔ms, 应用后先等多久再采]
+    //   前置等待必须 < 该动作的时长, 否则会错过一次性动作 (例: 眨眼半闭帧只有 ~130ms)
+    const LIB_SCENES = [
+        ['look_around', 16, 90, 250],
+        ['tilt_head', 14, 100, 250],
+        ['head_nod', 12, 70, 30],
+        ['happy', 10, 90, 60],
+        ['blink_soft', 14, 40, 20],
+        ['stretch', 12, 110, 250],
+        ['sit_rest', 12, 150, 250],
+        ['doze', 12, 150, 250],
+        ['sleep_breath', 14, 160, 250],
+    ];
+    for (const [action, count, interval, preDelay] of LIB_SCENES) {
+        await quiet();
+        const res = await previewCommand({ cmd: 'action', action });
+        console.log(`[main] R153 PREVIEW lib action=${action} ok=${res && res.ok}`);
+        await sleep_(preDelay);
+        summary[`lib_${action}`] = await captureFrames(`lib_${action}`, count, interval);
+    }
+
+    // ====== 场景 8 (R153): 坐 → 躺 的交叉溶解过渡 =====
+    // 采集 sit_rest → sleep_enter 切换瞬间的帧, 验证"坐下瞬间躺下"已变成溶解过渡。
+    await quiet();
+    await previewCommand({ cmd: 'action', action: 'sit_rest' });
+    await sleep_(500);
+    await previewCommand({ cmd: 'action', action: 'sleep_enter' });
+    summary.lib_transition = await captureFrames('lib_transition', 18, 40);
+
+    // ====== 场景 9 (R153): 坐 → 打盹 (不躺下) =====
+    await quiet();
+    await previewCommand({ cmd: 'action', action: 'sit_rest' });
+    await sleep_(400);
+    await previewCommand({ cmd: 'action', action: 'doze' });
+    summary.lib_sit_to_doze = await captureFrames('lib_sit_to_doze', 16, 90);
+
     const metaFile = path.join(previewDir_, 'preview_meta.json');
     fs.writeFileSync(metaFile, JSON.stringify(summary, null, 2));
     console.log(`[main] R147 PREVIEW done meta=${metaFile}`);

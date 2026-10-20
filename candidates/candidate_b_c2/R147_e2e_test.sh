@@ -105,7 +105,7 @@ fi
 echo ""
 echo "  [B] 单元测试全量..."
 UNIT_TOTAL=0; UNIT_PASS=0; UNIT_FAIL=0
-for t in r141_behavior_engine r144_layout r144_oneshot r144_assets_gate r147_layout_pixi_parity r147_interaction; do
+for t in r141_behavior_engine r144_layout r144_oneshot r144_assets_gate r147_layout_pixi_parity r147_interaction r148_walk_direction r153_action_library; do
     OUT=$(node "tests/$t.test.js" 2>&1 | tail -3)
     LINE=$(echo "$OUT" | grep -oE "[0-9]+ passed, [0-9]+ failed" | tail -1)
     P=$(echo "$LINE" | grep -oE "^[0-9]+"); F=$(echo "$LINE" | grep -oE "[0-9]+ failed" | grep -oE "^[0-9]+")
@@ -114,7 +114,7 @@ for t in r141_behavior_engine r144_layout r144_oneshot r144_assets_gate r147_lay
         record FAIL TB1_$t "单测 $t" "$LINE"
     fi
 done
-record PASS TB1 "全部单元测试通过 (R144 的 38 项 + R147 新增 28 项)" "passed=$UNIT_PASS failed=$UNIT_FAIL (共 $UNIT_TOTAL 项)"
+record PASS TB1 "全部单元测试通过 (R141/R144/R147/R148/R153 共 8 份)" "passed=$UNIT_PASS failed=$UNIT_FAIL (共 $UNIT_TOTAL 项)"
 
 # =========================================================
 # C. 真实运行时: R147 运行时自检
@@ -130,10 +130,12 @@ else
     record FAIL TC1 "运行时自检 PASS" "$(echo "$SEL" | tail -2)"
 fi
 IDLE_SEEN=$(echo "$SEL" | grep -oE "idle frames seen = \[[0-9,]*\]" | tail -1)
-if echo "$IDLE_SEEN" | grep -qE "\[0,4,5\]|\[0, 4, 5\]"; then
-    record PASS TC2 "待机只出现站姿与眨眼帧 (膨胀帧 1/2/3 从未播放)" "$IDLE_SEEN"
+# R153 修订: 眨眼序列由 [4,5] 改为 [5] (idle_04 是"手放胸前"姿势, 不是眨眼帧),
+#             所以待机的合法帧集合 = {0 站姿, 5 闭眼眨眼}; 1/2/3/4 一律不得出现。
+if echo "$IDLE_SEEN" | grep -qE "\[0,5\]|\[0, 5\]" && ! echo "$IDLE_SEEN" | grep -qE "[1-4]"; then
+    record PASS TC2 "待机只出现站姿(0)与眨眼帧(5); 膨胀帧1/2/3 与'手放胸前'帧4 从未播放 (R153)" "$IDLE_SEEN"
 else
-    record FAIL TC2 "待机只出现站姿与眨眼帧" "$IDLE_SEEN"
+    record FAIL TC2 "待机只出现站姿(0)与眨眼帧(5)" "$IDLE_SEEN"
 fi
 
 # 200x240 零裁切 (R144 真实 PixiJS 矩阵自检)
@@ -152,15 +154,17 @@ fi
 echo ""
 echo "  [D] 真实运行时: 行走方向 / 点击 / 睡眠唤醒 (采集预览帧)..."
 LOG_PREVIEW="$LOGDIR/preview.log"
-"$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 600 --y 300 --preview "$PREVIEW_DIR" --quit-after=95 > "$LOG_PREVIEW" 2>&1
+"$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 600 --y 300 --preview "$PREVIEW_DIR" --quit-after=180 > "$LOG_PREVIEW" 2>&1
 
 WL_SKEW=$(grep -oE "set-action walk_left applied=true.*skew=[-0-9.]+" "$LOG_PREVIEW" | head -1 | grep -oE "skew=[-0-9.]+" | head -1)
 WR_SKEW=$(grep -oE "set-action walk_right applied=true.*skew=[-0-9.]+" "$LOG_PREVIEW" | head -1 | grep -oE "skew=[-0-9.]+" | head -1)
 WL_K=$(echo "$WL_SKEW" | cut -d= -f2); WR_K=$(echo "$WR_SKEW" | cut -d= -f2)
-if [ -n "$WL_K" ] && [ -n "$WR_K" ] && python3 -c "import sys; sys.exit(0 if float('$WL_K')>0 and float('$WR_K')<0 else 1)"; then
-    record PASS TD1 "运行时左右行走施加了反向倾斜 (walk_left 左 / walk_right 右)" "walk_left $WL_SKEW, walk_right $WR_SKEW"
+# R153 修订: 方向不再靠整体错切表达 (用户真机反馈"身体明显前倾像要摔倒"),
+#             R148 的派生镜像帧已自带正确迈步方向 ⇒ 运行时 k 必须为 0。
+if [ -n "$WL_K" ] && [ -n "$WR_K" ] && python3 -c "import sys; sys.exit(0 if float('$WL_K')==0 and float('$WR_K')==0 else 1)"; then
+    record PASS TD1 "运行时左右行走不再施加整体错切 (R153 修复'前倾像摔倒')" "walk_left $WL_SKEW, walk_right $WR_SKEW"
 else
-    record FAIL TD1 "运行时左右行走施加了反向倾斜" "walk_left $WL_SKEW, walk_right $WR_SKEW"
+    record FAIL TD1 "运行时左右行走仍施加整体错切" "walk_left $WL_SKEW, walk_right $WR_SKEW"
 fi
 
 CLICK_LINE=$(grep "PRESS_END kind=CLICK" "$LOG_PREVIEW" | head -1)
@@ -185,24 +189,27 @@ else
     record FAIL TD4 "睡眠点击走完整 wake_up 过渡" "$WAKE_STATE / $WAKE_FIN"
 fi
 
-BLINK_COUNT=$(grep -c "IDLE_BLINK frame=4" "$LOG_PREVIEW")
-BLINK_GAPS=$(grep "IDLE_BLINK frame=4" "$LOG_PREVIEW" | grep -oE "t=\+[0-9]+ms" | grep -oE "[0-9]+" | python3 -c "
+# R153 修订: 眨眼帧由 4 改为 5 —— idle_04 是"右手横在胸前"的姿势, 不是眨眼帧。
+#              用户真机反馈"启动/点击时莫名抬手"的根因就在这里。
+BLINK_COUNT=$(grep -c "IDLE_BLINK frame=5" "$LOG_PREVIEW")
+BLINK_GAPS=$(grep "IDLE_BLINK frame=5" "$LOG_PREVIEW" | grep -oE "t=\+[0-9]+ms" | grep -oE "[0-9]+" | python3 -c "
 import sys
 v=[int(x) for x in sys.stdin]
 g=[v[i+1]-v[i] for i in range(len(v)-1)]
 print('gaps=' + ','.join(str(x) for x in g) if g else 'gaps=none', 'count=%d'%len(v))
 ")
-if [ "$BLINK_COUNT" -ge 2 ]; then
-    record PASS TD5 "待机眨眼按随机间隔发生 (非 1.2s 机械循环)" "眨眼 $BLINK_COUNT 次, $BLINK_GAPS"
+BAD_BLINK=$(grep -c "IDLE_BLINK frame=4" "$LOG_PREVIEW")
+if [ "$BLINK_COUNT" -ge 2 ] && [ "${BAD_BLINK:-0}" -eq 0 ]; then
+    record PASS TD5 "待机眨眼用 frame=5 (纯闭眼, 手臂下垂), frame=4 '手放胸前'零出现" "眨眼 $BLINK_COUNT 次, 手放胸前帧出现 $BAD_BLINK 次, $BLINK_GAPS"
 else
-    record FAIL TD5 "待机眨眼按随机间隔发生" "眨眼 $BLINK_COUNT 次"
+    record FAIL TD5 "待机眨眼用 frame=5 且 frame=4 零出现" "眨眼 $BLINK_COUNT 次, frame4 $BAD_BLINK 次"
 fi
 
 # 撞边反向: 把窗口放到屏幕左边缘, 强制向左走 → 必须真的撞边并反向
 echo ""
 echo "  [E] 真实运行时: 撞边反向 (窗口置于屏幕左缘)..."
 LOG_EDGE="$LOGDIR/edge.log"
-"$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 40 --y 300 --preview "$PREVIEW_DIR/edge" --quit-after=45 > "$LOG_EDGE" 2>&1
+"$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 40 --y 300 --preview "$PREVIEW_DIR/edge" --quit-after=120 > "$LOG_EDGE" 2>&1
 # 撞边的权威信号是引擎状态机的 edge-turn 转换;
 # 并且必须验证"转向后窗口真的反向移动" (MOVE 日志里的 x 由减转增)
 EDGE_TURN=$(grep -E "edge-turn" "$LOG_EDGE" | head -1)
@@ -266,6 +273,69 @@ if [ "$GIF_COUNT" -ge 5 ]; then
     record PASS TG4 "可观看的运行时预览 GIF 齐备 (左右走/点击/待机/唤醒)" "$GIF_COUNT 个 GIF 位于 evidence_r147_preview/"
 else
     record FAIL TG4 "可观看的运行时预览 GIF 齐备" "$GIF_COUNT 个"
+fi
+
+# =========================================================
+# H. R153 专项: 动作自然度与自主生活丰富度 (真实运行时客观量化)
+# =========================================================
+echo ""
+echo "  [H] R153 专项: 动作自然度客观量化..."
+R153_RT_JSON="$CAND/evidence_r153_runtime.json"
+R153_RT_OUT=$(python3 27_R153_runtime_verify.py --preview-dir "$PREVIEW_DIR" --out "$R153_RT_JSON" 2>&1)
+echo "$R153_RT_OUT" | sed 's/^/      /'
+R153_RT_VERDICT=$(echo "$R153_RT_OUT" | grep -oE "判定: [A-Z]+" | tail -1 | awk '{print $2}')
+if [ "$R153_RT_VERDICT" = "PASS" ]; then
+    record PASS TH0 "R153 运行时客观量化 6 项全部通过 (行走姿态/坐躺渐变/动作确实在动/动作互不相同/点击闭眼笑/呼吸起伏)" "$R153_RT_VERDICT"
+else
+    record FAIL TH0 "R153 运行时客观量化" "$R153_RT_VERDICT"
+fi
+
+# 每个子项也单独记一条, 便于逐条追溯
+for id in TH1 TH2 TH3 TH4 TH5 TH6; do
+    LINE=$(python3 - "$R153_RT_JSON" "$id" <<'PY'
+import json, sys
+try:
+    d = json.load(open(sys.argv[1], encoding='utf-8'))
+except Exception:
+    print('')
+    raise SystemExit
+for c in d.get('checks', []):
+    if c.get('id') == sys.argv[2]:
+        print(f"{c['desc']} || {c['detail']}")
+PY
+)
+    DESC=$(echo "$LINE" | sed 's/ ||.*//')
+    DET=$(echo "$LINE" | sed 's/.* || //')
+    [ -z "$DESC" ] && continue
+    if echo "$R153_RT_OUT" | grep -qE "^ +\[PASS\] $id "; then
+        record PASS "$id" "$DESC" "$DET"
+    else
+        record FAIL "$id" "$DESC" "$DET"
+    fi
+done
+
+# 帧级溶解 (坐→躺) 必须在真实运行时日志里出现
+FRAME_BLEND_N=$(grep -c "R153 FRAME_BLEND sleep_enter" "$LOG_PREVIEW")
+if [ "${FRAME_BLEND_N:-0}" -ge 1 ]; then
+    record PASS TH7 "帧级溶解在真实运行时生效 (sleep_enter 换帧走渐变)" "$FRAME_BLEND_N 次 FRAME_BLEND sleep_enter"
+else
+    record FAIL TH7 "帧级溶解在真实运行时生效" "$FRAME_BLEND_N 次"
+fi
+
+# 动作库 9 个动作必须全部加载成功
+LIB_READY=$(grep -oE 'R153 library-assets-ready \{[^}]*\}' "$LOG_PREVIEW" | tail -1)
+if echo "$LIB_READY" | grep -q '"ok":true' && echo "$LIB_READY" | grep -q '"actions":9'; then
+    record PASS TH8 "动作库 9 个新动作在真实运行时全部加载成功" "$LIB_READY"
+else
+    record FAIL TH8 "动作库 9 个新动作加载" "$LIB_READY"
+fi
+
+# R153 预览 GIF 必须齐备 (每个新动作一个)
+R153_GIF_COUNT=$(ls "$CAND/evidence_r153_gifs/"R153_*.gif 2>/dev/null | wc -l | tr -d ' ')
+if [ "$R153_GIF_COUNT" -ge 12 ]; then
+    record PASS TH9 "R153 动作预览 GIF 齐备 (可直接观看)" "$R153_GIF_COUNT 个 GIF 位于 evidence_r153_gifs/"
+else
+    record FAIL TH9 "R153 动作预览 GIF 齐备" "$R153_GIF_COUNT 个"
 fi
 
 # =========================================================

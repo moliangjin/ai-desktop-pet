@@ -1,0 +1,71 @@
+{
+  "round": "R156",
+  "technique": "程序化矢量绘制 (无外部素材/无 AI 生图)",
+  "coordinate_note": "道具 PNG = 1024x1024, 与角色帧同一纹理坐标系; 渲染时与角色 sprite 共享 position/anchor/scale; 每个道具的 floor_tex_y = 道具底边 (= 该场景的地面纹理行), 渲染器把它对齐到屏幕地面线",
+  "z_order_note": "back 层 = 月亮/床/沙发/转椅 (在角色身后); front 层 = 被子/桌子+笔记本/屏幕微光 (在角色身前)",
+  "props": {
+    "prop_bed.png": {
+      "bbox": [
+        40,
+        424,
+        963,
+        818
+      ],
+      "floor_tex_y": 818
+    },
+    "prop_quilt.png": {
+      "bbox": [
+        470,
+        494,
+        981,
+        701
+      ],
+      "floor_tex_y": null
+    },
+    "prop_moon.png": {
+      "bbox": [
+        88,
+        0,
+        955,
+        308
+      ],
+      "floor_tex_y": null
+    },
+    "prop_sofa.png": {
+      "bbox": [
+        253,
+        368,
+        812,
+        1001
+      ],
+      "floor_tex_y": 1001
+    },
+    "prop_chair.png": {
+      "bbox": [
+        332,
+        392,
+        713,
+        1001
+      ],
+      "floor_tex_y": 1001
+    },
+    "prop_desk.png": {
+      "bbox": [
+        330,
+        470,
+        789,
+        1001
+      ],
+      "floor_tex_y": 1001
+    },
+    "prop_screen_glow.png": {
+      "bbox": [
+        328,
+        379,
+        793,
+        774
+      ],
+      "floor_tex_y": null
+    }
+  }
+}

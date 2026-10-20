@@ -137,12 +137,20 @@ function computeUniformScale(rects, canvasW, canvasH, textureW, textureH, margin
 /**
  * 计算完整布局。
  *
+ * R156 新增: 每帧可声明 `ground_tex_y` (地面行)。
+ *   默认 (null/缺省): 每帧内容的**底边**落在地面接触线上 (R144 语义, 完全不变)。
+ *   有值: 该纹理行 (ground_tex_y) 落在地面接触线上, 帧内容按此上/下移。
+ *   用途:
+ *     · 有道具的动作 —— 真正的地面是**道具的底** (床脚/沙发底/桌腿底), 不是角色内容底边;
+ *       角色要踩在道具底上, 就得用道具底所在的纹理行当地面行。
+ *     · 腾空帧 —— 用比脚底更高的地面行 (1150) 表示"离地", 跳跃幅度不再受纹理头顶余量限制。
+ *
  * @param {object} opts
  * @param {number} opts.canvasW
  * @param {number} opts.canvasH
  * @param {number} opts.textureW
  * @param {number} opts.textureH
- * @param {Array<{action:string,index:number,bbox:number[],skew_x?:number}>} opts.frames
+ * @param {Array<{action:string,index:number,bbox:number[],skew_x?:number,ground_tex_y?:number|null}>} opts.frames
  * @param {number} [opts.margin]
  */
 function computeLayout(opts) {
@@ -157,6 +165,7 @@ function computeLayout(opts) {
     const rectsByAction = {};
     const skewByAction = {};
     const frameSkewByAction = {};
+    const groundTexYByAction = {};
     const scaleEntries = [];
     let missingBBox = 0;
 
@@ -179,6 +188,10 @@ function computeLayout(opts) {
         skewByAction[f.action] = k;
         frameSkewByAction[f.action] = frameSkewByAction[f.action] || [];
         frameSkewByAction[f.action][f.index] = k;
+        // R156: 地面行 (null = 缺省行为: 内容底边贴地面线)
+        const g = (typeof f.ground_tex_y === 'number' && isFinite(f.ground_tex_y)) ? f.ground_tex_y : null;
+        groundTexYByAction[f.action] = groundTexYByAction[f.action] || [];
+        groundTexYByAction[f.action][f.index] = g;
         scaleEntries.push({ rect: rects[rects.length - 1], skewX: k });
         frameY.push(0);
         frameYByAction[f.action] = frameYByAction[f.action] || [];
@@ -196,7 +209,10 @@ function computeLayout(opts) {
         const r = rects[i];
         const k = (typeof f.skew_x === 'number') ? f.skew_x : 0;
         const cosT = skewCosFactor(k);
-        const y = groundY - cosT * (r.bottom - anchor.y * textureH) * scale;
+        // R156: 地面行优先 —— 指定了 ground_tex_y 就让那一行落在地面线上
+        const g = groundTexYByAction[f.action][f.index];
+        const groundRow = (typeof g === 'number') ? g : r.bottom;
+        const y = groundY - cosT * (groundRow - anchor.y * textureH) * scale;
         frameY[i] = y;
         frameYByAction[f.action][f.index] = y;
     }
@@ -217,9 +233,26 @@ function computeLayout(opts) {
         rectsByAction,
         skewByAction,
         frameSkewByAction,
+        groundTexYByAction,
         missingBBox,
         frameCount: frames ? frames.length : 0,
     };
+}
+
+/**
+ * R156: 给定"地面行", 算出 sprite 的 y (让该纹理行落在屏幕地面线上)。
+ * 道具 sprite 与角色 sprite 共用同一个变换, 所以道具用道具场景的 floor_tex_y 调本函数,
+ * 角色用自己那一帧的 ground_tex_y 调本函数 —— 两者落在同一条地面线上, 接触关系精确成立。
+ *
+ * @param {object} layout
+ * @param {number} groundTexY 地面行 (纹理坐标)
+ * @param {number} [skewX] 水平错切因子 (道具一般传 0)
+ * @returns {number} sprite.y
+ */
+function groundRowY(layout, groundTexY, skewX = 0) {
+    if (!layout) return 0;
+    const cosT = skewCosFactor(skewX);
+    return layout.groundY - cosT * (groundTexY - layout.anchor.y * layout.textureH) * layout.scale;
 }
 
 /**
@@ -231,7 +264,7 @@ function computeLayout(opts) {
  *   → screen_x = pos.x + s*(lx + k*ly)      (k = sin(skew.x))
  *   → screen_y = pos.y + s*cosθ*ly          (cosθ = sqrt(1-k²))
  */
-function contentRectToScreen(rect, layout, skewX = 0) {
+function contentRectToScreen(rect, layout, skewX = 0, groundTexY = null) {
     const s = layout.scale;
     const ax = layout.anchor.x;
     const ay = layout.anchor.y;
@@ -239,6 +272,8 @@ function contentRectToScreen(rect, layout, skewX = 0) {
     const H = layout.textureH;
     const k = skewX || 0;
     const cosT = skewCosFactor(k);
+    // R156: 地面行 —— 指定了就以那一行为基准, 否则以内容底边为基准
+    const base = (typeof groundTexY === 'number') ? groundTexY : rect.bottom;
     const corners = [
         [rect.left, rect.top], [rect.right, rect.top],
         [rect.left, rect.bottom], [rect.right, rect.bottom],
@@ -248,7 +283,7 @@ function contentRectToScreen(rect, layout, skewX = 0) {
         const lx = u - ax * W;
         const ly = v - ay * H;
         const sx = layout.x + s * (lx + k * ly);
-        const sy = layout.groundY + s * cosT * (v - rect.bottom);
+        const sy = layout.groundY + s * cosT * (v - base);
         if (sx < minX) minX = sx;
         if (sx > maxX) maxX = sx;
         if (sy < minY) minY = sy;
@@ -258,14 +293,16 @@ function contentRectToScreen(rect, layout, skewX = 0) {
 }
 
 /**
- * 取出某动作某帧在屏幕上的矩形 (自动带上该帧的方向倾斜)。
+ * 取出某动作某帧在屏幕上的矩形 (自动带上该帧的方向倾斜与地面行)。
  */
 function frameScreenRect(layout, action, index) {
     const rect = layout.rectsByAction[action] && layout.rectsByAction[action][index];
     if (!rect) return null;
     const skews = layout.frameSkewByAction && layout.frameSkewByAction[action];
     const k = (skews && typeof skews[index] === 'number') ? skews[index] : 0;
-    return contentRectToScreen(rect, layout, k);
+    const grounds = layout.groundTexYByAction && layout.groundTexYByAction[action];
+    const g = (grounds && typeof grounds[index] === 'number') ? grounds[index] : null;
+    return contentRectToScreen(rect, layout, k, g);
 }
 
 /**
@@ -325,6 +362,7 @@ module.exports = {
     computeLayout,
     contentRectToScreen,
     frameScreenRect,
+    groundRowY,
     isRectInsideCanvas,
     legacyLayout,
     skewAngleX,

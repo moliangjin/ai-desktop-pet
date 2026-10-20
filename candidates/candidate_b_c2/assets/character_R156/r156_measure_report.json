@@ -1,0 +1,371 @@
+{
+  "round": "R156",
+  "canvas": [
+    200,
+    240
+  ],
+  "groundY": 236,
+  "frame_bboxes": {
+    "idle_00_base": [
+      329,
+      37,
+      704,
+      987
+    ],
+    "idle_01_inhale_peak": [
+      320,
+      39,
+      721,
+      987
+    ],
+    "idle_02_exhale_mid": [
+      329,
+      37,
+      704,
+      987
+    ],
+    "idle_03_exhale_low": [
+      329,
+      37,
+      704,
+      987
+    ],
+    "idle_04_blink_half": [
+      320,
+      37,
+      704,
+      987
+    ],
+    "idle_05_blink_closed": [
+      320,
+      37,
+      704,
+      987
+    ],
+    "sleep_enter_01_sit": [
+      338,
+      38,
+      721,
+      1002
+    ],
+    "sleep_enter_02_lie": [
+      23,
+      279,
+      993,
+      725
+    ],
+    "sleep_enter_03_settled": [
+      44,
+      299,
+      997,
+      747
+    ],
+    "sleep_loop_00_base": [
+      68,
+      265,
+      966,
+      747
+    ],
+    "sleep_loop_01_breath_in": [
+      63,
+      344,
+      980,
+      744
+    ],
+    "sleep_loop_02_stable": [
+      49,
+      330,
+      977,
+      691
+    ],
+    "wake_up_00_lift": [
+      36,
+      271,
+      994,
+      693
+    ],
+    "wake_up_01_sit_up": [
+      312,
+      39,
+      718,
+      925
+    ],
+    "wake_up_02_stand": [
+      320,
+      37,
+      704,
+      987
+    ],
+    "R153_happy": [
+      338,
+      36,
+      710,
+      987
+    ],
+    "R153_doze_sit": [
+      338,
+      38,
+      721,
+      1002
+    ],
+    "R153_sleep_breath_in": [
+      49,
+      330,
+      977,
+      691
+    ],
+    "R153_sleep_breath_out": [
+      49,
+      330,
+      977,
+      691
+    ],
+    "R153_head_tilt": [
+      338,
+      36,
+      711,
+      987
+    ],
+    "R156_cheer_heart_1": [
+      320,
+      37,
+      704,
+      987
+    ],
+    "R156_cheer_jump_0": [
+      329,
+      151,
+      704,
+      987
+    ],
+    "R156_cheer_jump_1": [
+      329,
+      37,
+      704,
+      987
+    ],
+    "R156_cheer_jump_2": [
+      329,
+      132,
+      704,
+      987
+    ],
+    "R156_cheer_spin_1": [
+      401,
+      39,
+      645,
+      987
+    ],
+    "R156_cheer_wink_0": [
+      338,
+      36,
+      711,
+      987
+    ],
+    "R156_cheer_wink_1": [
+      338,
+      36,
+      711,
+      987
+    ],
+    "R156_cheer_wink_2": [
+      335,
+      35,
+      709,
+      987
+    ],
+    "R156_cheer_hands_1": [
+      320,
+      39,
+      721,
+      987
+    ],
+    "R156_cheer_hands_2": [
+      320,
+      76,
+      721,
+      987
+    ],
+    "R156_work_1": [
+      338,
+      40,
+      773,
+      1002
+    ],
+    "R156_work_2": [
+      338,
+      37,
+      723,
+      1002
+    ]
+  },
+  "prop_bboxes": {
+    "prop_bed": [
+      40,
+      424,
+      963,
+      818
+    ],
+    "prop_quilt": [
+      470,
+      494,
+      981,
+      701
+    ],
+    "prop_moon": [
+      88,
+      0,
+      955,
+      308
+    ],
+    "prop_sofa": [
+      253,
+      368,
+      812,
+      1001
+    ],
+    "prop_chair": [
+      332,
+      392,
+      713,
+      1001
+    ],
+    "prop_desk": [
+      330,
+      470,
+      789,
+      1001
+    ],
+    "prop_screen_glow": [
+      328,
+      379,
+      793,
+      774
+    ]
+  },
+  "scale": 0.19631901840490798,
+  "scenes": {
+    "sleep": {
+      "frame": "sleep_loop_02_stable",
+      "ground_offset_px": 127,
+      "char_screen": [
+        9.1,
+        140.2,
+        191.3,
+        211.1
+      ],
+      "props_screen": {
+        "prop_moon": [
+          16.8,
+          75.4,
+          187.0,
+          135.9
+        ],
+        "prop_bed": [
+          7.3,
+          158.7,
+          188.5,
+          236.0
+        ],
+        "prop_quilt": [
+          91.8,
+          172.4,
+          192.1,
+          213.0
+        ]
+      },
+      "back": [
+        "prop_moon",
+        "prop_bed"
+      ],
+      "front": [
+        "prop_quilt"
+      ]
+    },
+    "sit": {
+      "frame": "sleep_enter_01_sit",
+      "ground_offset_px": -1,
+      "char_screen": [
+        65.8,
+        46.9,
+        141.0,
+        236.2
+      ],
+      "props_screen": {
+        "prop_sofa": [
+          49.2,
+          111.7,
+          158.9,
+          236.0
+        ]
+      },
+      "back": [
+        "prop_sofa"
+      ],
+      "front": []
+    },
+    "work": {
+      "frame": "R156_work_1",
+      "ground_offset_px": -1,
+      "char_screen": [
+        65.8,
+        47.3,
+        151.2,
+        236.2
+      ],
+      "props_screen": {
+        "prop_chair": [
+          64.7,
+          116.4,
+          139.5,
+          236.0
+        ],
+        "prop_desk": [
+          64.3,
+          131.8,
+          154.4,
+          236.0
+        ],
+        "prop_screen_glow": [
+          63.9,
+          113.9,
+          155.2,
+          191.4
+        ]
+      },
+      "back": [
+        "prop_chair"
+      ],
+      "front": [
+        "prop_desk",
+        "prop_screen_glow"
+      ]
+    },
+    "stand_idle": {
+      "frame": "idle_00_base",
+      "ground_offset_px": 0,
+      "char_screen": [
+        64.1,
+        49.5,
+        137.7,
+        236.0
+      ],
+      "props_screen": {},
+      "back": [],
+      "front": []
+    },
+    "jump_air": {
+      "frame": "R156_cheer_jump_1",
+      "ground_offset_px": 0,
+      "char_screen": [
+        64.1,
+        49.5,
+        137.7,
+        236.0
+      ],
+      "props_screen": {},
+      "back": [],
+      "front": []
+    }
+  }
+}

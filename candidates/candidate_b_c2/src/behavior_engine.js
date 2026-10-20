@@ -37,6 +37,10 @@ const DEFAULT_CONFIG = Object.freeze({
     drag_resume_delay_ms: 800,
     edge_margin_px: 4,
     // R153: 生活化活动参数
+    // R156: 办公待机 (新 idle 类状态) —— 权重刻意压低, 且不与其它活动连着做
+    work_probability: 0.10,
+    work_min_ms: 9000,
+    work_max_ms: 19000,
     gesture_probability: 0.46,      // 站立小动作 (张望/歪头/点头/伸展/开心)
     sit_probability: 0.22,          // 坐下休息
     doze_probability: 0.22,         // 困倦打盹 (短暂, 不躺下)
@@ -66,6 +70,7 @@ const STATES = Object.freeze({
     GESTURE: 'GESTURE',   // 站立小动作 (张望/歪头/点头/伸展/开心)
     SIT: 'SIT',           // 坐下休息
     DOZE: 'DOZE',         // 困倦打盹 (坐着)
+    WORK: 'WORK',         // R156: 在电脑前办公 (新的 idle 类状态)
 });
 
 // 状态优先级: 数值越大优先级越高. DRAGGING 最高 (用户操作永远优先).
@@ -77,6 +82,7 @@ const STATE_PRIORITY = Object.freeze({
     GESTURE: 2,
     SIT: 2,
     DOZE: 2,
+    WORK: 2,
     WALK_LEFT: 3,
     WALK_RIGHT: 3,
     DRAGGING: 10,
@@ -85,6 +91,14 @@ const STATE_PRIORITY = Object.freeze({
 // 一次性动画 (播完必须回调), 持续循环动画
 const ONE_SHOT_ACTIONS = Object.freeze(['sleep_enter', 'wake_up']);
 const LOOP_ACTIONS = Object.freeze(['idle', 'walk_left', 'walk_right', 'sleep_loop']);
+
+/**
+ * 自主活动池的**固定顺序**。
+ * 权重来自 config, 但顺序固定 → 随机阈值可复现, 自动化测试能反推"想触发某类活动
+ * 该喂哪个随机数", 不必把阈值写死在测试里。
+ * R156 新增 work (办公待机), 放在 sleep 之前, 让"睡觉"仍落在随机区间的末端。
+ */
+const ACTIVITY_KINDS = Object.freeze(['gesture', 'walk', 'sit', 'doze', 'work', 'sleep']);
 
 // 状态 -> 动画名
 const STATE_ACTION = Object.freeze({
@@ -99,6 +113,7 @@ const STATE_ACTION = Object.freeze({
     GESTURE: 'idle',     // 实际动作由 _startGesture 单独下发
     SIT: 'sit_rest',
     DOZE: 'doze',
+    WORK: 'work',        // R156: 办公待机 (小桌子 + 笔记本 + 屏幕微光)
 });
 
 class BehaviorEngine {
@@ -222,6 +237,7 @@ class BehaviorEngine {
             }
             case 'sit': this._startSit(); break;
             case 'doze': this._startDoze(); break;
+            case 'work': this._startWork(); break;
             case 'sleep': this._enterSleep(); break;
             default: this._scheduleIdle();
         }
@@ -241,11 +257,15 @@ class BehaviorEngine {
             { kind: 'walk', w: cfg.walk_probability },
             { kind: 'sit', w: cfg.sit_probability },
             { kind: 'doze', w: cfg.doze_probability },
+            { kind: 'work', w: cfg.work_probability },
             { kind: 'sleep', w: cfg.sleep_probability },
         ].map((it) => {
             let w = it.w;
             if (it.kind === this._lastActivity) w *= cfg.activity_repeat_penalty;
             if (it.kind === 'sleep' && (this._now() - this._wokeAt) < cfg.no_sleep_after_wake_ms) w = 0;
+            // R156: 办公待机**不与其它活动连着做** —— 上一项是办公时权重直接归零,
+            //       保证它与普通待机/打盹/行走/睡眠错开, 不会一直只办公
+            if (it.kind === 'work' && this._lastActivity === 'work') w = 0;
             return { kind: it.kind, w };
         });
         const total = items.reduce((s, it) => s + it.w, 0);
@@ -303,6 +323,27 @@ class BehaviorEngine {
                 this._setAction('idle');
                 this._scheduleIdle();
             }
+        }, ms);
+    }
+
+    /**
+     * R156: 在电脑前办公 (新的 idle 类状态)。
+     *   · 表现: 坐在转椅上, 上半身前倾看屏幕 / 抬头思考 (work 动作自带 2 帧循环)
+     *   · 频率: 权重低 (work_probability=0.10) 且不与其它活动连着做
+     *   · 道具: 引擎只下发动作名, 具体的小桌子/笔记本/屏幕微光由渲染器按动作挂载
+     */
+    _startWork() {
+        this._lastActivity = 'work';
+        this._transition(STATES.WORK, 'idle-decision');
+        this._setAction('work');
+        const ms = this._randInt(this.config.work_min_ms, this.config.work_max_ms);
+        this._timer = this._setTimeout(() => {
+            this._timer = null;
+            if (!this._running || this._dragging) return;
+            if (this.state !== STATES.WORK) return;
+            this._transition(STATES.IDLE, 'work-complete');
+            this._setAction('idle');
+            this._scheduleIdle();
         }, ms);
     }
 
@@ -672,6 +713,7 @@ class BehaviorEngine {
 
 module.exports = {
     BehaviorEngine,
+    ACTIVITY_KINDS,
     STATES,
     STATE_ACTION,
     STATE_PRIORITY,

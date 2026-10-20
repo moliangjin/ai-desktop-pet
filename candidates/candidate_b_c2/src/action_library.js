@@ -45,6 +45,15 @@ const ACTION_CATALOG = Object.freeze({
     sit_rest: Object.freeze({ kind: 'rest', group: 'library', loop: true, desc: '坐下休息' }),
     doze: Object.freeze({ kind: 'rest', group: 'library', loop: true, desc: '困倦打盹 (坐着)' }),
     sleep_breath: Object.freeze({ kind: 'rest', group: 'library', loop: true, desc: '躺姿呼吸' }),
+
+    // —— R156 新增 ——
+    work: Object.freeze({ kind: 'rest', group: 'library', loop: true, desc: '在电脑前办公 (新 idle 类状态)' }),
+    cheer_heart: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '比心 (近似)' }),
+    cheer_jump: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '开心小跳' }),
+    cheer_spin: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '原地轻盈转身' }),
+    cheer_wink: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '歪头眨眼卖萌' }),
+    cheer_hands: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '双手小庆祝' }),
+    cheer_sway: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '开心摇摆' }),
 });
 
 /**
@@ -135,6 +144,51 @@ function pickGesture(random, lastAction, exclude = []) {
 }
 
 /**
+ * R156: 点击互动动作池 (随机触发, 短时间内不重复)。
+ *
+ * 与 GESTURE_POOL 的区别:
+ *   · GESTURE_POOL = **自主**行为池 (桌宠自己时不时做的小动作)
+ *   · CLICK_POOL   = **用户点击**时的反馈池 (点一下随机来一个)
+ * 每个动作都有 3 帧 (开始/中间/结束), 不是单张定格。
+ */
+const CLICK_POOL = Object.freeze([
+    Object.freeze({ action: 'cheer_heart', weight: 3 }),
+    Object.freeze({ action: 'cheer_jump', weight: 2 }),
+    Object.freeze({ action: 'cheer_spin', weight: 2 }),
+    Object.freeze({ action: 'cheer_wink', weight: 3 }),
+    Object.freeze({ action: 'cheer_hands', weight: 2 }),
+    Object.freeze({ action: 'cheer_sway', weight: 2 }),
+]);
+
+/**
+ * 从点击池里挑一个动作。
+ * 规则:
+ *   · 按权重随机
+ *   · **不重复最近用过的** (recent 里的动作全部排除; 若全被排除则退回全集)
+ *
+ * @param {function} random () => [0,1)
+ * @param {string[]|string} [recent] 最近播放过的动作 (字符串或数组)
+ * @param {Array<{action:string,weight?:number}>} [pool] 池 (缺省用 CLICK_POOL)
+ * @returns {string} 动作名
+ */
+function pickClickReaction(random, recent, pool) {
+    const rng = typeof random === 'function' ? random : Math.random;
+    const p = (pool && pool.length) ? pool : CLICK_POOL;
+    const used = new Set(
+        Array.isArray(recent) ? recent.filter(Boolean) : (recent ? [recent] : [])
+    );
+    let candidates = p.filter((x) => !used.has(x.action));
+    if (candidates.length === 0) candidates = p.slice();
+    const total = candidates.reduce((s, x) => s + ((x && x.weight) || 1), 0);
+    let r = rng() * total;
+    for (const c of candidates) {
+        r -= ((c && c.weight) || 1);
+        if (r <= 0) return c.action;
+    }
+    return candidates[candidates.length - 1].action;
+}
+
+/**
  * 动作是否属于"素材受限"清单 (R153 如实标注: 这些动作需要新素材, 当前用近似实现)。
  * 引擎遇到这些动作时不应把它们算作"完整实现", 报告里要分开列。
  */
@@ -142,8 +196,13 @@ const NEEDS_NEW_ASSETS = Object.freeze([
     Object.freeze({ action: 'turn_around', desc: '原地转身 (360° 转身) — R138 无背面素材, 只能用左右步态交替近似' }),
     Object.freeze({ action: 'walk_backward', desc: '后退走 — R138 无后退步态素材' }),
     Object.freeze({ action: 'run', desc: '奔跑 — R138 无奔跑素材, 当前只有 30px/s 散步' }),
-    Object.freeze({ action: 'wave_hand', desc: '挥手打招呼 — R138 无挥手素材' }),
+    Object.freeze({ action: 'wave_hand', desc: '挥手打招呼 — R138 无挥手素材 (R156 的 cheer_hands 是双臂抬起, 不是挥手)' }),
     Object.freeze({ action: 'eat_drink', desc: '进食/喝水 — R138 无道具与手部动作素材' }),
+    // —— R156 追加 (点击互动与办公场景的素材边界, 如实列出, 不得硬标 PASS) ——
+    Object.freeze({ action: 'heart_hands_true', desc: '真正的双手比心手势 — R138 无手部素材, 当前用"右手横在胸前"近似 (cheer_heart)' }),
+    Object.freeze({ action: 'clap_hands', desc: '双手拍掌/庆祝挥动 — R138 无手部素材, 当前用双臂抬起近似 (cheer_hands)' }),
+    Object.freeze({ action: 'typing', desc: '敲键盘手部动作 — R138 无手部素材, 当前办公场景只能做"看屏幕/思考/停顿" (work)' }),
+    Object.freeze({ action: 'spin_180', desc: '真正的 180° 背面转身 — R138 无背面素材, 当前用 2D 水平压缩读作侧身 (cheer_spin)' }),
 ]);
 
 /**
@@ -209,6 +268,9 @@ function countDistinctActions(manifest) {
         reusedFrames,
         dedicatedActionCount: dedicated.size,
         needsNewAssets: NEEDS_NEW_ASSETS.map((x) => x.desc),
+        // R156: 点击互动池 (与动作库同一份代码, 渲染器与测试共用)
+        clickPool: CLICK_POOL.map((x) => x.action),
+        clickPoolSize: CLICK_POOL.length,
     };
 }
 
@@ -218,7 +280,9 @@ module.exports = {
     GESTURE_DURATION_MS,
     TRANSITION_BLEND_MS,
     NEEDS_NEW_ASSETS,
+    CLICK_POOL,
     transitionBlendMs,
     pickGesture,
+    pickClickReaction,
     countDistinctActions,
 };

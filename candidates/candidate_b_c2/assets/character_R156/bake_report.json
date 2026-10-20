@@ -1,0 +1,334 @@
+{
+  "round": "R156",
+  "techniques": [
+    "face_swap",
+    "head_transform",
+    "body_shift",
+    "body_narrow",
+    "body_shift_x",
+    "torso_lean"
+  ],
+  "notes": [
+    "复用 R153 烘焙器的 face_swap / head_transform / torso_breath",
+    "新增 body_shift (垂直平移+支点缩放) / body_narrow (水平压缩) / body_shift_x (水平平移) / torso_lean (上身前倾)"
+  ],
+  "material_limits": [
+    "R138 无手部素材 → 比心=手贴胸近似, 双手庆祝=双臂抬起近似, 办公无\"敲键盘\"手部动作",
+    "\"腾空离地\"由运行时的 ground_offset_px 实现 (整帧抬离地面线), 不是把角色在纹理里挪动; R138 素材头顶只剩 37px 余量, 纹理内挪动最多只能离地 7 屏幕 px, 抬升幅度不够",
+    "\"原地转身\"是 2D 表现手法 (正面→水平压缩 64% 读作侧身→回正), 不是真正的 180° 背面转身 (R138 无背面素材)"
+  ],
+  "items": [
+    {
+      "file": "cheer_heart_1.png",
+      "source": "idle_04_blink_half.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 7370,
+      "bbox": [
+        320,
+        37,
+        704,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 手贴胸 底图逐像素一致"
+    },
+    {
+      "file": "cheer_heart_2.png",
+      "source": "idle_04_blink_half.png",
+      "donor": "idle_00_base.png",
+      "swapped_px": 8383,
+      "bbox": [
+        320,
+        37,
+        704,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 手贴胸睁眼 底图逐像素一致"
+    },
+    {
+      "file": "cheer_heart_0.png",
+      "source": "_tmp_heart0.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 24018,
+      "bbox": [
+        324,
+        36,
+        698,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 起势闭眼笑 底图逐像素一致"
+    },
+    {
+      "file": "cheer_jump_0.png",
+      "source": "idle_00_base.png",
+      "technique": "body_shift",
+      "transform": {
+        "shift_up": 0,
+        "scale_y": 0.86,
+        "pivot_y": 987
+      },
+      "bbox": [
+        329,
+        170,
+        704,
+        987
+      ],
+      "note": "整体垂直平移 + 脚底支点缩放 (跳跃/缓冲), 未旋转未整体缩放"
+    },
+    {
+      "file": "cheer_jump_1.png",
+      "source": "_tmp_jump_air.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 23289,
+      "bbox": [
+        334,
+        38,
+        708,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 腾空闭眼笑 底图逐像素一致"
+    },
+    {
+      "file": "cheer_jump_2.png",
+      "source": "idle_00_base.png",
+      "technique": "body_shift",
+      "transform": {
+        "shift_up": 0,
+        "scale_y": 0.88,
+        "pivot_y": 987
+      },
+      "bbox": [
+        329,
+        151,
+        704,
+        987
+      ],
+      "note": "整体垂直平移 + 脚底支点缩放 (跳跃/缓冲), 未旋转未整体缩放"
+    },
+    {
+      "file": "cheer_spin_0.png",
+      "source": "idle_00_base.png",
+      "transform": {
+        "dx": 0,
+        "dy": 0,
+        "scale": 1.0,
+        "rotate": 8.0
+      },
+      "bbox": [
+        338,
+        35,
+        710,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "cheer_spin_1.png",
+      "source": "_tmp_spin_side.png",
+      "transform": {
+        "dx": 0,
+        "dy": 0,
+        "scale": 1.0,
+        "rotate": 14.0
+      },
+      "bbox": [
+        401,
+        39,
+        645,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "cheer_spin_2.png",
+      "source": "_tmp_spin_back.png",
+      "transform": {
+        "dx": 0,
+        "dy": 0,
+        "scale": 1.0,
+        "rotate": 5.0
+      },
+      "bbox": [
+        367,
+        36,
+        675,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "cheer_wink_0.png",
+      "source": "idle_00_base.png",
+      "transform": {
+        "dx": 0,
+        "dy": 0,
+        "scale": 1.0,
+        "rotate": 14.0
+      },
+      "bbox": [
+        338,
+        37,
+        712,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "cheer_wink_1.png",
+      "source": "_tmp_wink.png",
+      "donor": "idle_04_blink_half.png",
+      "swapped_px": 25801,
+      "bbox": [
+        338,
+        37,
+        712,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 歪头 底图逐像素一致"
+    },
+    {
+      "file": "cheer_wink_2.png",
+      "source": "_tmp_wink2.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 24480,
+      "bbox": [
+        337,
+        35,
+        710,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 轻歪头 底图逐像素一致"
+    },
+    {
+      "file": "cheer_hands_0.png",
+      "source": "_tmp_hands0.png",
+      "donor": "idle_04_blink_half.png",
+      "swapped_px": 25121,
+      "bbox": [
+        320,
+        37,
+        721,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 举手期待 底图逐像素一致"
+    },
+    {
+      "file": "cheer_hands_1.png",
+      "source": "idle_01_inhale_peak.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 19020,
+      "bbox": [
+        320,
+        39,
+        721,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 举手大笑 底图逐像素一致"
+    },
+    {
+      "file": "cheer_hands_2.png",
+      "source": "cheer_hands_1.png",
+      "technique": "body_shift",
+      "transform": {
+        "shift_up": 0,
+        "scale_y": 0.96,
+        "pivot_y": 987
+      },
+      "bbox": [
+        320,
+        76,
+        721,
+        987
+      ],
+      "note": "整体垂直平移 + 脚底支点缩放 (跳跃/缓冲), 未旋转未整体缩放"
+    },
+    {
+      "file": "cheer_sway_0.png",
+      "source": "_tmp_sway_l.png",
+      "transform": {
+        "dx": 0,
+        "dy": 0,
+        "scale": 1.0,
+        "rotate": 8.0
+      },
+      "bbox": [
+        291,
+        29,
+        665,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "cheer_sway_1.png",
+      "source": "_tmp_sway_r.png",
+      "transform": {
+        "dx": 0,
+        "dy": 0,
+        "scale": 1.0,
+        "rotate": -8.0
+      },
+      "bbox": [
+        368,
+        30,
+        742,
+        987
+      ],
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
+    },
+    {
+      "file": "cheer_sway_2.png",
+      "source": "_tmp_sway_c.png",
+      "donor": "idle_05_blink_closed.png",
+      "swapped_px": 21427,
+      "bbox": [
+        331,
+        36,
+        706,
+        987
+      ],
+      "note": "仅换眼部区域, 手臂/身体与 回正笑 底图逐像素一致"
+    },
+    {
+      "file": "work_1.png",
+      "source": "sleep_enter_01_sit.png",
+      "technique": "torso_lean",
+      "transform": {
+        "angle": 9.0,
+        "pivot": [
+          530,
+          700
+        ],
+        "shoulder_y": 290,
+        "hip_y": 700
+      },
+      "bbox": [
+        338,
+        40,
+        773,
+        1002
+      ],
+      "note": "上半身连续权重场绕髋部前倾 (连续场, 无切口/无空洞), 下半身固定"
+    },
+    {
+      "file": "work_2.png",
+      "source": "sleep_enter_01_sit.png",
+      "technique": "torso_lean",
+      "transform": {
+        "angle": 3.0,
+        "pivot": [
+          530,
+          700
+        ],
+        "shoulder_y": 290,
+        "hip_y": 700
+      },
+      "bbox": [
+        338,
+        37,
+        723,
+        1002
+      ],
+      "note": "上半身连续权重场绕髋部前倾 (连续场, 无切口/无空洞), 下半身固定"
+    }
+  ]
+}

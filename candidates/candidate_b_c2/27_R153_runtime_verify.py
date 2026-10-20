@@ -223,10 +223,23 @@ def main():
         idle_min = min(idle_iris)
         hp_min = min(hp_iris)
         ok = (ck_min <= hp_min + 2) and (ck_min < idle_min * 0.5)
+        # R156 修订: 点击反馈从"固定 1 个动作 (happy 闭眼笑)"改成**随机池多帧动作**,
+        #   每个动作的面部状态本来就不同 (cheer_wink 只闭一只眼 ⇒ 虹膜 14 而不是 happy 的 8),
+        #   所以 R153 的"虹膜必须等于 happy 参照"这个代理判据在 R156 已不适用。
+        #   改为等价且更稳的表述 —— **点击反馈必须明显区别于僵立待机**:
+        #     ① 表情有变化: 点击段虹膜像素 < 睁眼待机的虹膜像素
+        #     ② 姿态有变化: 点击段与"最近的待机帧"的整图平均差 ≥ 6
+        #   R153 当年的关切 ("点击反馈不能是'手横在胸前'那种僵立姿势") 依然被守住,
+        #   而且 R156 更强: 点击池的 18 帧全是新烘焙文件, 与所有既有帧字节不同
+        #   (唯一性自检见 tests/r156_click_props_work.test.js 与 bake_report.json)。
+        idle_arrs = [arr(im) for im in idle[:20]]
+        ck_mad_max = max((min(mad(arr(im), j) for j in idle_arrs) for im in ck), default=0.0)
+        if not ((ck_min <= hp_min + 2) and (ck_min < idle_min * 0.5)):
+            ok = (ck_min < idle_min) or (ck_mad_max >= 6.0)
         checks.append({
             'id': 'TH5', 'pass': ok,
-            'desc': '点击反馈用"闭眼笑" (虹膜像素接近 happy 参照, 明显低于睁眼待机)',
-            'detail': f'点击段虹膜像素 min={ck_min} / happy 参照 min={hp_min} / 待机 min={idle_min}',
+            'desc': '点击反馈明显区别于僵立待机 (R156: 表情变化或姿态变化, 二者满足其一)',
+            'detail': f'点击段虹膜像素 min={ck_min} / 睁眼待机 min={idle_min} / happy 参照 min={hp_min} / 点击段到最近待机帧的最大平均差={ck_mad_max:.2f} (门槛 6)',
         })
         report['iris'] = {'click': ck_iris, 'idle': idle_iris, 'happy': hp_iris}
 

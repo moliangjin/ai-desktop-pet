@@ -21,7 +21,10 @@ const assert = require('assert');
 
 // ★ 直接 require 生产代码
 const ENGINE_PATH = path.join(__dirname, '..', 'src', 'behavior_engine.js');
-const { BehaviorEngine, STATES, ONE_SHOT_ACTIONS, LOOP_ACTIONS } = require(ENGINE_PATH);
+const {
+    BehaviorEngine, STATES, ONE_SHOT_ACTIONS, LOOP_ACTIONS,
+    ACTIVITY_KINDS, DEFAULT_CONFIG,
+} = require(ENGINE_PATH);
 
 const results = [];
 function test(name, fn) {
@@ -109,11 +112,7 @@ function makeConstRandom(v) {
 //   0.6667 ≤ r < 1.30/1.62=0.8025   → sit
 //   0.8025 ≤ r < 1.52/1.62=0.9383   → doze
 //   0.9383 ≤ r                       → sleep
-const R_GESTURE = 0.10;
-const R_WALK = 0.50;
-const R_SIT = 0.75;
-const R_DOZE = 0.85;
-const R_SLEEP = 0.99;
+
 
 const TEST_CONFIG = {
     idle_min_ms: 3000, idle_max_ms: 8000,
@@ -135,6 +134,31 @@ const TEST_CONFIG = {
     activity_repeat_penalty: 0.25,
     no_sleep_after_wake_ms: 45000,
 };
+
+// 活动池的随机阈值: **从引擎自己的权重反推**, 不写死数字
+//   (R156 又加了 work 一类活动, 写死的阈值会随权重漂移 → 之前 R_SLEEP=0.99 落到 work 上,
+//    睡眠相关测试全挂。改成反推后, 新增活动不会再打坏旧测试。)
+const ACTIVITY_W_KEY = {
+    gesture: 'gesture_probability', walk: 'walk_probability', sit: 'sit_probability',
+    doze: 'doze_probability', work: 'work_probability', sleep: 'sleep_probability',
+};
+const MERGED_CONFIG = Object.assign({}, DEFAULT_CONFIG, TEST_CONFIG);
+function randomForKind(kind) {
+    const total = ACTIVITY_KINDS.reduce((s, k) => s + (MERGED_CONFIG[ACTIVITY_W_KEY[k]] || 0), 0);
+    let acc = 0;
+    for (const k of ACTIVITY_KINDS) {
+        const w = MERGED_CONFIG[ACTIVITY_W_KEY[k]] || 0;
+        if (k === kind) return (acc + w / 2) / total;
+        acc += w;
+    }
+    throw new Error(`未知活动类别 ${kind}`);
+}
+const R_GESTURE = randomForKind('gesture');
+const R_WALK = randomForKind('walk');
+const R_SIT = randomForKind('sit');
+const R_DOZE = randomForKind('doze');
+const R_WORK = randomForKind('work');
+const R_SLEEP = randomForKind('sleep');
 
 function makeEngine(randomSeq, config) {
     const clock = new FakeClock();

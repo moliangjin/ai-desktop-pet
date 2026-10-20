@@ -531,6 +531,8 @@ async function runPreviewSequence() {
         ['sit_rest', 12, 150, 250],
         ['doze', 12, 150, 250],
         ['sleep_breath', 14, 160, 250],
+        // R156: 办公待机 (2 帧循环, 每帧 2.8s → 多采一会儿才能看到两帧都出现)
+        ['work', 26, 280, 250],
     ];
     for (const [action, count, interval, preDelay] of LIB_SCENES) {
         await quiet();
@@ -554,6 +556,54 @@ async function runPreviewSequence() {
     await sleep_(400);
     await previewCommand({ cmd: 'action', action: 'doze' });
     summary.lib_sit_to_doze = await captureFrames('lib_sit_to_doze', 16, 90);
+
+    // ====== 场景 10 (R156): 点击互动池 — 6 个动作逐个采集 (每个动作 3 帧全过程) =====
+    // 目的: 让用户能**看到**每个点击动作的完整"开始/中间/结束", 而不是只信一份动作表。
+    const CLICK_ACTIONS = ['cheer_heart', 'cheer_jump', 'cheer_spin', 'cheer_wink', 'cheer_hands', 'cheer_sway'];
+    for (const act of CLICK_ACTIONS) {
+        await quiet();
+        const res = await previewCommand({ cmd: 'click', action: act });
+        console.log(`[main] R156 PREVIEW click-pool action=${act} picked=${res && res.action} ok=${res && res.ok}`);
+        summary[`click_${act}`] = await captureFrames(`click_${act}`, 16, 55);
+        summary[`click_${act}_result`] = res;
+    }
+
+    // ====== 场景 11 (R156): 点击池随机性 — 连点 10 次, 记录每次实际触发的动作 =====
+    // 这是"点击时随机触发 + 短时间内不重复"的**真实运行证据** (走的是与用户真机点击完全相同的代码路径)。
+    await quiet();
+    const randomClicks = [];
+    for (let i = 0; i < 10; i++) {
+        const r = await previewCommand({ cmd: 'click' });
+        randomClicks.push(r && r.action);
+        await sleep_(260);
+    }
+    summary.click_pool_random = randomClicks;
+    console.log(`[main] R156 PREVIEW click-pool random sequence = ${randomClicks.join(',')}`);
+
+    // ====== 场景 12 (R156): 睡觉场景 (床 + 月亮夜晚氛围 + 被子) =====
+    await quiet();
+    await previewCommand({ cmd: 'action', action: 'sleep_breath' });
+    await sleep_(700);
+    summary.scene_sleep = await captureFrames('scene_sleep', 18, 160);
+
+    // ====== 场景 13 (R156): 坐下沙发场景 =====
+    await quiet();
+    await previewCommand({ cmd: 'action', action: 'sit_rest' });
+    await sleep_(500);
+    summary.scene_sofa = await captureFrames('scene_sofa', 14, 150);
+
+    // ====== 场景 14 (R156): 办公待机场景 (小桌子 + 笔记本 + 屏幕微光) =====
+    await quiet();
+    await previewCommand({ cmd: 'action', action: 'work' });
+    await sleep_(600);
+    summary.scene_work = await captureFrames('scene_work', 26, 280);
+
+    // ====== 场景 15 (R156): 道具退出验证 — 从睡觉切回站立, 床与月亮必须一起退出 =====
+    await quiet();
+    await previewCommand({ cmd: 'action', action: 'sleep_breath' });
+    await sleep_(600);
+    await previewCommand({ cmd: 'action', action: 'idle' });
+    summary.scene_prop_exit = await captureFrames('scene_prop_exit', 14, 90);
 
     const metaFile = path.join(previewDir_, 'preview_meta.json');
     fs.writeFileSync(metaFile, JSON.stringify(summary, null, 2));

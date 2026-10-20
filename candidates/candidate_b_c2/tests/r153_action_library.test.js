@@ -51,11 +51,18 @@ function sha256(p) {
 const LIB = MANIFEST.action_library || {};
 const LIB_ACTIONS = LIB.actions || {};
 
+// R153 的 9 个动作 (R156 又新增了 7 个, 但 R153 的这 9 个一个都不能少)
+const R153_LIB_ACTIONS = ['look_around', 'tilt_head', 'head_nod', 'happy', 'blink_soft',
+    'stretch', 'sit_rest', 'doze', 'sleep_breath'];
+
 // ====== A. 动作库结构 ======
-test('A1 动作库启用, 含 9 个新增动作, 且每个都有帧资源与目录登记', () => {
+test('A1 动作库启用, R153 的 9 个动作齐全, 每个都有帧资源与目录登记', () => {
     assert.ok(LIB.enabled, 'manifest 的 action_library 必须启用');
     const names = Object.keys(LIB_ACTIONS);
-    assert.strictEqual(names.length, 9, `动作库应有 9 个动作, 实际 ${names.length}: ${names.join(',')}`);
+    assert.ok(names.length >= 9, `动作库至少应有 9 个动作, 实际 ${names.length}: ${names.join(',')}`);
+    for (const n of R153_LIB_ACTIONS) {
+        assert.ok(LIB_ACTIONS[n], `R153 动作 ${n} 丢失 (R156 新增动作不得顶掉旧动作)`);
+    }
     for (const n of names) {
         const spec = LIB_ACTIONS[n];
         assert.ok(Array.isArray(spec.frames) && spec.frames.length > 0, `${n} 没有帧资源`);
@@ -67,11 +74,11 @@ test('A1 动作库启用, 含 9 个新增动作, 且每个都有帧资源与目�
     }
 });
 
-test('A2 核心 6 组 + 动作库 9 个 = 15 个动作, 满足"不少于 12 种"的要求', () => {
+test('A2 核心 6 组 + 动作库 (R153 九个 + R156 新增) ≥ 15 个动作, 满足"不少于 12 种"', () => {
     const core = MANIFEST.animation_order;
     assert.strictEqual(core.length, 6, `核心应有 6 组, 实际 ${core.length}`);
     const stats = countDistinctActions(MANIFEST);
-    assert.strictEqual(stats.total, 15, `动作总数应为 15, 实际 ${stats.total}`);
+    assert.ok(stats.total >= 15, `动作总数应 ≥15 (R153 基线), 实际 ${stats.total}`);
     assert.ok(stats.total >= 12, `动作数 ${stats.total} 少于任务书要求的 12`);
     // 分类分布: 静止/小动作/移动/一次性 都要有
     const kinds = Object.keys(stats.byKind).sort();
@@ -129,11 +136,13 @@ test('B3 动作库里复用已有帧的只有 stretch / sit_rest, 且复用的�
         `复用的动作应只有 stretch/sit_rest, 实际 ${Object.keys(reusedBy).join(',')}`);
     assert.ok(reusedBy.stretch === 1 && reusedBy.sit_rest === 1,
         `stretch/sit_rest 各应只复用 1 帧, 实际 ${JSON.stringify(reusedBy)}`);
-    // 其余 7 个库动作必须是**独占**的 R153 烘焙帧
-    const dedicated = stats.detail.filter(d => d.group === 'library')
-        .filter(d => !reusedBy[d.action]).map(d => d.action);
-    assert.strictEqual(dedicated.length, 7,
-        `应有 7 个独占烘焙帧的库动作, 实际 ${dedicated.length}: ${dedicated.join(',')}`);
+    // 其余库动作必须是**独占**的烘焙帧 (R153 原有 7 个 + R156 新增的 7 个)
+    const libDetail = stats.detail.filter(d => d.group === 'library');
+    const dedicated = libDetail.filter(d => !reusedBy[d.action]).map(d => d.action);
+    assert.ok(dedicated.length >= 7,
+        `应有 ≥7 个独占烘焙帧的库动作, 实际 ${dedicated.length}: ${dedicated.join(',')}`);
+    assert.strictEqual(dedicated.length + Object.keys(reusedBy).length, libDetail.length,
+        '每个库动作要么独占烘焙帧, 要么是被登记在案的语义化复用 (不得有第三种情况)');
 });
 
 // ====== C. 局部烘焙的诚实性 (不是整体旋转/强行缩放) ======
@@ -306,7 +315,7 @@ test('G3 行走不施加整体错切, 核心动作一律无错切 (修复"前倾
 });
 
 // ====== H. 库动作的像素级真实性 (各动作彼此真的不一样) ======
-test('H1 9 个库动作的画面彼此不同 (用真实像素比对, 不看动作名)', () => {
+test('H1 全部库动作的画面彼此不同 (用真实像素比对, 不看动作名)', () => {
     const { alphaMask, measureLean } = require(path.join(__dirname, 'r153_png.js'));
     // 取每个动作的代表帧, 比较像素签名 (alpha 掩膜 + 颜色直方图)
     const signatures = new Map();

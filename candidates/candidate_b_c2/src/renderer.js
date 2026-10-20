@@ -23,12 +23,13 @@ const PIXI = require('pixi.js');
 //   (方向倾斜 skew 的换算同样放在 sprite_layout.js, 与 PixiJS 顶点语义同源)
 const {
     computeLayout, contentRectToScreen, isRectInsideCanvas, frameScreenRect, skewAngleX,
+    groundRowY,
 } = require('./sprite_layout.js');
 const { AnimationClock } = require('./anim_clock.js');
 const { IdleDirector } = require('./idle_director.js');
 // R153 新增纯逻辑生产模块:
 //   action_library.js : 动作目录 + 站立小动作池 + 动作过渡策略 (渲染器与引擎共用同一份)
-const { transitionBlendMs } = require('./action_library.js');
+const { transitionBlendMs, pickClickReaction } = require('./action_library.js');
 // R147: 点击/拖拽判定 (纯逻辑, 与自动化测试共用同一份代码)
 const {
     classifyPress, isClickReaction, isDragEnd, releasesPress,
@@ -105,24 +106,26 @@ async function runR147SelfTest() {
     }
     console.log(`[R147 self-test] idle frames seen = [${[...seen].join(',')}] excluded=[${excluded.join(',')}]`);
 
-    // 5: 点击反馈必须产生可见变化 (texture 变化 + y 位移)
+    // 5: 点击反馈必须产生可见变化
+    //    R156 口径升级: 点击反馈是**多帧动作** (开始/中间/结束), 因此判据从
+    //    "texture 变了 + 有弹跳"改为 "至少出现 2 个不同画面" (单帧定格不算反馈)。
     applyAction('idle');
     const before = { tex: sprite_.texture, y: sprite_.y };
     startClickReaction();
-    let moved = false, changed = false, peakBump = 0;
-    for (let i = 0; i < 30; i++) {
+    const clickFrames = new Set();
+    let minY = Infinity, maxY = -Infinity;
+    for (let i = 0; i < 48; i++) {
         await new Promise((r) => setTimeout(r, 25));
         const active = updateClickReaction(performance.now());
         if (active) {
-            if (sprite_.texture !== before.tex) changed = true;
-            const arr = layout_.frameYByAction['idle'];
-            const baseY = arr && arr[0] !== undefined ? arr[0] : before.y;
-            peakBump = Math.max(peakBump, baseY - sprite_.y);
+            clickFrames.add(sprite_.texture);
+            minY = Math.min(minY, sprite_.y);
+            maxY = Math.max(maxY, sprite_.y);
         } else break;
     }
-    if (!changed) issues.push('点击反馈未改变 texture (画面无可见变化)');
-    if (peakBump < 4) issues.push(`点击反馈弹跳幅度仅 ${peakBump.toFixed(1)}px (肉眼不可见)`);
-    console.log(`[R147 self-test] click textureChanged=${changed} peakBump=${peakBump.toFixed(1)}px`);
+    if (clickFrames.size < 2) issues.push(`点击反馈只出现 ${clickFrames.size} 个画面 (应 ≥2: 多帧动作必须有开始/中间/结束)`);
+    const yTravel = (maxY > -Infinity) ? (maxY - minY) : 0;
+    console.log(`[R147 self-test] click distinctFrames=${clickFrames.size} yTravel=${yTravel.toFixed(1)}px`);
 
     applyAction('idle');
     console.log(`[R147 self-test] issues=${issues.length}`);
@@ -196,6 +199,24 @@ const R147_CLICK_HOLD_MS = 700;      // 通知主进程"暂缓自主行为"的�
 const R153_CLICK_DURATION_MS = 780;   // 点击反馈总时长
 const R153_CLICK_HAPPY_MS = 430;      // 前 430ms 保持"歪头眯眼笑"
 const R153_CLICK_BUMP_PX = 7;         // 点击反馈的轻微弹跳峰值 (屏幕像素)
+// ====== R156: 点击互动池 + 场景道具 ======
+// R156 变更 1: 点击反馈从"固定 1 个动作 + 人工弹跳"改为**随机池**。
+//   6 个动作 (比心/小跳/转身/歪头眨眼/双手庆祝/摇摆), 每个 3 帧: 开始 → 情绪高点 → 收势。
+//   动作帧自带运动, 不再叠加人工弹跳; 短时间内不重复上一个。
+const R156_CLICK_HOLD_MS = 1100;      // 点击反馈期间暂缓自主行为的时长 (覆盖 3 帧总时长)
+const R156_PROP_FADE_MS = 260;        // 道具进出场淡入淡出时长
+// R156 变更 2: 场景道具 (床/月亮/被子/沙发/转椅/桌子+笔记本/屏幕微光)
+//   道具 PNG 与角色帧**同一纹理坐标系**, 与角色 sprite 共享 position/anchor/scale,
+//   道具底边落在"场景地面行"(floor_tex_y) → 与角色的接触关系由绘制坐标精确保证。
+//   back 层道具在角色身后, front 层道具在角色身前; 退出动作时道具一并淡出, 绝不残留。
+let propTextures_ = {};               // 道具名 → PIXI.Texture
+let propSprites_ = new Map();        // 道具名 → { sprite, layer, floorTexY, alpha, target, lastT }
+let propAssetLoaded_ = 0;
+let propAssetFailed_ = 0;
+let clickClock_ = new AnimationClock();  // 点击反馈专用时钟 (与主动画时钟互不干扰)
+let clickRecent_ = [];               // 最近播放过的点击动作 (避免连续重复)
+let lastClickAction_ = null;          // 最近一次点击反馈选中的动作 (预览采集/自检用)
+let lastPropT_ = performance.now();  // 道具淡入淡出的时间基准
 
 const frameDeltas = [];
 function tick() {
@@ -330,6 +351,8 @@ function attachCanvasListeners(stageEl) {
 //   - 动作被切换/拖拽打断后, 旧的完成事件作废 (epoch 校验), 不得发过期事件
 function tickerCallback() {
     tick();
+    // R156: 道具淡入淡出 + 位置同步 (与角色共用同一变换)
+    updateProps(performance.now());
     // R153: 动作过渡溶解 (优先于一切, 保证过渡不被其它逻辑打断)
     updateBlend(performance.now());
     // R104 P0-1: drag 期间 sprite 位置保持稳定 (BrowserWindow 移动, sprite 相对窗口位置不变)
@@ -401,6 +424,143 @@ function tickerCallback() {
     }
 }
 
+// ====== R156: 场景道具 (床/月亮/被子/沙发/转椅/桌子+笔记本/屏幕微光) ======
+//
+// 设计要点:
+//  · 道具 PNG 与角色帧**同一纹理坐标系** (1024x1024), 渲染时与角色 sprite 共享
+//    position / anchor / scale → "道具落地"等价于"道具底边落在场景地面行上";
+//  · 地面行 (floor_tex_y) 由 manifest 声明: 床脚 818 / 沙发底与桌腿底 1001;
+//  · back 层道具在角色身后, front 层道具在角色身前 (被子/笔记本在角色前);
+//  · 切换动作时旧道具淡出、新道具淡入, 退出动作后道具不残留。
+
+/**
+ * 取某个动作的道具场景 (manifest.props.scenes[action])。
+ * @param {object} manifest
+ * @param {string} action
+ * @returns {object|null}
+ */
+function propSceneOf(manifest, action) {
+    const p = manifest && manifest.props && manifest.props.enabled ? manifest.props.scenes : null;
+    return (p && p[action]) ? p[action] : null;
+}
+
+/**
+ * 解析某动作某帧的"地面行" (ground_tex_y)。
+ * 优先级: 动作自身的声明 > 道具场景的 floor_tex_y > null (缺省: 内容底边贴地面线)。
+ * @returns {number|null}
+ */
+function resolveGroundTexY(manifest, action, spec, index) {
+    const g = spec ? spec.ground_tex_y : undefined;
+    if (Array.isArray(g)) {
+        const v = g[index];
+        return (typeof v === 'number' && isFinite(v)) ? v : null;
+    }
+    if (typeof g === 'number' && isFinite(g)) return g;
+    const scene = propSceneOf(manifest, action);
+    if (scene && typeof scene.floor_tex_y === 'number') return scene.floor_tex_y;
+    return null;
+}
+
+/**
+ * 重新排列舞台层级: back 道具 → 过渡层 → 角色 → front 道具。
+ * 道具必须严格分层, 否则会出现"枕头盖住脸""沙发挡住角色"这类问题。
+ */
+function restageProps() {
+    if (!app_ || !app_.stage) return;
+    const stage = app_.stage;
+    const backs = [];
+    const fronts = [];
+    for (const rec of propSprites_.values()) {
+        if (rec.sprite.parent !== stage) stage.addChild(rec.sprite);
+        (rec.layer === 'front' ? fronts : backs).push(rec.sprite);
+    }
+    let idx = 0;
+    for (const sp of backs) stage.setChildIndex(sp, idx++);
+    if (spritePrev_ && spritePrev_.parent === stage) stage.setChildIndex(spritePrev_, idx++);
+    if (sprite_ && sprite_.parent === stage) stage.setChildIndex(sprite_, idx++);
+    for (const sp of fronts) stage.setChildIndex(sp, idx++);
+}
+
+/**
+ * 按动作挂载/卸载道具 (带淡入淡出)。切换到没有道具的动作时, 旧道具淡出后销毁。
+ * @param {string} action
+ */
+function applyPropsFor(action) {
+    const scene = propSceneOf(manifest_, action);
+    const want = new Set();
+    if (scene) {
+        for (const n of (scene.back || [])) want.add(n);
+        for (const n of (scene.front || [])) want.add(n);
+    }
+    for (const [name, rec] of propSprites_) {
+        rec.target = want.has(name) ? 1 : 0;
+    }
+    if (scene) {
+        for (const name of want) {
+            const layer = (scene.back || []).indexOf(name) >= 0 ? 'back' : 'front';
+            let rec = propSprites_.get(name);
+            if (!rec) {
+                const tex = propTextures_[name];
+                if (!tex) {
+                    console.warn(`[renderer] R156 PROP_MISSING ${name} (资源未加载)`);
+                    continue;
+                }
+                const sp = new PIXI.Sprite(tex);
+                sp.alpha = 0;
+                sp.interactive = false;
+                rec = {
+                    sprite: sp, layer, floorTexY: scene.floor_tex_y,
+                    alpha: 0, target: 1, lastT: performance.now(),
+                };
+                propSprites_.set(name, rec);
+            } else {
+                rec.layer = layer;
+                rec.floorTexY = scene.floor_tex_y;
+                rec.target = 1;
+            }
+        }
+    }
+    restageProps();
+    console.log(`[renderer] R156 PROPS action=${action} scene=${scene ? 'yes' : 'none'} ` +
+        `mounted=${[...propSprites_.keys()].join(',') || 'none'}`);
+}
+
+/**
+ * 推进道具的淡入淡出与位置 (由 ticker 调用)。
+ * 道具与角色共用同一变换; 纵向位置由"场景地面行"决定, 与角色的地面行一致。
+ */
+function updateProps(now) {
+    if (propSprites_.size === 0) { lastPropT_ = now; return; }
+    const dt = Math.max(0, Math.min(200, now - lastPropT_));
+    lastPropT_ = now;
+    const step = dt / R156_PROP_FADE_MS;
+    for (const rec of propSprites_.values()) {
+        const diff = rec.target - rec.alpha;
+        if (Math.abs(diff) > 0.0005) {
+            rec.alpha += Math.sign(diff) * Math.min(Math.abs(diff), step);
+        } else {
+            rec.alpha = rec.target;
+        }
+        rec.sprite.alpha = rec.alpha;
+        if (layout_) {
+            rec.sprite.anchor.set(layout_.anchor.x, layout_.anchor.y);
+            rec.sprite.scale.set(layout_.scale, layout_.scale);
+            rec.sprite.x = layout_.x;
+            rec.sprite.y = groundRowY(layout_, rec.floorTexY, 0);
+        }
+    }
+    let removed = false;
+    for (const [name, rec] of [...propSprites_]) {
+        if (rec.target === 0 && rec.alpha <= 0.0005) {
+            if (rec.sprite.parent) rec.sprite.parent.removeChild(rec.sprite);
+            rec.sprite.destroy();
+            propSprites_.delete(name);
+            removed = true;
+        }
+    }
+    if (removed) restageProps();
+}
+
 // ====== R144 P0-1: 布局构建与应用 ======
 // 依据 manifest.layout.frame_bboxes (由 08_R144_layout_builder.py 从真实 PNG 逐帧测量)
 // 计算: 全部帧共用的统一缩放 + 每帧内容底边对齐到同一条地面接触线。
@@ -417,7 +577,11 @@ function buildLayoutFor(manifest, canvasW, canvasH) {
         // R147: 方向倾斜 (整体朝向) — 同一动作内所有帧共享同一个错切因子
         const lean = (a.lean && typeof a.lean.skew_x === 'number') ? a.lean.skew_x : 0;
         for (let i = 0; i < a.frames.length; i++) {
-            frames.push({ action, index: i, bbox: boxes[i] || null, skew_x: lean });
+            // R156: 地面行 (ground_tex_y) — 有道具时地面是道具底; 腾空帧用更高的地面行
+            frames.push({
+                action, index: i, bbox: boxes[i] || null, skew_x: lean,
+                ground_tex_y: resolveGroundTexY(manifest, action, a, i),
+            });
         }
     };
     for (const action of order) pushAction(action, manifest.actions && manifest.actions[action]);
@@ -482,6 +646,8 @@ function applyAction(action, opts = {}) {
     lastAdvanceAt = performance.now();
     // R144 P0-2: 切换动作时重置一次性动画回报状态 (旧完成事件作废)
     animClock_.setAction(action, meta, performance.now());
+    // R156: 道具随动作挂载/退出 (切换到无道具动作时旧道具淡出, 绝不残留)
+    applyPropsFor(action);
     // R147: 动作被切换 → 任何进行中的点击反馈立即让位 (不得残留旧动作)
     if (changed && clickReaction_) {
         clickReaction_ = null;
@@ -557,56 +723,76 @@ function updateBlend(now) {
 }
 
 /**
- * R153: 点击反馈 —— "歪头 + 眯眼笑" (action_library 的 happy 动作)。
+ * R156: 点击反馈 —— **随机池**多帧动作。
  *
- * R153 变更 (用户真机反馈"点击后重复手放胸前的动作"):
- *   旧实现用 idle 的第 4/5 帧做眨眼反馈, 而 **idle_04 是右手横在胸前的姿势** (不是眨眼帧),
+ * R153 变更背景 (用户真机反馈"点击后重复手放胸前的动作"):
+ *   旧实现用 idle 的第 4/5 帧做眨眼反馈, 而 **idle_04 是右手横在胸前的姿势**,
  *   于是每次点击都会把手放到胸前, 缺乏含义。
- *   新实现改用 R153 局部烘焙的 happy 帧 (歪头 + 眯眼笑) + 一个轻微弹跳, 动作有明确含义。
+ * R156 变更:
+ *   点击反馈从"固定 1 个动作 + 人工 7px 弹跳"改为**从池中随机挑一个**:
+ *     比心(近似) / 开心小跳 / 原地轻盈转身 / 歪头眨眼 / 双手小庆祝 / 开心摇摆
+ *   每个动作 3 帧 (开始 → 情绪高点 → 收势), 帧自带运动, 不再叠加人工弹跳;
+ *   短时间内不重复上一个 (clickRecent_)。
+ *   播放期间 ticker 让位 (updateClickReaction 返回 true) → 普通 idle/walk/sleep 不推进;
+ *   播完自动回到当前动作的正常状态机。
  */
-function startClickReaction() {
-    const happyMeta = spritesByAction['happy'];
-    if (!happyMeta || happyMeta.frames.length === 0) {
-        console.warn('[renderer] R153 CLICK_REACTION skipped: happy action not loaded');
+function startClickReaction(forcedAction) {
+    const pool = (manifest_ && manifest_.click_reactions && manifest_.click_reactions.enabled)
+        ? manifest_.click_reactions.pool : null;
+    // forcedAction 仅用于预览采集 (要逐个看清每个动作的全过程); 正常点击走随机池
+    const action = (forcedAction && spritesByAction[forcedAction])
+        ? forcedAction
+        : pickClickReaction(Math.random, clickRecent_, pool);
+    const meta = spritesByAction[action];
+    if (!meta || meta.frames.length === 0) {
+        console.warn(`[renderer] R156 CLICK_REACTION skipped: ${action} has no frames`);
         return false;
     }
-    const idleMeta = spritesByAction['idle'];
+    clickRecent_.push(action);
+    while (clickRecent_.length > 2) clickRecent_.shift();
+    lastClickAction_ = action;
+    clickClock_ = new AnimationClock();
+    clickClock_.setAction(action, meta, performance.now());
     clickReaction_ = {
         startAt: performance.now(),
-        durationMs: R153_CLICK_DURATION_MS,
-        happy: happyMeta.frames[0],
-        base: (idleMeta && idleMeta.frames.length) ? idleMeta.frames[0] : null,
+        action,
+        meta,
+        frameIndex: 0,
     };
-    console.log(`[renderer] R153 CLICK_REACTION start (歪头眯眼笑) duration=${R153_CLICK_DURATION_MS}ms bump=${R153_CLICK_BUMP_PX}px`);
+    if (sprite_) {
+        sprite_.texture = meta.frames[0];
+        applyFramePosition(action, 0);
+    }
+    console.log(`[renderer] R156 CLICK_REACTION start action=${action} ` +
+        `frames=${meta.frames.length} recent=${clickRecent_.join('>')}`);
     return true;
 }
 
 /**
- * R153: 推进点击反馈。返回 true 表示反馈仍在进行 (ticker 应让位给反馈)。
+ * R156: 推进点击反馈。返回 true 表示反馈仍在进行 (ticker 应让位给反馈)。
  */
 function updateClickReaction(now) {
     if (!clickReaction_) return false;
-    const el = now - clickReaction_.startAt;
-    if (el >= clickReaction_.durationMs) {
+    const rec = clickReaction_;
+    const res = clickClock_.tick(now);
+    if (res.changed) {
+        rec.frameIndex = res.frameIndex;
+        if (sprite_ && rec.meta.frames[res.frameIndex]) {
+            sprite_.texture = rec.meta.frames[res.frameIndex];
+            applyFramePosition(rec.action, res.frameIndex);
+        }
+    }
+    if (res.finished) {
         clickReaction_ = null;
         const meta = spritesByAction[currentAction];
         if (meta && meta.frames.length && sprite_) {
             sprite_.texture = meta.frames[Math.min(frameIdx, meta.frames.length - 1)];
             applyFramePosition(currentAction, frameIdx);
         }
-        console.log(`[renderer] R153 CLICK_REACTION end t=+${Date.now() - R144_T0_}ms`);
+        console.log(`[renderer] R156 CLICK_REACTION end action=${rec.action} ` +
+            `t=+${Date.now() - R144_T0_}ms`);
         return false;
     }
-    if (!sprite_) return true;
-    // 前 420ms 保持"歪头眯眼笑", 之后回到站姿
-    if (el < R153_CLICK_HAPPY_MS) sprite_.texture = clickReaction_.happy;
-    else if (clickReaction_.base) sprite_.texture = clickReaction_.base;
-    // 轻微弹跳: 抛物线, 峰值 R153_CLICK_BUMP_PX
-    const t = Math.min(1, el / clickReaction_.durationMs);
-    const bump = Math.sin(Math.PI * t) * R153_CLICK_BUMP_PX;
-    const arr = layout_ && layout_.frameYByAction['idle'];
-    const baseY = (arr && arr[0] !== undefined) ? arr[0] : (sprite_.y + bump);
-    sprite_.y = baseY - bump;
     return true;
 }
 
@@ -730,7 +916,8 @@ function endDrag(opts = {}) {
         // R147: 点击走独立 IPC, 由主进程统一处理拖拽态与自主行为协调
         ipcRenderer.send('character-click', {
             action: prevAction,
-            holdMs: R147_CLICK_HOLD_MS,
+            // R156: 点击池动作有 3 帧 (总时长最长 ~1.0s), 暂缓自主行为要覆盖整个反馈
+            holdMs: R156_CLICK_HOLD_MS,
         });
         // 非睡眠状态下的可见反馈: 轻微弹跳 + 眨眼
         if (!wasSleeping) startClickReaction();
@@ -801,6 +988,11 @@ function applyModeToScene(mode, opts) {
     detachCanvasListeners();
     const oldView = app_.view;
     oldView.remove();
+    // R156: 旧 app 销毁会连带销毁道具 sprite → 先把引用清掉, 避免留下野指针
+    for (const [, rec] of propSprites_) {
+        try { rec.sprite.destroy(); } catch (e) {}
+    }
+    propSprites_.clear();
     try { app_.destroy(true, { children: true, texture: false }); } catch (e) {}
 
     app_ = new PIXI.Application({
@@ -980,6 +1172,38 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     if (libNames.length > 0 && libFailed > 0) {
         console.error(`[renderer] R153 LIBRARY_ASSET_ERROR ${libFailed} 帧加载失败`);
     }
+    // ====== R156: 场景道具加载 (7 个程序化绘制的小道具) =====
+    const propLib = (manifest.props && manifest.props.enabled) ? (manifest.props.library || {}) : {};
+    propTextures_ = {};
+    propAssetLoaded_ = 0;
+    propAssetFailed_ = 0;
+    for (const [name, spec] of Object.entries(propLib)) {
+        if (!spec || !spec.file) { propAssetFailed_++; continue; }
+        const abs = path.join(baseDir, spec.file);
+        const fileUrl = url.pathToFileURL(abs).toString();
+        try {
+            const texture = await PIXI.Assets.load(fileUrl);
+            if (texture && texture.baseTexture && texture.baseTexture.valid) {
+                propTextures_[name] = texture;
+                propAssetLoaded_++;
+            } else {
+                propAssetFailed_++;
+                console.warn(`[renderer] R156 prop asset invalid: ${fileUrl}`);
+            }
+        } catch (e) {
+            propAssetFailed_++;
+            console.warn(`[renderer] R156 prop asset failed: ${fileUrl} ${e?.message || e}`);
+        }
+    }
+    ipcRenderer.send('props-asset-report', {
+        loaded: propAssetLoaded_, failed: propAssetFailed_,
+        total: propAssetLoaded_ + propAssetFailed_,
+    });
+    console.log(`[renderer] R156 props-asset-report loaded=${propAssetLoaded_} failed=${propAssetFailed_}`);
+    if (propAssetFailed_ > 0) {
+        console.error(`[renderer] R156 PROP_ASSET_ERROR ${propAssetFailed_} 个道具加载失败`);
+    }
+
     // ====== R144 P0-3: 资源就绪报告 (renderer 只汇报事实, 判定在 main 侧 asset_gate) ======
     const actionsReport = {};
     for (const action of order) {
@@ -1122,7 +1346,7 @@ ipcRenderer.on('preview-command', async (_evt, payload) => {
             const ok = applyAction(payload.action);
             ipcRenderer.send('preview-result', { id, cmd, ok, action: payload.action });
         } else if (cmd === 'click') {
-            const res = await runPreviewClick();
+            const res = await runPreviewClick(payload && payload.action);
             ipcRenderer.send('preview-result', Object.assign({ id, cmd }, res));
         } else {
             ipcRenderer.send('preview-result', { id, cmd, ok: false, error: 'unknown cmd' });
@@ -1132,7 +1356,7 @@ ipcRenderer.on('preview-command', async (_evt, payload) => {
     }
 });
 
-async function runPreviewClick() {
+async function runPreviewClick(forcedAction) {
     if (!sprite_ || !app_) return { ok: false, error: 'sprite/app 未就绪' };
     // 用 sprite 的**可见包围盒中心**构造 pointer 事件 (走 PixiJS 的命中测试)
     // 注意: 不能用 getGlobalPosition() —— 那是锚点位置, 躺睡姿态下锚点并不在角色身上
@@ -1150,11 +1374,17 @@ async function runPreviewClick() {
     app_.view.dispatchEvent(new PointerEvent('pointerup', Object.assign({}, base, { buttons: 0 })));
     await new Promise((r) => setTimeout(r, 60));
     const kind = lastPressKind_;
-    console.log(`[renderer] R147 PREVIEW_CLICK downSeen=${downSeen} kind=${kind}`);
+    // 强制指定动作时, 预览采集直接播那个动作 (不走随机)
+    if (forcedAction) {
+        applyAction('idle', { immediate: true });
+        startClickReaction(forcedAction);
+    }
+    console.log(`[renderer] R147 PREVIEW_CLICK downSeen=${downSeen} kind=${kind} action=${lastClickAction_}`);
     return {
         ok: true,
         downSeen,
         kind,
+        action: lastClickAction_,
         clientX: Math.round(clientX),
         clientY: Math.round(clientY),
     };
@@ -1459,7 +1689,8 @@ async function runR107DragIPCTest() {
     }
 }
 
-// R144: 真实 PixiJS 变换矩阵下的 23 帧可见像素边界核算
+// R144: 真实 PixiJS 变换矩阵下的全部帧可见像素边界核算
+// R156: 帧数从 23 涨到 114 (R138 23 + R153 + R156 的 20 张), 判据按逐帧地面行精确化
 // 依据 R144 P0-1: "每一帧按实际 PixiJS 变换矩阵核算可见像素边界",
 //                "在正式生产渲染参数下验证全部 23 帧"
 // 做法: 用生产布局模块算出 scale/anchor/position → 建真实 PIXI.Sprite →
@@ -1523,14 +1754,31 @@ async function runR144BoundsSelfTest() {
                 const tl = { x: Math.min(...qx), y: Math.min(...qy) };
                 const br = { x: Math.max(...qx), y: Math.max(...qy) };
                 const inside = tl.x >= -0.01 && tl.y >= -0.01 && br.x <= w + 0.01 && br.y <= h + 0.01;
-                const groundErr = Math.abs(br.y - layout.groundY);
+                // R156: 地面接触线判据按"逐帧地面行 (ground_tex_y)"精确化。
+                //   旧判据 (R144): 内容底边必须正好落在地面接触线上。
+                //   但 R156 引入了逐帧地面行 —— 有道具的动作里, 真正的地面是**道具的底**
+                //   (床脚 818 / 沙发底 1001 / 桌腿底 1001), 角色要踩在道具底上;
+                //   腾空帧则用更高的地面行 (1015) 表示离地。
+                //   ⇒ 判据改为"内容底边必须落在**该帧声明的接触行**上":
+                //       接触行 = ground_tex_y (声明值) 或 内容底边 (未声明 ⇒ R144 原语义, 完全不变)
+                //       期望屏幕底边 = groundY + scale*cosT*(rect.bottom - 接触行)
+                //   未声明 ground_tex_y 的帧 (R138 全部 23 帧 + R153 的帧) 判据与 R144 **逐字等价**。
+                const groundRows = layout.groundTexYByAction && layout.groundTexYByAction[action];
+                const declaredGround = (groundRows && typeof groundRows[i] === 'number') ? groundRows[i] : null;
+                const contactRow = (declaredGround !== null) ? declaredGround : rect.bottom;
+                const cosT = Math.sqrt(Math.max(0, 1 - k * k));
+                const expectedBottomY = layout.groundY + layout.scale * cosT * (rect.bottom - contactRow);
+                const groundErr = Math.abs(br.y - expectedBottomY);
                 totalFrames++;
                 if (!inside) {
                     clippedFrames++;
                     issues.push(`${mode}/${action}[${i}] 越界 screen=(${tl.x.toFixed(2)},${tl.y.toFixed(2)})-(${br.x.toFixed(2)},${br.y.toFixed(2)}) canvas=${w}x${h} skew=${k}`);
                 }
                 if (groundErr > 0.01) {
-                    issues.push(`${mode}/${action}[${i}] 地面接触线偏差 ${groundErr.toFixed(4)}px`);
+                    const why = (declaredGround !== null)
+                        ? ` (声明接触行 ground_tex_y=${contactRow}, 期望底边=${expectedBottomY.toFixed(4)})`
+                        : '';
+                    issues.push(`${mode}/${action}[${i}] 地面接触线偏差 ${groundErr.toFixed(4)}px${why}`);
                 }
                 console.log(`[R144 bounds self-test] ${mode} ${action}[${i}] screen=(${tl.x.toFixed(2)},${tl.y.toFixed(2)})-(${br.x.toFixed(2)},${br.y.toFixed(2)}) inside=${inside} groundErr=${groundErr.toFixed(4)} skew=${k}`);
             }
@@ -1539,7 +1787,7 @@ async function runR144BoundsSelfTest() {
     }
     console.log(`[R144 bounds self-test] SUMMARY frames=${totalFrames} clipped=${clippedFrames} issues=${issues.length}`);
     if (issues.length === 0 && clippedFrames === 0) {
-        console.log('[R144 bounds self-test] PASS — 23 帧在两种画布尺寸下均完整显示');
+        console.log(`[R144 bounds self-test] PASS — ${totalFrames} 帧在两种画布尺寸下均完整显示且落在各自声明的接触行上`);
     } else {
         console.log('[R144 bounds self-test] FAIL:', issues.join('; '));
     }

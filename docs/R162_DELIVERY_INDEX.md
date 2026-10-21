@@ -4,7 +4,7 @@
 > **对应任务书**：R162（修复点击动作视觉缺陷，承接 R158）
 > **作者**：MiniMax（Mavis）
 > **上一交付**：R158 `03fe4d9`（实现 `b740070` / 索引 `4b3793f` / 归档 `03fe4d9`）
-> **本轮实现提交**：`__IMPL_COMMIT__`
+> **本轮实现提交**：`e60931e`
 > **状态**：`ENGINEERING_GATE = PASS` / `VISUAL_GATE = PASS`（沙箱内真实 Electron 运行 + 像素级客观测量 + 独立可复算的缺陷回归测试）/ **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** / `V0_0_RELEASE_STATUS = NOT_FROZEN`
 > **范围声明**：本轮未进入 V0.1；**未改动人物身份与服装**；**未重新开发整个动画系统**（只在 `arm_rig` 的切层/关节/衣身还原 + 烘焙顺序两层修）；**未充值 i2i**（全程无 AI 生图调用）；6 个点击动作与三类生活场景原样保留；R148 行走方向与 R113 拖拽核心未动。
 
@@ -18,9 +18,9 @@
 | 候选实现 | `candidates/candidate_b_c2/` |
 | QA 报告 | `docs/R162_QA_REPORT.md` |
 | 交付索引 | `docs/R162_DELIVERY_INDEX.md`（本文件） |
-| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R162_review.zip`（__REVIEW_FILE_COUNT__ 文件 / __REVIEW_BYTES__ B） |
-| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R162_review.zip.sha256`（`__REVIEW_SHA256__`） |
-| 备份 | `backup/V0.0_backup_20261021_XXXXXX_r162.zip`（__BACKUP_FILE_COUNT__ 文件 / __BACKUP_BYTES__ B）+ 同名 `.sha256`（`__BACKUP_SHA256__`） |
+| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R162_review.zip`（98 文件 / 11,421,943 B） |
+| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R162_review.zip.sha256`（`d278cb1b083e596c349c72fa8afb1c0ffcb4a69f232f7079bb5f5361ccdc3836`） |
+| 备份 | `backup/V0.0_backup_20261021_180542_r162.zip`（184 文件 / 47,481,093 B）+ 同名 `.sha256`（`e17e35a28ff14f13990a6c672bb25af1c817fc68232292ae99602bd1b13689eb`） |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`（59 项） |
 | 运行时客观量化 | `candidates/candidate_b_c2/evidence_r162_preview/r156_runtime_verify.json`（23 项）+ `r158_runtime_verify.json`（6 项） |
 | rig 层缺陷验证 | `candidates/candidate_b_c2/evidence_r162_rig_verify.json` |

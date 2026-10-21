@@ -290,45 +290,37 @@
     },
     {
       "file": "work_1.png",
-      "source": "sleep_enter_01_sit.png",
-      "technique": "torso_lean",
+      "source": "_tmp_work1.png",
       "transform": {
-        "angle": 9.0,
-        "pivot": [
-          530,
-          700
-        ],
-        "shoulder_y": 290,
-        "hip_y": 700
+        "dx": -5.0,
+        "dy": -6.0,
+        "scale": 1.0,
+        "rotate": 16.0
       },
       "bbox": [
         338,
-        40,
-        773,
+        63,
+        755,
         1002
       ],
-      "note": "上半身连续权重场绕髋部前倾 (连续场, 无切口/无空洞), 下半身固定"
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
     },
     {
       "file": "work_2.png",
-      "source": "sleep_enter_01_sit.png",
-      "technique": "torso_lean",
+      "source": "_tmp_work2.png",
       "transform": {
-        "angle": 3.0,
-        "pivot": [
-          530,
-          700
-        ],
-        "shoulder_y": 290,
-        "hip_y": 700
+        "dx": -6.0,
+        "dy": 2.0,
+        "scale": 1.0,
+        "rotate": 13.0
       },
       "bbox": [
         338,
-        37,
-        723,
+        41,
+        727,
         1002
       ],
-      "note": "上半身连续权重场绕髋部前倾 (连续场, 无切口/无空洞), 下半身固定"
+      "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
     }
   ]
 }

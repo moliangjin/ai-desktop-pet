@@ -218,6 +218,21 @@
     "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做",
     "R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; R156 的几何形变点击动作 (cheer_spin/cheer_sway/cheer_heart/cheer_wink/cheer_hands) 已下架",
     "R158: 新增 arm_rig 技术 (36_R158_arm_rig.py) —— 把 R138 切层脚本漏掉的\"张开的手\"切出来, 肩/肘/腕三关节圆形咬口旋转 + 摘袖后按行重建大褂边缘",
+    "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做",
+    "R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; R156 的几何形变点击动作 (cheer_spin/cheer_sway/cheer_heart/cheer_wink/cheer_hands) 已下架",
+    "R158: 新增 arm_rig 技术 (36_R158_arm_rig.py) —— 把 R138 切层脚本漏掉的\"张开的手\"切出来, 肩/肘/腕三关节圆形咬口旋转 + 摘袖后按行重建大褂边缘",
+    "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做",
+    "R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; R156 的几何形变点击动作 (cheer_spin/cheer_sway/cheer_heart/cheer_wink/cheer_hands) 已下架",
+    "R158: 新增 arm_rig 技术 (36_R158_arm_rig.py) —— 把 R138 切层脚本漏掉的\"张开的手\"切出来, 肩/肘/腕三关节圆形咬口旋转 + 摘袖后按行重建大褂边缘",
+    "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做",
+    "R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; R156 的几何形变点击动作 (cheer_spin/cheer_sway/cheer_heart/cheer_wink/cheer_hands) 已下架",
+    "R158: 新增 arm_rig 技术 (36_R158_arm_rig.py) —— 把 R138 切层脚本漏掉的\"张开的手\"切出来, 肩/肘/腕三关节圆形咬口旋转 + 摘袖后按行重建大褂边缘",
+    "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做",
+    "R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; R156 的几何形变点击动作 (cheer_spin/cheer_sway/cheer_heart/cheer_wink/cheer_hands) 已下架",
+    "R158: 新增 arm_rig 技术 (36_R158_arm_rig.py) —— 把 R138 切层脚本漏掉的\"张开的手\"切出来, 肩/肘/腕三关节圆形咬口旋转 + 摘袖后按行重建大褂边缘",
+    "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做",
+    "R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; R156 的几何形变点击动作 (cheer_spin/cheer_sway/cheer_heart/cheer_wink/cheer_hands) 已下架",
+    "R158: 新增 arm_rig 技术 (36_R158_arm_rig.py) —— 把 R138 切层脚本漏掉的\"张开的手\"切出来, 肩/肘/腕三关节圆形咬口旋转 + 摘袖后按行重建大褂边缘",
     "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做"
   ],
   "layout": {
@@ -519,19 +534,19 @@
       ],
       "cheer_jump": [
         [
-          264,
+          304,
           227,
-          766,
+          726,
           987
         ],
         [
-          243,
+          241,
           39,
-          790,
+          791,
           987
         ],
         [
-          256,
+          254,
           186,
           774,
           987
@@ -621,7 +636,7 @@
         [
           333,
           35,
-          768,
+          769,
           987
         ],
         [
@@ -633,35 +648,35 @@
         [
           332,
           36,
-          817,
+          818,
           987
         ]
       ],
       "cheer_hands_up": [
         [
-          218,
+          216,
           37,
-          808,
+          810,
           987
         ],
         [
-          287,
+          286,
           39,
-          762,
+          763,
           987
         ],
         [
-          199,
+          197,
           36,
-          826,
+          827,
           987
         ]
       ],
       "cheer_clap": [
         [
-          332,
+          309,
           36,
-          707,
+          722,
           987
         ],
         [
@@ -671,9 +686,9 @@
           987
         ],
         [
-          331,
+          315,
           36,
-          706,
+          716,
           987
         ]
       ],
@@ -719,7 +734,7 @@
   "action_library": {
     "enabled": true,
     "round": "R158",
-    "note": "R153 新增动作库: 每个动作都有独立帧资源与独立语义 (禁止重命名/重复播放/整体旋转虚增)。所有新帧由 22_R153_pose_bake.py 基于现有素材做**局部**处理生成: 眼部区域合成 / 头部连续权重场弯曲 / 胸口软遮罩微缩 | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。",
+    "note": "R153 新增动作库: 每个动作都有独立帧资源与独立语义 (禁止重命名/重复播放/整体旋转虚增)。所有新帧由 22_R153_pose_bake.py 基于现有素材做**局部**处理生成: 眼部区域合成 / 头部连续权重场弯曲 / 胸口软遮罩微缩 | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。 | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。",
     "actions": {
       "look_around": {
         "frames": [
@@ -1017,22 +1032,22 @@
   },
   "props": {
     "enabled": true,
-    "round": "R158",
+    "round": "R165",
     "technique": "程序化矢量绘制 (30_R156_props_bake.py + 37_R158_action_bake.py, 无外部素材/无 AI 生图)",
     "coordinate_note": "道具 PNG 与角色帧**同一纹理坐标系** (1024x1024), 渲染时与角色 sprite 共享 position/anchor/scale, 所以\"道具落地\"= 画到该场景的地面纹理行",
     "z_order_note": "back 层 = 道具在角色身后 (月亮/床/沙发/转椅); front 层 = 道具在角色身前 (被子/桌子+笔记本/屏幕微光)",
     "library": {
       "prop_bed": {
         "file": "character_R156/prop_bed.png",
-        "desc": "小床: 床头板 + 床垫 + 枕头 + 床腿"
+        "desc": "小床: 木架 + 床垫 + 枕头 + 床腿 (R165 重做: 床垫分顶面/侧面两层, 床品与被子同色系)"
       },
       "prop_quilt": {
         "file": "character_R156/prop_quilt.png",
-        "desc": "被子: 盖住身体右半与腿, 左边界收到 x=470 不遮脸"
+        "desc": "被子 (R165 重做): 上沿沿角色身体实测轮廓起伏, 4 长 3 短羽化弧形褶皱, 17px 翻折亮边, 对角柔和渐变; 左边界 x=416 不遮脸不切手, 下沿搭到床垫前沿"
       },
       "prop_moon": {
         "file": "character_R156/prop_moon.png",
-        "desc": "月亮 + 小星 + 一小片淡月晕 (夜晚氛围, 不做大块背景)"
+        "desc": "月亮 + 小星 + 一小片淡月晕 (夜晚氛围辅助, 不做大块背景, 不喧宾夺主)"
       },
       "prop_sofa": {
         "file": "character_R156/prop_sofa.png",
@@ -1044,15 +1059,19 @@
       },
       "prop_desk": {
         "file": "character_R156/prop_desk.png",
-        "desc": "小桌子 + 笔记本电脑 (观众视角看到屏幕正面)"
+        "desc": "办公桌前沿厚边 + 两条桌腿 (front 层, 角色身前); 桌下留空, 靴子露出 ⇒ 读作坐着"
       },
       "prop_screen_glow": {
         "file": "character_R156/prop_screen_glow.png",
-        "desc": "屏幕微光: 淡淡一层冷色光"
+        "desc": "屏幕微光: 三块小柔光落在胸口/下巴/桌面上的双手, 不遮五官"
       },
       "prop_heart": {
         "file": "character_R158/prop_heart.png",
         "desc": "爱心特效: 程序化矢量绘制, 叠在双手合拢处上方 (front 层)"
+      },
+      "prop_desk_surface": {
+        "file": "character_R156/prop_desk_surface.png",
+        "desc": "办公桌台面 + 笔记本电脑 (back 层, 角色坐在桌后): 台面远沿 y=556 / 近沿 y=668, 笔记本盖板在角色右侧, 背板朝观众、屏幕朝角色; 含双手落在台面上的接触阴影"
       }
     },
     "scenes": {
@@ -1097,13 +1116,14 @@
       "work": {
         "floor_tex_y": 1001,
         "back": [
-          "prop_chair"
+          "prop_chair",
+          "prop_desk_surface"
         ],
         "front": [
           "prop_desk",
           "prop_screen_glow"
         ],
-        "desc": "办公待机: 坐在转椅上, 角色从笔记本电脑屏幕后面探出上半身, 屏幕微光"
+        "desc": "办公待机: 坐在转椅上, 台面在身后/身前分层 ⇒ 双手完整压在台面上; 笔记本电脑在右侧桌上, 屏幕朝角色 (观众看到背板), 屏幕微光落在脸与手上"
       },
       "cheer_heart": {
         "floor_tex_y": 987,

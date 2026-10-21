@@ -138,7 +138,8 @@ test('A4 20 张 R156 新帧两两不同, 且与 R138/R153 既有帧无字节重�
     const files = allFiles.filter(f => !propFiles.has(f));   // 角色动作帧 (道具另算)
     assert.strictEqual(files.length, 20,
         `应有 20 张 R156 角色动作帧 (6 点击动作 ×3 + 办公 2), 实际 ${files.length}: ${files.join(',')}`);
-    assert.strictEqual(allFiles.length, 27, `R156 目录应有 27 张 PNG (20 动作帧 + 7 道具), 实际 ${allFiles.length}`);
+    // R165: 办公桌拆成 back(台面) / front(前沿+桌腿) 两个道具 ⇒ 道具 7 → 8, PNG 27 → 28
+    assert.strictEqual(allFiles.length, 28, `R156 目录应有 28 张 PNG (20 动作帧 + 8 道具), 实际 ${allFiles.length}`);
     const mine = new Map();
     for (const f of files) {
         const h = sha256(path.join(dir, f));
@@ -198,10 +199,12 @@ test('B3 权重生效: 高权重动作出现频率更高 (不是等概率)', () 
 test('C1 8 个道具文件齐全 (R156 的 7 个 + R158 的爱心特效), 场景登记的 back/front 道具都在库里', () => {
     assert.ok(PROPS.enabled, 'manifest 的 props 段必须启用');
     // R158: 在 R156 的 7 个道具基础上新增 prop_heart (比心爱心特效)
-    assert.strictEqual(Object.keys(PROPS_LIB).length, 8,
-        `应有 8 个道具, 实际 ${Object.keys(PROPS_LIB).length}: ${Object.keys(PROPS_LIB).join(',')}`);
+    // R165: 新增 prop_desk_surface (办公桌台面, back 层) ⇒ 道具 8 → 9
+    assert.strictEqual(Object.keys(PROPS_LIB).length, 9,
+        `应有 9 个道具, 实际 ${Object.keys(PROPS_LIB).length}: ${Object.keys(PROPS_LIB).join(',')}`);
     for (const need of ['prop_bed', 'prop_quilt', 'prop_moon', 'prop_sofa',
-                        'prop_chair', 'prop_desk', 'prop_screen_glow', 'prop_heart']) {
+                        'prop_chair', 'prop_desk', 'prop_desk_surface',
+                        'prop_screen_glow', 'prop_heart']) {
         assert.ok(PROPS_LIB[need], `道具库缺少 ${need}`);
     }
     for (const [name, spec] of Object.entries(PROPS_LIB)) {

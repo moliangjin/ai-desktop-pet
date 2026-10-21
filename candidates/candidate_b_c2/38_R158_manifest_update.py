@@ -114,6 +114,28 @@ CLICK_POOL = [
 PROP_HEART = {'file': f'{R158}/prop_heart.png',
                'desc': '爱心特效: 程序化矢量绘制, 叠在双手合拢处上方 (front 层)'}
 
+# ---------------------------------------------------------------------------
+# R165: 办公场景桌子拆成 back(台面+笔记本) / front(前沿+桌腿) 两个道具
+#
+#   病根: 整张桌子放在 front 层 ⇒ 角色 sprite 里的双手 (y567..641) 完全落在
+#   桌板**上方**, 一根手指都碰不到桌面 ⇒ 用户看到的是"双手搭在腿上"。
+#   桌子是一张横板, 正面视角下远端在角色身后、近端在角色身前 ⇒ 必须分层。
+# ---------------------------------------------------------------------------
+PROP_DESK_SURFACE = {
+    'file': f'{R156}/prop_desk_surface.png',
+    'desc': ('办公桌台面 + 笔记本电脑 (back 层, 角色坐在桌后): 台面远沿 y=556 / '
+             '近沿 y=668, 笔记本盖板在角色右侧, 背板朝观众、屏幕朝角色; '
+             '含双手落在台面上的接触阴影'),
+}
+PROP_DESC_UPDATE = {
+    'prop_bed': '小床: 木架 + 床垫 + 枕头 + 床腿 (R165 重做: 床垫分顶面/侧面两层, 床品与被子同色系)',
+    'prop_quilt': ('被子 (R165 重做): 上沿沿角色身体实测轮廓起伏, 4 长 3 短羽化弧形褶皱, '
+                   '17px 翻折亮边, 对角柔和渐变; 左边界 x=416 不遮脸不切手, 下沿搭到床垫前沿'),
+    'prop_moon': '月亮 + 小星 + 一小片淡月晕 (夜晚氛围辅助, 不做大块背景, 不喧宾夺主)',
+    'prop_desk': '办公桌前沿厚边 + 两条桌腿 (front 层, 角色身前); 桌下留空, 靴子露出 ⇒ 读作坐着',
+    'prop_screen_glow': '屏幕微光: 三块小柔光落在胸口/下巴/桌面上的双手, 不遮五官',
+}
+
 
 def bbox_of(rel):
     p = os.path.join(ASSETS, rel)
@@ -190,8 +212,21 @@ def main():
         'front': ['prop_heart'],
         'desc': '比心: 爱心特效叠在双手合拢处上方 (角色身前), 随动作淡入淡出',
     }
+    # ---------- 4b. R165: 办公场景桌子分层 + 5 个道具文案更新 ----------
+    libp['prop_desk_surface'] = PROP_DESK_SURFACE
+    for _k, _v in PROP_DESC_UPDATE.items():
+        if _k in libp:
+            libp[_k] = dict(libp[_k])
+            libp[_k]['desc'] = _v
+    scenes['work'] = {
+        'floor_tex_y': 1001,
+        'back': ['prop_chair', 'prop_desk_surface'],
+        'front': ['prop_desk', 'prop_screen_glow'],
+        'desc': ('办公待机: 坐在转椅上, 台面在身后/身前分层 ⇒ 双手完整压在台面上; '
+                 '笔记本电脑在右侧桌上, 屏幕朝角色 (观众看到背板), 屏幕微光落在脸与手上'),
+    }
     props['enabled'] = True
-    props['round'] = 'R158'
+    props['round'] = 'R165'
     props['library'] = libp
     props['scenes'] = scenes
     props['technique'] = ('程序化矢量绘制 (30_R156_props_bake.py + 37_R158_action_bake.py, '

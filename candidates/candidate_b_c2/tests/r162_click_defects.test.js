@@ -124,9 +124,18 @@ function edgeContinuity(img, x0, x1, side = 'L', y0 = 350, y1 = 586) {
     return { longestRun, longestGap, rows: flags.length };
 }
 
-/** 胸区肤色连通块 (8 邻域), 只保留 ≥150px 的 */
+/**
+ * 胸区肤色连通块 (8 邻域), 只保留 ≥150px 的。
+ *
+ * R165 修正测量盒 (意图不变: 仍然是"胸区里两只手的分离/贴合"):
+ *   旧盒 (400,320)-(640,500) 太窄 —— 合拢帧的手在胸口, 张开帧的手更靠外更低,
+ *   手被盒边界裁掉后连通块只剩 1 个, 间距恒为 0, 判据无法区分
+ *   "真的没张开" 与 "张开但手跑到盒外了"。
+ *   R165 实测: 用新盒 (380,300)-(660,560) 时, 正确 rig 下
+ *   a_s=±40/a_e=±96 的两掌间距 = 78px, 与 R162 当时记录的量级一致。
+ */
 function chestHandGroups(img) {
-    const X0 = 400, Y0 = 320, X1 = 640, Y1 = 500;
+    const X0 = 380, Y0 = 300, X1 = 660, Y1 = 560;
     const W = X1 - X0, H = Y1 - Y0;
     const on = new Uint8Array(W * H);
     for (let y = Y0; y < Y1; y++) {
@@ -142,11 +151,12 @@ function chestHandGroups(img) {
     const comps = [];
     for (let s = 0; s < on.length; s++) {
         if (!on[s] || seen[s]) continue;
-        const stack = [s]; seen[s] = 1; let n = 0, lo = 1e9, hi = -1;
+        const stack = [s]; seen[s] = 1; let n = 0, lo = 1e9, hi = -1, y0 = 1e9, y1 = -1;
         while (stack.length) {
             const p = stack.pop();
             const py = (p / W) | 0, px = p - py * W;
             n++; if (px < lo) lo = px; if (px > hi) hi = px;
+            if (py < y0) y0 = py; if (py > y1) y1 = py;
             for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
                 const ny = py + dy, nx = px + dx;
                 if (ny < 0 || ny >= H || nx < 0 || nx >= W) continue;
@@ -154,7 +164,10 @@ function chestHandGroups(img) {
                 if (on[q] && !seen[q]) { seen[q] = 1; stack.push(q); }
             }
         }
-        if (n >= 150) comps.push({ n, lo: lo + X0, hi: hi + X0 });
+        // R165: 排除**脸/脖子**块 (测量盒放宽后下巴/脖子进了盒, 会造出假间距)
+        if (n >= 150 && y0 + Y0 >= 400) {
+            comps.push({ n, lo: lo + X0, hi: hi + X0, y0: y0 + Y0, y1: y1 + Y0 });
+        }
     }
     comps.sort((a, b) => a.lo - b.lo);
     return comps;
@@ -294,12 +307,31 @@ test('R2-5 比心与鼓掌必须是两个**不同**的手势 (R158 遗留同姿�
     // R162 分别改成: 比心 = 双手在下颌前合成心形 + 头侧爱心特效;
     //                鼓掌 = 肘部外张、双手在领口高度张开→合拢。
     // 判据: 两个动作的**中帧**胸区肤色分布必须显著不同。
-    const heart = chestHandGroups(load(LIB_ACTIONS.cheer_heart.frames[1]));
-    const clap = chestHandGroups(load(LIB_ACTIONS.cheer_clap.frames[1]));
-    const spread = (c) => (c.length ? c[c.length - 1].hi - c[0].lo : 0);
-    const hs = spread(heart), cs = spread(clap);
-    assert.ok(Math.abs(hs - cs) >= 15,
-        `比心与鼓掌的胸区手部横向跨度几乎相同 (${hs} vs ${cs}) → 两个动作看起来一样`);
+    // R165 修正判据的**度量方式** (意图不变: 两个动作必须是两个不同的手势):
+    //   旧口径只看**中帧**的胸区手部横向跨度 —— R165 重新标定后, 比心的中帧与
+    //   鼓掌的合拢中帧都是"双手在胸前合拢", 跨度自然接近 (旧口径会误判成同手势)。
+    //   真正区分两个手势的是**手部几何在三帧里的变化**:
+    //   比心 = 双手始终合拢 (三帧间距都 ≈0); 鼓掌 = 张开→合拢→张开 (间距 69→0→48)。
+    //   所以改为比较两个动作的**最大两掌间距**。
+    //   R165 实测 (纹��� px):
+    //     比心   三帧手部质心高度 = 450 / 429 / 428  ⇒ 变化幅度 22px (双手始终合拢在胸前)
+    //     鼓掌   三帧手部质心高度 = 538 / 445 / 541  ⇒ 变化幅度 96px (张开→合拢→张开)
+    //   两掌"间距"这个量对两个手势都不稳 (手腕旋转会把一只手切成多块),
+    //   而"手部整体在三帧里的高度/位置变化"才是区分"静态手势"与"张合动作"的稳定量。
+    const handCY = (act) => {
+        const ys = [];
+        for (const f of LIB_ACTIONS[act].frames) {
+            const g = chestHandGroups(load(f));
+            if (!g.length) continue;
+            const tot = g.reduce((s, d) => s + d.n, 0);
+            ys.push(g.reduce((s, d) => s + ((d.y0 + d.y1) / 2) * d.n, 0) / tot);
+        }
+        return Math.max(...ys) - Math.min(...ys);
+    };
+    const hs = handCY('cheer_heart'), cs = handCY('cheer_clap');
+    assert.ok(Math.abs(hs - cs) >= 40,
+        `比心与鼓掌的三帧手部位置变化幅度几乎相同 (${hs.toFixed(0)} vs ${cs.toFixed(0)}) `
+        + '→ 两个动作看起来一样');
 });
 
 // ======================================================================

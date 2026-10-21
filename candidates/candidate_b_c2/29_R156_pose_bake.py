@@ -267,13 +267,25 @@ def main():
     emit(face_swap(tmp('sway_c.png'), CLOSED_SMILE, p('cheer_sway_2.png'), tag='回正笑'))
     os.remove(tmp('sway_c.png'))
 
-    # ================= 7. 办公看屏幕 (前倾 / 抬头思考) =================
-    emit(torso_lean(SIT, p('work_1.png'),
-                     angle=9.0, pivot=(SIT_AXIS_X, SIT_HIP_Y),
-                     shoulder_y=290, hip_y=700, tag='前倾看屏幕'))
-    emit(torso_lean(SIT, p('work_2.png'),
-                     angle=3.0, pivot=(SIT_AXIS_X, SIT_HIP_Y),
-                     shoulder_y=290, hip_y=700, tag='抬头思考'))
+    # ================= 7. 办公看屏幕 (R165: 手压在台面上 + 视线看向笔记本) =================
+    # R165 改动 (对应用户 P0-2: "双手没有真正放在桌面/键盘上" / "看起来不像在办公"):
+    #   · 桌子已拆成 back 层台面 (prop_desk_surface), 台面远沿 y=556 / 近沿 y=668
+    #     ⇒ 角色 sprite 里的双手 (SIT 实测 y567..641) **完整压在台面上**;
+    #   · 笔记本在角色**右侧** (盖板中心 x=795, 角色身体中心 x=530)
+    #     ⇒ 上半身微向画面右倾 + 头部转向右 ⇒ 视线落在笔记本上;
+    #   · work_1 = 低头看键盘 (在打字), work_2 = 抬头看屏幕 (打字间隙的思考)。
+    emit(torso_lean(SIT, tmp('work1.png'),
+                     angle=6.0, pivot=(SIT_AXIS_X, SIT_HIP_Y),
+                     shoulder_y=290, hip_y=700, tag='上身前倾'))
+    emit(head_transform(tmp('work1.png'), p('work_1.png'),
+                         rotate=16.0, dy=-6.0, dx=-5.0, tag='低头看键盘'))
+    os.remove(tmp('work1.png'))
+    emit(torso_lean(SIT, tmp('work2.png'),
+                     angle=2.0, pivot=(SIT_AXIS_X, SIT_HIP_Y),
+                     shoulder_y=290, hip_y=700, tag='坐直'))
+    emit(head_transform(tmp('work2.png'), p('work_2.png'),
+                         rotate=13.0, dy=2.0, dx=-6.0, tag='抬头看屏幕'))
+    os.remove(tmp('work2.png'))
 
     # ---------- 唯一性自检: 新帧不得与既有帧字节重复, 也不得彼此重复 ----------
     import hashlib

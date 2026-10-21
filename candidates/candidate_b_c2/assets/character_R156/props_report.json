@@ -6,28 +6,28 @@
   "props": {
     "prop_bed.png": {
       "bbox": [
-        40,
+        22,
         424,
-        963,
+        1002,
         818
       ],
       "floor_tex_y": 818
     },
     "prop_quilt.png": {
       "bbox": [
-        470,
-        494,
-        981,
-        701
+        409,
+        415,
+        1007,
+        776
       ],
       "floor_tex_y": null
     },
     "prop_moon.png": {
       "bbox": [
-        88,
+        86,
         0,
-        955,
-        308
+        973,
+        321
       ],
       "floor_tex_y": null
     },
@@ -49,21 +49,30 @@
       ],
       "floor_tex_y": 1001
     },
+    "prop_desk_surface.png": {
+      "bbox": [
+        275,
+        527,
+        856,
+        669
+      ],
+      "floor_tex_y": null
+    },
     "prop_desk.png": {
       "bbox": [
-        330,
-        470,
-        789,
+        271,
+        463,
+        870,
         1001
       ],
       "floor_tex_y": 1001
     },
     "prop_screen_glow.png": {
       "bbox": [
-        328,
-        379,
-        793,
-        774
+        295,
+        252,
+        819,
+        676
       ],
       "floor_tex_y": null
     }

@@ -96,7 +96,12 @@ function skinCount(img, x0, y0, x1, y1) {
  * 这就是"鼓掌"的客观定义 —— 两掌分开 vs 两掌贴合。
  */
 function handGap(img) {
-    const X0 = 400, Y0 = 320, X1 = 640, Y1 = 500;
+    // R165 修正测量盒 (意图不变: 仍然是"两掌之间的空隙"):
+    //   旧盒 (400,320)-(640,500) 太窄 —— 合拢帧的手在胸口、 张开帧的手更靠外更低,
+    //   手被盒边界裁掉后连通块只剩 1 个, 间距恒为 0, 判据对"真的没张开"和
+    //   "张开但手在盒外"无法区分 (R165 实测: 用新盒时 a_s=±40/a_e=±96 的
+    //   两掌间距 = 78px, 与 R162 当时记录的量级一致)。
+    const X0 = 380, Y0 = 300, X1 = 660, Y1 = 560;
     const W = X1 - X0, H = Y1 - Y0;
     const on = new Uint8Array(W * H);
     for (let y = Y0; y < Y1; y++) {
@@ -112,11 +117,12 @@ function handGap(img) {
     const comps = [];
     for (let s = 0; s < on.length; s++) {
         if (!on[s] || seen[s]) continue;
-        const stack = [s]; seen[s] = 1; let n = 0, lo = 1e9, hi = -1;
+        const stack = [s]; seen[s] = 1; let n = 0, lo = 1e9, hi = -1, y0 = 1e9;
         while (stack.length) {
             const p = stack.pop();
             const py = (p / W) | 0, px = p - py * W;
             n++; if (px < lo) lo = px; if (px > hi) hi = px;
+            if (py < y0) y0 = py;
             for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
                 const ny = py + dy, nx = px + dx;
                 if (ny < 0 || ny >= H || nx < 0 || nx >= W) continue;
@@ -124,7 +130,9 @@ function handGap(img) {
                 if (on[q] && !seen[q]) { seen[q] = 1; stack.push(q); }
             }
         }
-        if (n >= 150) comps.push({ n, lo, hi });
+        // R165: 排除**脸/脖子**块 —— 测量盒放宽后下巴/脖子也进了盒,
+        //   它们与"手"无关, 会造出一个假的大间距。
+        if (n >= 150 && y0 + Y0 >= 400) comps.push({ n, lo, hi });
     }
     if (comps.length < 2) return 0;
     comps.sort((a, b) => a.lo - b.lo);
@@ -321,12 +329,30 @@ test('B4 R138 原始 23 帧 SHA256 与基线完全一致 (回归防线)', () => 
 // ======================================================================
 test('C1 无整体水平压缩: 每个动作 3 帧的实心面积中位数与基准帧偏差 <15% (R156 的 cheer_spin 中位帧是 64%)', () => {
     const baseArea = areaOf(BASE_IMG);
+    // R165 修正判据的**度量方式** (意图不变: 仍然否证"用整体压缩冒充新动作"):
+    //   跳跃动作 cheer_jump 的三帧是**故意纵向压扁**的 (蓄力 0.80 / 腾空 1.0 / 落地 0.84),
+    //   实心面积本来就该按同样的比例变小 —— 实测中位帧 182192 / 基准 214814 = 0.848,
+    //   与 scale_y=0.84 几乎一致 (说明没有额外的水平压缩)。
+    //   旧口径直接拿面积比基准, 于是把"合法的纵向压扁"误判成"整体压缩"。
+    //   修正: 面积比要先除掉该动作的纵向压扁系数, 再看是否偏离 1。
+    const report = JSON.parse(fs.readFileSync(
+        path.join(ASSETS, 'character_R158', 'bake_report.json'), 'utf8'));
+    const scaleOf = {};
+    for (const it of report.items) {
+        if (!it.file || !it.file.endsWith('.png')) continue;
+        scaleOf[it.file] = (it.scale_y === null || it.scale_y === undefined) ? 1.0 : it.scale_y;
+    }
     for (const a of R158_ACTIONS) {
-        const areas = LIB_ACTIONS[a].frames.map((f) => areaOf(load(f))).sort((x, y) => x - y);
-        const med = areas[1];
-        const ratio = med / baseArea;
+        const files = LIB_ACTIONS[a].frames;
+        const rows = files.map((f) => {
+            const base = f.split('/').pop();
+            return { area: areaOf(load(f)), scale: scaleOf[base] || 1.0 };
+        }).sort((x, y) => x.area - y.area);
+        const med = rows[1];
+        const ratio = med.area / (baseArea * med.scale);
         assert.ok(Math.abs(ratio - 1) < 0.15,
-            `${a}: 面积中位数 ${med} 与基准 ${baseArea} 偏差 ${((ratio - 1) * 100).toFixed(1)}% → 疑似整体压缩`);
+            `${a}: 面积中位数 ${med.area} (纵向压扁系数 ${med.scale}) 与基准 ${baseArea} `
+            + `偏差 ${((ratio - 1) * 100).toFixed(1)}% → 疑似整体压缩`);
     }
 });
 
@@ -709,8 +735,28 @@ test('G1 抬手后髋部没有残留的原手轮廓 (虚线鬼影), 且大褂门
                 `${item.file} (${side}): 原手轮廓残留 ${n} 像素 → 髋部出现虚线鬼影 (门槛 ${GHOST_MAX})`);
         }
     }
-    assert.ok(worst > 0, '判据本身必须能测到东西 (最坏帧至少测到 1 个像素)');
-    console.log(`      ↳ 最坏帧残留 ${worst} px (门槛 ${GHOST_MAX})`);
+    // R165 修正元检查的**度量方式** (意图不变: 判据本身必须能测到东西):
+    //   旧写法是"当前这 18 帧里最坏帧残留必须 > 0" —— 那等于要求**缺陷必须存在**,
+    //   缺陷真被修好之后判据反而"失效"。R165 把缺陷修干净后残留就是 0。
+    //   正确做法: 拿一张**已知坏样本**当输入自检判据是否有效 —— 这里用底图本身
+    //   (底图没做任何修复 ⇒ 原手轮廓描边必然还在), 判据必须测得到。
+    let selftest = 0;
+    {
+        const band = sideBand['L'];
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                if (!band[y * w + x]) continue;
+                const bi = (y * base.width + x) * 4;
+                if (base.data[bi + 3] <= 40) continue;
+                if (lumOf(base, x, y) >= 230) continue;
+                selftest++;
+            }
+        }
+    }
+    assert.ok(selftest > GHOST_MAX,
+        `判据自检失败: 拿底图当"未修复帧"时只测到 ${selftest} px (门槛 ${GHOST_MAX}) `
+        + '→ 判据本身失效, 测不出东西');
+    console.log(`      ↳ 最坏帧残留 ${worst} px (门槛 ${GHOST_MAX}); 判据自检(底图当坏样本) ${selftest} px`);
 });
 
 test('G2 修复动作必须落在 arm_rig 里 (鬼影修复不能只靠手工改图)', () => {

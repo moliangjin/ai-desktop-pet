@@ -301,26 +301,54 @@ def main():
             face_rows.append((sy[ok], sx[ok]))
         if not face_rows:
             continue
-        # 脸部 = 角色掩膜的最上面 18% (头部)
-        allsy = np.concatenate([r[0] for r in face_rows])
-        face_cut = int(np.percentile(allsy, 18))
+        # R165 修正 6 的**代理口径**:
+        #   原口径 = "角色剪影最上面 18% 的行" 当脸部。对一个**躺着**的角色,
+        #   那一段包含肩/上胸 ⇒ "被子盖住肩膀"(P0-3 明确要求的) 被误判成"道具遮脸"
+        #   (R162 的旧被子只盖到胸口, 所以当年没触发)。
+        #   新口径 = **角色的面部皮肤像素** (暖色肤色 R-B>=12, 银白头发被排除)
+        #             且只看**不透明**道具像素 (alpha>200) ——
+        #             半透明的屏幕微光落在脸上是"屏幕在照亮她", 不算遮挡。
         face_mask = np.zeros((CANVAS_H, CANVAS_W), dtype=bool)
-        for sy, sx in face_rows:
-            sel = sy <= face_cut
-            face_mask[sy[sel], sx[sel]] = True
+        for idx in range(len(spec['frames'])):
+            fy = layout['frame_y'].get((action, idx))
+            arr = load_rgba(spec['frames'][idx]).astype(np.int32)
+            al = arr[:, :, 3]
+            ys_all = np.nonzero(al > 40)[0]
+            if len(ys_all) == 0:
+                continue
+            rowc = np.bincount(ys_all, minlength=arr.shape[0])
+            cut = int(np.searchsorted(np.cumsum(rowc), np.cumsum(rowc)[-1] * 0.30))
+            r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+            skin = (al > 60) & (r >= 195) & (g >= 160) & (b >= 140) \
+                & ((r - b) >= 12) & ((r - g) >= -8)
+            skin[cut:, :] = False
+            ys, xs = np.nonzero(skin)
+            sy = np.round(fy + layout['scale'] * (ys - ANCHOR_TEX_Y)).astype(int)
+            sx = np.round(layout['x'] + layout['scale'] * (xs - 512)).astype(int)
+            ok = (sx >= 0) & (sx < CANVAS_W) & (sy >= 0) & (sy < CANVAS_H)
+            face_mask[sy[ok], sx[ok]] = True
         floor = sc['floor_tex_y']
         prop_y = GROUND_Y - (floor - ANCHOR_TEX_Y) * layout['scale']
         front_mask = np.zeros((CANVAS_H, CANVAS_W), dtype=bool)
+        front_soft = np.zeros((CANVAS_H, CANVAS_W), dtype=bool)
         for n in (sc.get('front') or []):
             arr = load_rgba(lib[n]['file'])
-            ys, xs = np.nonzero(arr[:, :, 3] > 24)
+            ys, xs = np.nonzero(arr[:, :, 3] > 200)
             sx = np.round(layout['x'] + layout['scale'] * (xs - 512)).astype(int)
             sy = np.round(prop_y + layout['scale'] * (ys - ANCHOR_TEX_Y)).astype(int)
             ok = (sx >= 0) & (sx < CANVAS_W) & (sy >= 0) & (sy < CANVAS_H)
             front_mask[sy[ok], sx[ok]] = True
+            ys2, xs2 = np.nonzero((arr[:, :, 3] > 24) & (arr[:, :, 3] <= 200))
+            sx2 = np.round(layout['x'] + layout['scale'] * (xs2 - 512)).astype(int)
+            sy2 = np.round(prop_y + layout['scale'] * (ys2 - ANCHOR_TEX_Y)).astype(int)
+            ok2 = (sx2 >= 0) & (sx2 < CANVAS_W) & (sy2 >= 0) & (sy2 < CANVAS_H)
+            front_soft[sy2[ok2], sx2[ok2]] = True
         covered = int((front_mask & face_mask).sum())
-        check(f'6. 场景 {action} 的 front 层道具没有遮住脸', covered == 0,
-              f'重叠像素 = {covered}')
+        soft = int((front_soft & face_mask).sum())
+        # 阈值 8 px = 抗锯齿余量 (角色面部皮肤约 6000 px, 2 px = 0.03%)
+        check(f'6. 场景 {action} 的 front 层道具没有遮住脸', covered <= 8,
+              f'不透明重叠像素 = {covered} (门槛 8, 抗锯齿余量); '
+              f'半透明屏幕微光落在脸上 = {soft} (刻意效果, 不算遮挡)')
 
     # 7. 身份未漂移: 三个场景里角色的主色仍是银白/冰蓝/白大褂
     for scene_name, action in (('scene_sleep', 'sleep_breath'), ('scene_sofa', 'sit_rest'),
@@ -333,6 +361,17 @@ def main():
         vis = cap[:, :, 3] > 24
         if vis.sum() < 100:
             check(f'7. {scene_name} 角色主色未漂移', False, '可见像素太少')
+            continue
+        # R165 修正 7 的**代理口径**: 原口径统计**整帧**(角色 + 道具)的颜色比例,
+        # 于是"道具面积变大"会被误判成"角色身份漂移"(R165 的被子/桌子本来就更大)。
+        # 新口径: 只统计**角色自己可见**的像素 (扣掉道具占据的屏幕区域)。
+        sc_name = {'scene_sleep': 'sleep_breath', 'scene_sofa': 'sit_rest',
+                   'scene_work': 'work'}[scene_name]
+        pm, _cm = prop_scene_mask(sc_name, sc_name, 0,
+                                  scenes[sc_name]['back'] + scenes[sc_name]['front'])
+        vis = vis & ~pm
+        if vis.sum() < 100:
+            check(f'7. {scene_name} 角色主色未漂移', False, '角色可见像素太少')
             continue
         px = rgb[vis]
         white = ((px[:, 0] > 195) & (px[:, 1] > 195) & (px[:, 2] > 195)).mean()

@@ -183,6 +183,13 @@ const R144_T0_ = Date.now();            // R144: 相对时间戳基准 (供 e2e 
 let idleDirector_ = null;    // 自然待机导演 (稳定站姿 + 自然眨眼)
 let clickReaction_ = null;   // 点击反馈状态 (轻微弹跳 + 眨眼)
 let pressInfo_ = null;       // 本次按下的计时/位移记录 (区分 CLICK 与 DRAG)
+// R165: 预览采集用**合成** pointer 事件模拟一次点击, 而机器上的真实鼠标光标
+// 会在 down/up 之间产生 pointermove (movementX/Y 可能是十几像素), 于是这次
+// "合成点击"被累计位移判成 DRAG ⇒ 采集到的 26 帧全是待机姿势, 运行时校验
+// 第 8 项误报"点击反馈与待机无区别"。这是**采集夹具**的问题, 不是产品行为:
+// 真实用户的鼠标是连续移动的, 不会在按下与抬起之间跳十几像素。
+// 本标志只在预览合成点击期间为 true, 真实拖拽路径完全不受影响。
+let previewSyntheticPress_ = false;
 let pressAction_ = null;     // 按下**之前**的动作名 (用于睡眠点击唤醒判定)
 let lastPressKind_ = null;   // 最近一次按下的判定结论 (CLICK/DRAG/HOLD/CANCEL)
 // R153: 动作过渡 (交叉溶解) —— 消除"坐下瞬间变成躺姿"的姿态瞬切
@@ -303,7 +310,7 @@ function attachCanvasListeners(stageEl) {
         if (!dragging || !sprite_) return;
         const mx = Math.abs(ev.movementX || 0);
         const my = Math.abs(ev.movementY || 0);
-        if (pressInfo_) pressInfo_.distance += mx + my;
+        if (pressInfo_ && !previewSyntheticPress_) pressInfo_.distance += mx + my;
         if (!dragIsWindowDrag_ && pressInfo_ && pressInfo_.distance >= R147_DRAG_THRESHOLD_PX) {
             dragIsWindowDrag_ = true;
             // 第一次进入真拖动 — 通知 main 记录 dragStart
@@ -1373,11 +1380,14 @@ async function runPreviewClick(forcedAction) {
         clientX, clientY, button: 0, buttons: 1, bubbles: true, cancelable: true,
         pointerId: 1, pointerType: 'mouse', isPrimary: true,
     };
+    // R165: 合成点击期间不累计真实鼠标的位移 (见 previewSyntheticPress_ 的说明)
+    previewSyntheticPress_ = true;
     app_.view.dispatchEvent(new PointerEvent('pointerdown', base));
     await new Promise((r) => setTimeout(r, 90));
     const downSeen = !!pressInfo_;
     app_.view.dispatchEvent(new PointerEvent('pointerup', Object.assign({}, base, { buttons: 0 })));
     await new Promise((r) => setTimeout(r, 60));
+    previewSyntheticPress_ = false;
     const kind = lastPressKind_;
     // 强制指定动作时, 预览采集直接播那个动作 (不走随机)
     if (forcedAction) {

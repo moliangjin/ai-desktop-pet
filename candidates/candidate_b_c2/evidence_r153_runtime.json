@@ -1,23 +1,23 @@
 {
-  "preview_dir": "../../../../../../../../../tmp/r147_e2e_preview_92388",
+  "preview_dir": "../../../../../../../../../tmp/r147_e2e_preview_74031",
   "checks": [
     {
       "id": "TH1",
       "pass": true,
       "desc": "行走躯干偏心: 左右符号相反且 < 身高的 3% (修复\"前倾像摔倒\")",
-      "detail": "walk_left 均值=-0.01249 walk_right 均值=+0.01228 最大绝对值=0.01689 门槛=0.03"
+      "detail": "walk_left 均值=-0.01262 walk_right 均值=+0.01252 最大绝对值=0.01689 门槛=0.03"
     },
     {
       "id": "TH2",
       "pass": true,
       "desc": "坐→躺之间存在多帧渐变 (修复\"坐下瞬间变成躺姿\")",
-      "detail": "中间态帧 15 帧 (门槛 ≥3) [{\"frame\": 1, \"d_sit\": 3.189, \"d_lie\": 63.359}, {\"frame\": 2, \"d_sit\": 6.412, \"d_lie\": 63.384}, {\"frame\": 3, \"d_sit\": 8.833, \"d_lie\": 63.285}, {\"frame\": 4, \"d_sit\": 10.574, \"d_lie\": 63.547}, {\"frame\": 5, \"d_sit\": 32.19, \"d_lie\": 64.533}, {\"frame\": 6, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 7, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 8, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 9, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 10, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 11, \"d_sit\": 37.878, \"d_lie\": 77.226}, {\"frame\": 12, \"d_sit\": 39.197, \"d_lie\": 72.105}, {\"frame\": 13, \"d_sit\": 40.977, \"d_lie\": 65.089}, {\"frame\": 14, \"d_sit\": 41.989, \"d_lie\": 56.594}, {\"frame\": 15, \"d_sit\": 42.697, \"d_lie\": 43.512}]"
+      "detail": "中间态帧 15 帧 (门槛 ≥3) [{\"frame\": 1, \"d_sit\": 3.779, \"d_lie\": 63.209}, {\"frame\": 2, \"d_sit\": 6.801, \"d_lie\": 63.15}, {\"frame\": 3, \"d_sit\": 9.152, \"d_lie\": 63.353}, {\"frame\": 4, \"d_sit\": 12.061, \"d_lie\": 64.462}, {\"frame\": 5, \"d_sit\": 31.416, \"d_lie\": 64.946}, {\"frame\": 6, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 7, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 8, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 9, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 10, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 11, \"d_sit\": 38.273, \"d_lie\": 75.266}, {\"frame\": 12, \"d_sit\": 40.11, \"d_lie\": 68.581}, {\"frame\": 13, \"d_sit\": 41.579, \"d_lie\": 61.446}, {\"frame\": 14, \"d_sit\": 42.3, \"d_lie\": 50.577}, {\"frame\": 15, \"d_sit\": 43.547, \"d_lie\": 35.382}]"
     },
     {
       "id": "TH3",
       "pass": true,
       "desc": "多帧库动作在真实运行时确实逐帧推进 (防 anim_clock 每帧时长回归)",
-      "detail": "各动作最大\"变化像素数\" {\"look_around\": 2698, \"tilt_head\": 3040, \"head_nod\": 9004, \"blink_soft\": 8787, \"sleep_breath\": 1014} (门槛 ≥25); 静止的动作: 无"
+      "detail": "各动作最大\"变化像素数\" {\"look_around\": 2698, \"tilt_head\": 3040, \"head_nod\": 9018, \"blink_soft\": 8827, \"sleep_breath\": 504} (门槛 ≥25); 静止的动作: 无"
     },
     {
       "id": "TH4",
@@ -29,45 +29,45 @@
       "id": "TH5",
       "pass": true,
       "desc": "点击反馈明显区别于僵立待机 (R156: 表情变化或姿态变化, 二者满足其一)",
-      "detail": "点击段虹膜像素 min=14 / 睁眼待机 min=90 / happy 参照 min=9 / 点击段到最近待机帧的最大平均差=4.75 (门槛 6)"
+      "detail": "点击段虹膜像素 min=10 / 睁眼待机 min=90 / happy 参照 min=8 / 点击段到最近待机帧的最大平均差=6.54 (门槛 6)"
     },
     {
       "id": "TH6",
       "pass": true,
       "desc": "睡眠期间有可见呼吸起伏, 且幅度不过大",
-      "detail": "最大帧间差=0.5608 (需 >0.05), 身高=153px, 粗估比例=0.0001 (门槛 <0.02)"
+      "detail": "最大帧间差=0.2737 (需 >0.05), 身高=153px, 粗估比例=0.0000 (门槛 <0.02)"
     }
   ],
   "walk_lean": {
-    "left_mean": -0.012486307771608536,
-    "right_mean": 0.012282985950152234,
+    "left_mean": -0.012615460631071464,
+    "right_mean": 0.012518012379773732,
     "max_abs": 0.016891084889262543
   },
   "sit_to_lie_mixed": [
     {
       "frame": 1,
-      "d_sit": 3.189,
-      "d_lie": 63.359
+      "d_sit": 3.779,
+      "d_lie": 63.209
     },
     {
       "frame": 2,
-      "d_sit": 6.412,
-      "d_lie": 63.384
+      "d_sit": 6.801,
+      "d_lie": 63.15
     },
     {
       "frame": 3,
-      "d_sit": 8.833,
-      "d_lie": 63.285
+      "d_sit": 9.152,
+      "d_lie": 63.353
     },
     {
       "frame": 4,
-      "d_sit": 10.574,
-      "d_lie": 63.547
+      "d_sit": 12.061,
+      "d_lie": 64.462
     },
     {
       "frame": 5,
-      "d_sit": 32.19,
-      "d_lie": 64.533
+      "d_sit": 31.416,
+      "d_lie": 64.946
     },
     {
       "frame": 6,
@@ -96,36 +96,36 @@
     },
     {
       "frame": 11,
-      "d_sit": 37.878,
-      "d_lie": 77.226
+      "d_sit": 38.273,
+      "d_lie": 75.266
     },
     {
       "frame": 12,
-      "d_sit": 39.197,
-      "d_lie": 72.105
+      "d_sit": 40.11,
+      "d_lie": 68.581
     },
     {
       "frame": 13,
-      "d_sit": 40.977,
-      "d_lie": 65.089
+      "d_sit": 41.579,
+      "d_lie": 61.446
     },
     {
       "frame": 14,
-      "d_sit": 41.989,
-      "d_lie": 56.594
+      "d_sit": 42.3,
+      "d_lie": 50.577
     },
     {
       "frame": 15,
-      "d_sit": 42.697,
-      "d_lie": 43.512
+      "d_sit": 43.547,
+      "d_lie": 35.382
     }
   ],
   "lib_motion": {
     "look_around": 2698,
     "tilt_head": 3040,
-    "head_nod": 9004,
-    "blink_soft": 8787,
-    "sleep_breath": 1014
+    "head_nod": 9018,
+    "blink_soft": 8827,
+    "sleep_breath": 504
   },
   "lib_pair_min_diff": [
     "sit_rest",
@@ -134,24 +134,24 @@
   ],
   "lib_representatives": {
     "look_around": {
-      "frame_index": 6,
+      "frame_index": 5,
       "mad_vs_first": 2.706
     },
     "tilt_head": {
-      "frame_index": 7,
+      "frame_index": 6,
       "mad_vs_first": 3.652
     },
     "head_nod": {
       "frame_index": 5,
-      "mad_vs_first": 3.071
+      "mad_vs_first": 2.705
     },
     "happy": {
       "frame_index": 2,
-      "mad_vs_first": 3.828
+      "mad_vs_first": 3.804
     },
     "blink_soft": {
       "frame_index": 2,
-      "mad_vs_first": 1.934
+      "mad_vs_first": 1.923
     },
     "stretch": {
       "frame_index": 0,
@@ -163,23 +163,23 @@
     },
     "doze": {
       "frame_index": 1,
-      "mad_vs_first": 0.399
+      "mad_vs_first": 0.147
     },
     "sleep_breath": {
       "frame_index": 7,
-      "mad_vs_first": 0.815
+      "mad_vs_first": 0.451
     }
   },
   "iris": {
     "click": [
-      14,
-      14,
-      14,
-      21,
-      21,
-      21,
-      21,
-      21
+      91,
+      91,
+      10,
+      10,
+      10,
+      10,
+      91,
+      91
     ],
     "idle": [
       90,
@@ -192,14 +192,14 @@
       90
     ],
     "happy": [
-      64,
-      9,
+      68,
+      8,
       9,
       9
     ]
   },
   "breath": {
-    "max_frame_diff": 0.5608,
+    "max_frame_diff": 0.2737,
     "body_h": 153
   },
   "verdict": "PASS"

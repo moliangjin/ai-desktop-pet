@@ -1,0 +1,105 @@
+{
+ "baseline": {
+  "frame": "character_R138/idle/idle_00_base.png",
+  "solid_area_px": 214814,
+  "feet_center_x": 522.3,
+  "crown_row60_width_px": 138
+ },
+ "thresholds": {
+  "area_median_deviation_max_pct": 15.0,
+  "feet_center_shift_max_px": 24,
+  "crown_width_deviation_max_pct": 15.0
+ },
+ "actions": {
+  "cheer_wave": {
+   "round": "R158",
+   "frames": [
+    "cheer_wave_0.png",
+    "cheer_wave_1.png",
+    "cheer_wave_2.png"
+   ],
+   "area_median_px": 212244,
+   "area_median_deviation_pct": -1.2,
+   "area_verdict": "PASS",
+   "feet_center_shift_max_px": 0.0,
+   "feet_verdict": "PASS",
+   "crown_width_deviation_max_pct": 5.07,
+   "crown_verdict": "PASS"
+  },
+  "cheer_hands_up": {
+   "round": "R158",
+   "frames": [
+    "cheer_hands_up_0.png",
+    "cheer_hands_up_1.png",
+    "cheer_hands_up_2.png"
+   ],
+   "area_median_px": 217777,
+   "area_median_deviation_pct": 1.38,
+   "area_verdict": "PASS",
+   "feet_center_shift_max_px": 0.0,
+   "feet_verdict": "PASS",
+   "crown_width_deviation_max_pct": 10.87,
+   "crown_verdict": "PASS"
+  },
+  "cheer_heart": {
+   "round": "R158",
+   "frames": [
+    "cheer_heart_0.png",
+    "cheer_heart_1.png",
+    "cheer_heart_2.png"
+   ],
+   "area_median_px": 198186,
+   "area_median_deviation_pct": -7.74,
+   "area_verdict": "PASS",
+   "feet_center_shift_max_px": 0.0,
+   "feet_verdict": "PASS",
+   "crown_width_deviation_max_pct": 12.32,
+   "crown_verdict": "PASS"
+  },
+  "cheer_clap": {
+   "round": "R158",
+   "frames": [
+    "cheer_clap_0.png",
+    "cheer_clap_1.png",
+    "cheer_clap_2.png"
+   ],
+   "area_median_px": 203477,
+   "area_median_deviation_pct": -5.28,
+   "area_verdict": "PASS",
+   "feet_center_shift_max_px": 0.0,
+   "feet_verdict": "PASS",
+   "crown_width_deviation_max_pct": 5.07,
+   "crown_verdict": "PASS"
+  },
+  "cheer_jump": {
+   "round": "R158",
+   "frames": [
+    "cheer_jump_0.png",
+    "cheer_jump_1.png",
+    "cheer_jump_2.png"
+   ],
+   "area_median_px": 183127,
+   "area_median_deviation_pct": -14.75,
+   "area_verdict": "PASS",
+   "feet_center_shift_max_px": 0.16,
+   "feet_verdict": "PASS",
+   "crown_width_deviation_max_pct": 10.14,
+   "crown_verdict": "PASS"
+  },
+  "cheer_tilt": {
+   "round": "R158",
+   "frames": [
+    "cheer_tilt_0.png",
+    "cheer_tilt_1.png",
+    "cheer_tilt_2.png"
+   ],
+   "area_median_px": 213928,
+   "area_median_deviation_pct": -0.41,
+   "area_verdict": "PASS",
+   "feet_center_shift_max_px": 0.0,
+   "feet_verdict": "PASS",
+   "crown_width_deviation_max_pct": 9.42,
+   "crown_verdict": "PASS"
+  }
+ }
+}

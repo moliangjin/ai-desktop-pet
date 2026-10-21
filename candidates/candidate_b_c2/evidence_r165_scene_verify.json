@@ -1,0 +1,140 @@
+{
+  "round": "R165",
+  "criteria_note": "绝对值口径, 新旧素材同一套判据复算 (不是\"相比基线没变差\")",
+  "results": {
+    "R165": {
+      "tag": "R165",
+      "P2-1_hands_inside_desk_band": {
+        "pass": true,
+        "desk_far": 556,
+        "desk_near": 668,
+        "hand_l": [
+          348,
+          567,
+          425,
+          638
+        ],
+        "hand_r": [
+          439,
+          571,
+          535,
+          641
+        ],
+        "left_ok": true,
+        "right_ok": true
+      },
+      "P2-2_screen_direction": {
+        "pass": true,
+        "lid_mean_luminance": 62.3,
+        "lid_cyan_edge_px": 921,
+        "lid_box": [
+          648,
+          466,
+          804,
+          636
+        ],
+        "note": "盖板均值 < 120 = 看到的是石墨背板(屏幕朝角色); 青蓝边缘光 ≥ 150 = 屏幕亮着"
+      },
+      "P2-3_props_cover_face_skin_px": {
+        "pass": true,
+        "value": 0,
+        "face_skin_px": 12785,
+        "translucent_screen_glow_on_face_px": 253,
+        "note": "遮挡只看**不透明**道具像素(alpha>200); 半透明的屏幕微光落在脸上是刻意效果(屏幕在照亮她), 不算遮挡"
+      },
+      "P2-4_character_white_ratio": {
+        "pass": true,
+        "white": 0.414,
+        "silver": 0.36,
+        "note": "只统计角色自身可见像素 (排除道具); 白大褂 ≥ 0.30, 银白发 ≥ 0.10"
+      },
+      "P3-2_quilt_cover_face_skin_px": {
+        "pass": true,
+        "value": 9,
+        "face_skin_px": 6070,
+        "note": "阈值 30 px = 抗锯齿余量 (占面部皮肤 6070 px 的 0.5%)"
+      },
+      "P3-1_quilt_body_coverage_ratio": {
+        "pass": true,
+        "overall_ratio": 0.506,
+        "body_core_ratio": 0.958,
+        "body_core_x_from": 400,
+        "covered_px": 90647,
+        "body_px": 179292,
+        "note": "整体覆盖率 ≥ 0.45 且**身体核心**(x≥400 躯干+臀+腿)覆盖率 ≥ 0.85 = 被子确实盖在身上而不是摆在旁边; 左侧头/手臂按设计露出"
+      },
+      "P3-3_quilt_left_edge_softness": {
+        "pass": true,
+        "outer_2px_median_alpha": 0.0,
+        "note": "被子最外 2px 的 alpha 中位数 < 200 = 边缘是渐隐而不是硬切"
+      }
+    },
+    "R162": {
+      "tag": "R162",
+      "P2-1_hands_inside_desk_band": {
+        "pass": false,
+        "desk_far": 640,
+        "desk_near": 716,
+        "hand_l": [
+          348,
+          567,
+          425,
+          638
+        ],
+        "hand_r": [
+          439,
+          571,
+          535,
+          641
+        ],
+        "left_ok": false,
+        "right_ok": false
+      },
+      "P2-2_screen_direction": {
+        "pass": false,
+        "lid_mean_luminance": 120.9,
+        "lid_cyan_edge_px": 6542,
+        "lid_box": [
+          516,
+          520,
+          762,
+          692
+        ],
+        "note": "盖板均值 < 120 = 看到的是石墨背板(屏幕朝角色); 青蓝边缘光 ≥ 150 = 屏幕亮着"
+      },
+      "P2-3_props_cover_face_skin_px": {
+        "pass": true,
+        "value": 0,
+        "face_skin_px": 12785,
+        "translucent_screen_glow_on_face_px": 0,
+        "note": "遮挡只看**不透明**道具像素(alpha>200); 半透明的屏幕微光落在脸上是刻意效果(屏幕在照亮她), 不算遮挡"
+      },
+      "P2-4_character_white_ratio": {
+        "pass": true,
+        "white": 0.447,
+        "silver": 0.348,
+        "note": "只统计角色自身可见像素 (排除道具); 白大褂 ≥ 0.30, 银白发 ≥ 0.10"
+      },
+      "P3-2_quilt_cover_face_skin_px": {
+        "pass": true,
+        "value": 9,
+        "face_skin_px": 6070,
+        "note": "阈值 30 px = 抗锯齿余量 (占面部皮肤 6070 px 的 0.5%)"
+      },
+      "P3-1_quilt_body_coverage_ratio": {
+        "pass": false,
+        "overall_ratio": 0.369,
+        "body_core_ratio": 0.699,
+        "body_core_x_from": 400,
+        "covered_px": 66203,
+        "body_px": 179292,
+        "note": "整体覆盖率 ≥ 0.45 且**身体核心**(x≥400 躯干+臀+腿)覆盖率 ≥ 0.85 = 被子确实盖在身上而不是摆在旁边; 左侧头/手臂按设计露出"
+      },
+      "P3-3_quilt_left_edge_softness": {
+        "pass": true,
+        "outer_2px_median_alpha": 0.0,
+        "note": "被子最外 2px 的 alpha 中位数 < 200 = 边缘是渐隐而不是硬切"
+      }
+    }
+  }
+}

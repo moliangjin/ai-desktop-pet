@@ -1,0 +1,61 @@
+{
+  "round": "R162",
+  "technique": "arm_rig 重建后衣身的客观测量",
+  "thresholds": {
+    "max_edge_gap": 38,
+    "max_leak_rows": 0,
+    "max_teal_dash": 30
+  },
+  "sides": {
+    "L": {
+      "arm_px": 11954,
+      "chunk_px": {
+        "upper": 854,
+        "fore": 4267,
+        "hand": 6658
+      },
+      "edge_left": {
+        "longest_run": 236,
+        "longest_gap": 0,
+        "rows": 236
+      },
+      "edge_right": {
+        "longest_run": 236,
+        "longest_gap": 0,
+        "rows": 236
+      },
+      "seam_leak_rows": 0,
+      "seam_leak_samples": [],
+      "teal_dash_px": {
+        "left": 0,
+        "right": 0
+      }
+    },
+    "R": {
+      "arm_px": 12814,
+      "chunk_px": {
+        "upper": 1219,
+        "fore": 4509,
+        "hand": 6955
+      },
+      "edge_left": {
+        "longest_run": 236,
+        "longest_gap": 0,
+        "rows": 236
+      },
+      "edge_right": {
+        "longest_run": 236,
+        "longest_gap": 0,
+        "rows": 236
+      },
+      "seam_leak_rows": 0,
+      "seam_leak_samples": [],
+      "teal_dash_px": {
+        "left": 0,
+        "right": 0
+      }
+    }
+  },
+  "pass": true,
+  "failures": []
+}

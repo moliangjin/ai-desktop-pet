@@ -38,6 +38,12 @@ DARK_LUM = 118
 BARRIER_R = 2
 
 # 实测几何 (1024 纹理坐标)
+#
+# R162 修正: 原来的肩/肘枢轴**落在角色体外的空白区**(肩盘 398,386 整个悬空),
+#   手臂绕体外一点旋转 ⇒ ①肩部甩出一块平涂白色的圆盘残块 ②手臂与躯干之间断开
+#   ③袖子描边残留成虚线。现按**袖子的实测位置**重新标定:
+#   袖子掩膜顶端在 x≈420 / y≈380, 袖口(青色腕带)在 y≈556, 袖身中段在 y≈470。
+#   枢轴必须落在**袖子内部**, 圆盘才咬得住袖料。
 SIDES = {
     'L': dict(  # 画面左臂 = 角色右手
         hand_box=(335, 588, 398, 668),
@@ -45,12 +51,12 @@ SIDES = {
         cuff_box=(340, 548, 408, 606),
         sleeve_box=(352, 500, 384, 556),
         roi=(322, 300, 438, 684),
-        shoulder=(398, 386),
-        elbow=(376, 486),
-        wrist=(366, 574),
-        r_shoulder=26,
-        r_elbow=17,
-        r_wrist=15,
+        shoulder=(428, 383),
+        elbow=(408, 468),
+        wrist=(370, 556),
+        r_shoulder=14,
+        r_elbow=15,
+        r_wrist=13,
     ),
     'R': dict(  # 画面右臂 = 角色左手
         hand_box=(626, 588, 692, 668),
@@ -58,27 +64,47 @@ SIDES = {
         cuff_box=(620, 548, 688, 606),
         sleeve_box=(640, 500, 672, 556),
         roi=(586, 300, 702, 684),
-        shoulder=(626, 386),
-        elbow=(648, 486),
-        wrist=(658, 574),
-        r_shoulder=26,
-        r_elbow=17,
-        r_wrist=15,
+        shoulder=(596, 383),
+        elbow=(616, 468),
+        wrist=(654, 556),
+        r_shoulder=14,
+        r_elbow=15,
+        r_wrist=13,
     ),
 }
 
-# 衣身还原参数 (可调, 靠肉眼看图迭代)
-#   实测 (idle_00_base, 1024 纹理坐标):
-#     y=452 行: x394 灰边 / x395-398 深色描边 / x399-400 灰 / x401+ 袖子白 / x435+ 大褂白
-#     ⇒ 袖子的**描边**被洪水填充当成阻隔, 落在掩膜之外 ⇒ 擦除时必须一起带走
-#     ⇒ 袖子与大褂在肩部基本齐平, 所以衣身边缘默认重建在袖子外轮廓处 (inset=0)
-INSET_MODE = 'graded'   # 'graded' | 'zero'
-SHOULDER_FLAT = 470     # 此行以上: 袖子与大褂轮廓齐平 → 衣身不内缩
-INSET_FULL_Y = 660      # 此行: 袖口+手完全悬空 → 衣身内缩到极限
-INSET_REF_WIDTH = 62    # 内缩上限 (参考袖子最大宽度)
-HAND_Y = 575            # 此行以下 (袖口+手) 完全悬空 → 全部透明
+# 衣身还原参数 (R162 重标定)
+#
+# 【关键解剖结论 —— R162 实测得出, 之前几轮全错在这里】
+#   底图 idle_00_base 里, 角色左臂的**袖子是画在白大褂"外面"的一层**:
+#     x  外侧深色描边(4~5px) | 袖子白/青色饰条 |  x=seam 处的深色接缝线 | 大褂本体
+#   也就是说:
+#     · 最外侧那条粗黑线 = **袖子的外轮廓**, 也就是角色剪影的最外缘
+#     · 接缝线 (seam) = 袖子压在衣身上的**内轮廓**, 大褂真正的衣身边缘藏在它后面
+#   ⇒ 摘掉袖子后, 大褂的边缘就落在 **seam** 上, 而不是"袖子外轮廓"上。
+#   ⇒ seam 以下 (袖口+手) 背后是背景, 摘掉后必须透明。
+#
+# 【L 侧 seam 实测 (1024 纹理坐标, 逐行数暗线得到)】
+#   肩部 y350-378: 421→427  (与肩帽融合, 接缝线出现在 x≈427)
+#   y380-410:      429→439  (腋下, 明显外张)
+#   y415-445:      439→437  (手臂垂下, 接缝线回落到 x≈437)
+#   y460-545:      436→424  (袖子内缘随袖口收窄)
+#   y560-580:      412→398  (袖口青色腕带收口)
+#   y590-675:      396→382  (手掌右缘)
+# R 侧按 x→1024-x 镜像 (角色本体关于 x=512 严格对称: 肩 428↔596 / 肘 408↔616 / 腕 370↔654)
+SEAM_L = [
+    (335, 421), (345, 423), (355, 425), (365, 427), (375, 429), (385, 430),
+    (395, 433), (405, 437), (415, 440), (425, 439), (435, 438), (445, 437),
+    (465, 436), (485, 435), (505, 432), (525, 428), (545, 422), (558, 412),
+    (570, 405), (580, 398), (595, 394), (615, 390), (635, 385), (655, 381),
+    (675, 381),
+]
+SLEEVE_END = 585        # 此行以下只有袖口+手, 背后是背景 ⇒ 摘掉后必须透明
+OUT_KEEP = 5            # 保留底图最外侧描边带的宽度 (底图描边 4~5px + 1px 抗锯齿)
 OUTLINE_PX = 2          # 重建的衣身外缘描边宽度
-RING_R = 3              # 擦除袖子描边时向外扩的像素数
+SEAM_LINE_PX = 3        # 重建的衣身接缝描边宽度
+EDGE_SHADOW_PX = 18     # 衣身外缘柔和投影的宽度 (纹理 px)
+RING_R = 3              # (兼容旧常量, 新实现不再需要)
 
 
 # ---------------------------------------------------------------- 基础工具
@@ -197,8 +223,25 @@ def flood_region(a, seed, roi=None, dark_thr=DARK_LUM, barrier_r=BARRIER_R):
     return seen
 
 
+def seam_x(side, y):
+    """手臂与衣身之间的接缝线 x 坐标 (逐行线性插值)。"""
+    tbl = SEAM_L if side == 'L' else [(y0, 1024 - x0) for y0, x0 in SEAM_L]
+    if y <= tbl[0][0]:
+        return float(tbl[0][1])
+    for (y0, x0), (y1, x1) in zip(tbl, tbl[1:]):
+        if y0 <= y <= y1:
+            t = 0.0 if y1 == y0 else (y - y0) / float(y1 - y0)
+            return x0 + (x1 - x0) * t
+    return float(tbl[-1][1])
+
+
 def rotate_rgba(rgba, pivot, ang):
-    """绕 pivot 旋转 RGBA。ang>0 = 屏幕顺时针 (y 向下坐标系)。"""
+    """绕 pivot 旋转 RGBA (双线性采样)。ang>0 = 屏幕顺时针 (y 向下坐标系)。
+
+    R162 修正: 原来用**最近邻**采样, 斜着走的细描边被重采样成 1px 宽的
+    **阶梯锯齿**(肉眼就是一条虚线), 看上去像"断线/残影"。
+    改成预乘 alpha 的双线性 ⇒ 边缘平滑, 细线仍是连续的。
+    """
     px, py = pivot
     th = np.deg2rad(ang)
     cos, sin = np.cos(th), np.sin(th)
@@ -206,11 +249,29 @@ def rotate_rgba(rgba, pivot, ang):
     yy, xx = np.mgrid[0:H, 0:W].astype(np.float64)
     dx = xx - px
     dy = yy - py
-    xi = np.round(px + dx * cos - dy * sin).astype(int)
-    yi = np.round(py + dx * sin + dy * cos).astype(int)
-    ok = (xi >= 0) & (xi < W) & (yi >= 0) & (yi < H)
-    out = rgba[np.clip(yi, 0, H - 1), np.clip(xi, 0, W - 1)].copy()
-    out[~ok, 3] = 0
+    sx = px + dx * cos - dy * sin
+    sy = py + dx * sin + dy * cos
+    ok = (sx >= 0) & (sx <= W - 1) & (sy >= 0) & (sy <= H - 1)
+    x0 = np.floor(sx).astype(np.int64)
+    y0 = np.floor(sy).astype(np.int64)
+    fx = (sx - x0)[..., None]
+    fy = (sy - y0)[..., None]
+    x0c = np.clip(x0, 0, W - 1)
+    x1c = np.clip(x0 + 1, 0, W - 1)
+    y0c = np.clip(y0, 0, H - 1)
+    y1c = np.clip(y0 + 1, 0, H - 1)
+    src = rgba.astype(np.float64)
+    a = src[:, :, 3:4] / 255.0
+    prem = np.concatenate([src[:, :, 0:3] * a, a * 255.0], axis=2)
+    v = (prem[y0c, x0c] * (1 - fx) * (1 - fy) + prem[y0c, x1c] * fx * (1 - fy)
+         + prem[y1c, x0c] * (1 - fx) * fy + prem[y1c, x1c] * fx * fy)
+    v = np.where(ok[..., None], v, 0.0)
+    va = np.clip(v[:, :, 3:4] / 255.0, 0, 1)
+    out = np.zeros(rgba.shape, np.int32)
+    safe = np.where(va > 1e-6, va, 1.0)[:, :, 0]
+    for c in range(3):
+        out[:, :, c] = np.clip(v[:, :, c] / safe, 0, 255).astype(np.int32)
+    out[:, :, 3] = np.clip(v[:, :, 3], 0, 255).astype(np.int32)
     return out
 
 
@@ -240,17 +301,63 @@ def build_arm(a, side):
     slv &= (a[:, :, 3] > 40) & (lum(a) > 130)
 
     arm = flood_region(a, hand | cuff | slv, roi=J['roi'])
+    # ------------------------------------------------------------------
+    # R162 修正 A: 洪水填充把**暗色描边当阻隔** ⇒ 描边落在掩膜之外。
+    #   后果实测: ①切口是"没有描边的裸边" ②描边残留成虚线鬼影
+    #   ③袖子外侧那条**青色高光带**(底图 y420 的 x410-416)整条留在掩膜外
+    #      ⇒ 手臂转走后原地留下一条**青色虚线** —— 就是评审看到的"拼接残影"。
+    #   对策: 从洪水区域**沿不透明像素一路走到真正的剪影**, 把这段
+    #      (描边 + 抗锯齿 + 青色高光带) 全部并进手臂掩膜。
+    #      剪影处必然是透明像素, 所以"走到透明为止"就等于真实外轮廓。
+    solid_a = a[:, :, 3] > 40
+    outer = np.zeros_like(arm)
+    for _y in range(a.shape[0]):
+        _xs = np.nonzero(arm[_y])[0]
+        if len(_xs) == 0:
+            continue
+        if side == 'L':
+            _x = int(_xs.min())
+            _stop = _x
+            while _stop > 0 and solid_a[_y, _stop - 1]:
+                _stop -= 1
+            outer[_y, _stop:_x + 1] = True
+        else:
+            _x = int(_xs.max())
+            _stop = _x
+            while _stop < a.shape[1] - 1 and solid_a[_y, _stop + 1]:
+                _stop += 1
+            outer[_y, _x:_stop + 1] = True
+    arm = arm | outer
+    # ------------------------------------------------------------------
+    # R162 修正 B: 洪水填充会**从肩膀上方绕进大褂胸口** —— 袖子的暗描边
+    #   在肩部不断开, 填充能绕过去 ⇒ 手臂掩膜里混进一大块衣身。
+    #   手臂一转, 这块衣身跟着飞起来 ⇒ 肩上凭空多出一块**白色残块**。
+    #   对策: 用实测接缝线 (seam) 给手臂掩膜的**内侧**封顶。
+    capm = np.zeros_like(arm)
+    for _y in range(a.shape[0]):
+        _xs = np.nonzero(arm[_y])[0]
+        if len(_xs) == 0:
+            continue
+        if side == 'L':
+            _hi = int(_xs.max())
+            _sx = int(round(seam_x('L', _y))) + SEAM_LINE_PX
+            if _sx < _hi:
+                capm[_y, _sx:] = True
+        else:
+            _lo = int(_xs.min())
+            # R 侧接缝 = L 侧接缝关于 x=512 的镜像 (x → 1024-x)
+            _sx = 1024 - int(round(seam_x('L', _y))) - SEAM_LINE_PX
+            if _sx > _lo:
+                capm[_y, :_sx + 1] = True
+    arm = arm & (~capm)
     # 洪水偶尔从袖口漏到衣身口袋饰条上 ⇒ 去掉衣身那一坨青色
     for _size, m in components(tl, 200):
         ys, xs = np.nonzero(m)
         if ys.min() < 400 and ys.max() > 640 and xs.max() - xs.min() > 120:
             arm &= ~m
-    # 去掉袖口右上方漏进衣身竖向饰条的部分
-    YY, XX = np.mgrid[0:a.shape[0], 0:a.shape[1]]
-    if side == 'L':
-        arm &= ~((XX > 412) & (YY > 512))
-    else:
-        arm &= ~((XX < 612) & (YY > 512))
+    # R162: 旧实现有一条"袖口右上方 x>412 全部切掉"的硬裁剪 —— 那是**旧几何**
+    #   (袖口在 x340-408)下为防漏进衣身竖饰条而加的; 新几何里袖子内侧到 x=435,
+    #   再切会把袖子自己腰斩 ⇒ 已由上面的"接缝线封顶"取代, 此处不再裁剪。
 
     # ---- 手部单独切: 洪水填充拿不到手的描边与手指 (暗线被当成阻隔) ----
     hz = np.zeros_like(arm)
@@ -282,16 +389,16 @@ def build_arm(a, side):
     # 咬口归属: 肘圆盘归前臂段, 腕圆盘归手段 (各自**近端**关节 → 完整圆盘)
     fore = fore | (arm & nE & (s_e > 0) & ~nW)
     handseg = handseg | (arm & nW)
-    # 肩圆盘也归上臂段 (上臂的近端关节) —— 绕肩旋转时圆盘与自身重合 ⇒ 无缝
-    upper = upper | (arm & nS)
-    # 肩圆盘内若混有非袖子像素 (衣身), 用袖子主色补齐, 保证圆盘完整
-    full_disc = nS & (s_e < 0)
-    sleeve_color = a[arm & (s_e < 0)][:, :3].mean(axis=0) if arm.any() else np.array([240, 240, 245])
-    upper = upper | (full_disc & ~upper)
+    # R162 修正: **肩盘不参与旋转**。
+    #   它是"长在身体上的肩章"(大褂肩部 + 青色肩线), 手臂绕它转, 它自己不动。
+    #   之前把肩盘塞进上臂段一起旋转 + 用平涂袖色补齐圆盘
+    #   ⇒ 肩章内容在盘内被甩歪, 肩上凭空多出一块白色残块。
+    upper = upper & ~nS
     # 手部整块归"手段" (含描边与手指)
     handseg = handseg | hand_full
-    # 身体里保留一份肩圆盘 (角色肩头), 旋转后的上臂圆盘正好盖住它
+    # 身体里保留一份肩章 (角色肩头), 旋转后的上臂正好盖住它
     cap = arm & nS
+    sleeve_color = a[arm & (s_e < 0)][:, :3].mean(axis=0) if arm.any() else np.array([240, 240, 245])
 
     ys, xs = np.nonzero(handseg)
     hand_c = (float(xs.mean()), float(ys.mean())) if len(xs) else (float(W[0]), float(W[1]))
@@ -344,164 +451,108 @@ def _inset_for_row(y, width):
     return int(round(FOREARM_RATIO * width))
 
 
-def restore_body(base, arm_mask, side, hand_y=None,
-                 outline_px=OUTLINE_PX, ring_r=RING_R):
+def restore_body(base, arm_mask, side, outline_px=OUTLINE_PX):
     """摘掉袖子, 并把被袖子压住的**衣身**补回来。
 
-    实测依据 (idle_00_base):
-      · 袖子的深色描边被洪水填充当成"阻隔", 落在掩膜之外 ⇒ 必须用
-        dilate(arm,ring_r) ∩ 暗像素 一并擦掉, 否则原处会留一圈虚线鬼影。
-      · 袖子是画在大褂**上面**的一层; 肩部与大褂轮廓齐平, 往下逐渐悬空。
+    R162 重写 (之前几轮全错在"大褂边缘该画在哪"):
+      底图解剖 (idle_00_base, 左臂, 1024 纹理坐标):
+        x  外侧粗黑描边(剪影) | 袖子白 + 青色饰条 | x=seam 接缝线 | 大褂本体
+      ⇒ 大褂的**可见边缘就是接缝线**, 袖子外那条粗黑线是**袖子的外轮廓**。
+      ⇒ 摘掉袖子后: 大褂边缘落在 seam 上, 而 seam 之外(左边)回到背景。
+      ⇒ 袖口+手 (y>SLEEVE_END) 背后本来就是背景 ⇒ 整块清透明, 不能补衣身。
 
-    返回 (body_img, fill_mask) —— fill_mask 记录新补的衣身区域 (用于自检)。
+    R 侧按 x→1024-x 镜像处理 (角色本体关于 x=512 严格对称)。
+
+    返回 (body_img, fill_mask)。
     """
+    if side == 'R':
+        out, fill = restore_body(base[:, ::-1], arm_mask[:, ::-1], 'L', outline_px)
+        return out[:, ::-1], fill[:, ::-1]
+
     out = base.copy()
     H, W = arm_mask.shape
     solid = base[:, :, 3] > 40
-    dark = (lum(base) < 130) & solid
-    ring = dilate(arm_mask, ring_r) & (~arm_mask)
-    # 只擦"袖子自己的描边": 外轮廓 (lo 左侧一小条) + 内轮廓 (hi 右侧一小条)。
-    # 不能用整圈 ring —— 否则大褂下摆/短裤的描边会被误擦成虚线。
-    ring_l = np.zeros_like(arm_mask)
-    ring_r_ = np.zeros_like(arm_mask)
-    for y in range(H):
-        xs = np.nonzero(arm_mask[y])[0]
-        if len(xs) == 0:
-            continue
-        lo, hi = int(xs.min()), int(xs.max())
-        ring_l[y, max(0, lo - 7):lo + 2] = True
-        ring_r_[y, max(0, hi - 2):min(W, hi + 3)] = True
-    erase = arm_mask | ((ring & dark) & (ring_l | ring_r_))
-    body = solid & (~erase)
-    fill = np.zeros_like(arm_mask)
+    lum_ = lum(base)
 
     # 全局衣身主色 (兜底): 取画面中部大片白大褂像素的中位数
     mid = base[380:700, 400:620, :3].astype(np.float64).reshape(-1, 3)
     ml = 0.299 * mid[:, 0] + 0.587 * mid[:, 1] + 0.114 * mid[:, 2]
-    mt = teal(base[380:700, 400:620])
-    bright = mid[(ml > 190) & (~mt.reshape(-1))]
+    mt = teal(base[380:700, 400:620]).reshape(-1)
+    bright = mid[(ml > 190) & (~mt)]
     global_coat = np.median(bright, axis=0) if len(bright) else np.array([244, 251, 254])
 
-    def coat_color(y, s_lo, s_hi):
-        """取该行大褂面料色: 只用"亮且非青"像素, 取亮部高分位 (避开描边暗线)。"""
-        if s_hi - s_lo < 3:
+    def coat_color(y, x0, x1):
+        """该行大褂面料色: 窗口内"亮且非青"像素的中位数 (避开描边与青色饰条)。"""
+        x0 = max(0, x0)
+        x1 = min(W, x1)
+        if x1 - x0 < 3:
             return global_coat
-        strip = base[y, s_lo:s_hi, :3].astype(np.float64)
-        m = (lum(strip) > 190) & (~teal(base[y, s_lo:s_hi]))
-        if m.sum() >= 3:
-            return np.percentile(strip[m], 75, axis=0)
+        strip = base[y, x0:x1, :3].astype(np.float64)
+        m = (lum(strip) > 185) & (~teal(base[y, x0:x1]))
+        if m.sum() >= 2:
+            return np.median(strip[m], axis=0)
         return global_coat
 
-    # R158 修: 记录每一行重建出的**大褂外缘**位置, 循环结束后把"大褂之外"的残留全部清成透明。
-    # 根因: 手臂掩膜只包含肤色/袖色像素, **手的描边与手指间的暗线不在掩膜内**
-    #       (洪水填充把暗线当阻隔), 于是摘掉手臂后原手轮廓残留成**虚线鬼影**。
-    #       之前只擦 ring_l/ring_r_ 两条窄带, 手指轮廓的大多数像素漏网。
-    # 对策: 重建好的大褂边缘之外本来就应该是背景(透明), 直接整段清掉, 鬼影无处可藏。
-    edge_by_row = {}
+    def seam_color(y, sx):
+        """接缝描边取底图该行接缝线自身的颜色 (不能瞎取, 之前取到透明区
+        ⇒ 变成纯黑或纯白 ⇒ 整条衣身边缘变成**虚线**)。"""
+        x0 = max(0, sx - 1)
+        x1 = min(W, sx + 5)
+        seg = base[y, x0:x1, :3].astype(np.float64)
+        if not len(seg):
+            return np.array([40, 45, 70])
+        d = lum(seg)
+        cand = seg[d <= np.percentile(d, 45)]
+        return np.median(cand, axis=0) if len(cand) else np.array([40, 45, 70])
+
+    fill = np.zeros((H, W), bool)
 
     for y in range(H):
         xs = np.nonzero(arm_mask[y])[0]
         if len(xs) == 0:
             continue
         lo, hi = int(xs.min()), int(xs.max())
-        width = hi - lo + 1
-        if INSET_MODE == 'zero':
-            inset = 0
-        elif y <= SHOULDER_FLAT:
-            inset = 0
-        elif y >= INSET_FULL_Y:
-            inset = INSET_REF_WIDTH
-        else:
-            # 平滑单调的内缩曲线 (不能用"每行按袖子宽度比例" —— 宽度逐行抖动会让衣身边缘成锯齿虚线)
-            t = (y - SHOULDER_FLAT) / float(INSET_FULL_Y - SHOULDER_FLAT)
-            t = min(1.0, max(0.0, t))
-            ts = t * t * (3 - 2 * t)
-            inset = int(round(INSET_REF_WIDTH * ts))
-        inset = int(round(inset))
 
-        # 大褂边缘 (往里收 inset)
-        if side == 'L':
-            edge = lo + inset
-            src_lo = hi + 3
-            src_hi = min(W, hi + 20)
-            if edge >= hi + 1 or src_hi - src_lo < 4:
-                continue
-            # 平铺大褂白 (逐行取"真实像素"会在描边处产生横向条纹, 实测不可用)
-            outl = base[y, max(0, lo - 7):lo, :3].reshape(-1, 3)
-            dark_c = outl[outl.sum(axis=1).argmin()] if len(outl) else np.array([40, 45, 70])
-            for x in range(edge, hi + 3):
-                if x < 0 or x >= W:
-                    continue
-                out[y, x, 0:3] = global_coat
-                out[y, x, 3] = 255
-                fill[y, x] = True
-            # 外缘描边 (在填充区最外侧)
-            for k in range(outline_px):
-                x = edge + k
-                if 0 <= x < W:
-                    out[y, x, 0:3] = dark_c
-                    out[y, x, 3] = 255
-                    fill[y, x] = True
-            edge_by_row[y] = edge
-        else:
-            edge = hi - inset
-            src_lo = max(0, lo - 20)
-            src_hi = lo - 3
-            if edge <= lo - 1 or src_hi - src_lo < 4:
-                continue
-            outl = base[y, hi + 1:hi + 8, :3].reshape(-1, 3)
-            dark_c = outl[outl.sum(axis=1).argmin()] if len(outl) else np.array([40, 45, 70])
-            for x in range(lo - 3, edge + 1):
-                if x < 0 or x >= W:
-                    continue
-                out[y, x, 0:3] = global_coat
-                out[y, x, 3] = 255
-                fill[y, x] = True
-            # 外缘描边 (在填充区最外侧 = 右边)
-            for k in range(outline_px):
-                x = edge + k
-                if 0 <= x < W:
-                    out[y, x, 0:3] = dark_c
-                    out[y, x, 3] = 255
-                    fill[y, x] = True
-            edge_by_row[y] = edge
-
-    # 擦除区里没被衣身填回的部分 → 透明
-    out[erase & (~fill)] = 0
-
-    # R158 修: 大褂外缘之外**整段清成透明** —— 原手轮廓/手指暗线不在手臂掩膜内,
-    #   擦不干净就会在髋部留下虚线鬼影 (原来只擦两条窄带, 漏掉手指轮廓的大部分像素)。
-    #   大褂外缘之外本来就应该透明, 所以整段清掉既根治鬼影, 又不会误伤衣身。
-    for y, edge in edge_by_row.items():
-        if side == 'L':
-            out[y, :edge] = 0
-        else:
-            out[y, edge + outline_px:] = 0
-
-    # R158 修 2: 上面那圈循环里, **只有重建了大褂的行**才被清干净。
-    #   但手部那几行 (袖子已完全离开大褂, edge 会越界) 会被 continue 跳过 ⇒
-    #   那些行上的原手轮廓残像素仍在 ⇒ 髋部出现一圈**虚线鬼影**。
-    #   对策: 只清"紧贴手部皮肤的暗线"(半径 5 纹理 px)。
-    #   实测几何: 手的描边就画在皮肤外沿 (离皮肤 0~4 px), 而大褂门襟的竖线
-    #   离皮肤 ≥6 px ⇒ 半径 5 刚好能把两者分开, 不误伤衣身。
-    #   亮度阈值放到 215: 肉眼看到的"虚线"其实是描边外的**抗锯齿浅色晕**(lum≈175),
-    #   只清 lum<130 的暗线核心清不掉它 (实测踩过)。
-    hz = SIDES[side]['hand_zone']
-    zx0, zy0, zx1, zy1 = hz
-    zy1 = min(zy1, H)
-    zmask = np.zeros_like(arm_mask)
-    zmask[zy0:zy1, zx0:zx1] = True
-    near_skin = dilate(skin_relaxed(base) & zmask, 5)
-    ghost = (lum(base) < 215) & solid & near_skin
-    for y in range(zy0, zy1):
-        if y in edge_by_row:
+        if y > SLEEVE_END:
+            # 袖口+手: 背后是背景 ⇒ 整块清透明 (含描边, 不能留鬼影)
+            out[y, :hi + 1] = 0
             continue
-        xs = np.nonzero(arm_mask[y])[0]
-        if len(xs) == 0:
-            continue
-        row = ghost[y, zx0:zx1]
-        if row.any():
-            out[y, zx0:zx1][row] = 0
+
+        sx = int(round(seam_x('L', y)))
+        # ---- ① 保留底图最外侧描边带 (剪影 = 衣身外缘, 天然连续且颜色正确) ----
+        keep_hi = min(W, lo + OUT_KEEP)
+        # 描边带之外(左侧)本来就是背景
+        out[y, :lo] = 0
+
+        # ---- ② 衣身填充: 描边带内侧 → 接缝线 ----
+        #    R162 再修: 之前直接用"该行亮像素中位数"平涂, 结果:
+        #      · 采样窗口落在**袖子的暗部**上 ⇒ 填出一块**灰板** (与白大褂接缝明显)
+        #      · 袖子外缘内侧那道**柔和投影**被整段抹平 ⇒ 大褂像一块没有体积的布
+        #    改成: ① 采样窗口移到**接缝线右侧的大褂本体**取干净白
+        #          ② 按底图实测的外缘投影深度, 给填充区补一条柔和的边缘阴影
+        fill_hi = min(hi, sx)
+        if fill_hi > keep_hi:
+            col = coat_color(y, sx + 4, min(W, sx + 90))
+            seg = out[y, keep_hi:fill_hi, 0:3].astype(np.float64)
+            # 边缘投影: 取底图紧贴剪影内侧的暗度, 折算成"比衣身白暗多少"
+            edge = base[y, keep_hi:min(W, keep_hi + 16), 0:3].astype(np.float64)
+            if len(edge):
+                el = lum(edge)
+                emed = float(np.median(el))
+                cb = float(np.median(lum(col)))
+                depth = float(np.clip((cb - emed) / max(1.0, cb), 0.0, 0.22))
+            else:
+                depth = 0.10
+            n = fill_hi - keep_hi
+            ramp = np.ones(n)
+            m = min(n, EDGE_SHADOW_PX)
+            if m > 0:
+                ramp[:m] = 1.0 - depth * (1.0 - np.linspace(0.0, 1.0, m))
+            seg = seg * ramp[:, None]
+            out[y, keep_hi:fill_hi, 0:3] = np.clip(seg, 0, 255).astype(np.int32)
+            out[y, keep_hi:fill_hi, 3] = 255
+            fill[y, keep_hi:fill_hi] = True
+
     return out, fill
 
 

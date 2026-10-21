@@ -20,6 +20,7 @@ import os
 import sys
 
 import numpy as np
+from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 _spec = importlib.util.spec_from_file_location('r156v', os.path.join(HERE, '34_R156_runtime_verify.py'))
@@ -78,6 +79,25 @@ def main():
     #   "道具掩膜 - 角色掩膜" 的办法 (那会把叠在角色身上的特效一起减掉)。
     #   改用**颜色判据**: 爱心的粉红 (255,92,122) 与角色配色 (银白/冰蓝/白大褂/深蓝衬衫/青边/肤���)
     #   没有任何重叠 —— 粉红像素数必须随动作推进明显增长。
+    # R162: 爱心特效从**胸口正中央**移到了**头侧左上空白区** (R158 旧位置
+    #   正好压在躯干/折叠的手臂上, 把"比心"的手势整个盖掉, 200px 下更看不清)。
+    #   ⇒ 屏幕取样区域不能再写死, 必须由 **prop_heart.png 自己的包围盒**
+    #   经布局参数换算出来, 否则素材一挪位置判据就失效 (R162 实测踩过)。
+    _prop_img = Image.open(os.path.join(HERE, 'assets', lib['prop_heart']['file'])).convert('RGBA')
+    _pb = _prop_img.getbbox()
+    _scale = layout['scale']
+    _gt = (lib_actions.get('cheer_heart') or {}).get('ground_tex_y')
+    if isinstance(_gt, list):
+        _gt = _gt[0]
+    _ground_tex_y = 987 if _gt is None else _gt
+    _sx0 = int(layout['x'] + _scale * (_pb[0] - 512)) - 2
+    _sx1 = int(layout['x'] + _scale * (_pb[2] - 512)) + 3
+    _sy0 = int(layout['groundY'] + _scale * (_pb[1] - _ground_tex_y)) - 2
+    _sy1 = int(layout['groundY'] + _scale * (_pb[3] - _ground_tex_y)) + 3
+    _sx0 = max(0, _sx0); _sy0 = max(0, _sy0)
+    print(f"  爱心特效屏幕区域: x[{_sx0},{_sx1}) y[{_sy0},{_sy1}) "
+          f"(由 prop_heart 包围盒 {list(_pb)} 换算)")
+
     def heart_pink_count(cap):
         rgb = cap[:, :, :3].astype(int)
         al = cap[:, :, 3]
@@ -86,7 +106,7 @@ def main():
         pink = (al > 24) & (r > 190) & ((r - g) > 80) & ((r - b) > 80)
         # 只取爱心所在的屏幕区域 (脸在更上方, 不会被算进来)
         reg = np.zeros_like(pink)
-        reg[106:150, 74:120] = True
+        reg[_sy0:_sy1, _sx0:_sx1] = True
         return int((pink & reg).sum())
 
     heart_scene = scenes.get('cheer_heart')

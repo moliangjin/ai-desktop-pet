@@ -89,6 +89,49 @@ function skinCount(img, x0, y0, x1, y1) {
     }
     return n;
 }
+/**
+ * 胸区 (纹理 x400-640, y320-500) 里**两只手之间的空隙** (纹理 px)。
+ * 做法: 取该区内的肤色像素, 做 8 邻域连通块标记, 找出**最靠左**与**最靠右**
+ * 的两块 (各 ≥150px) 之间的水平间距; 若两块相接/重叠则返回 0。
+ * 这就是"鼓掌"的客观定义 —— 两掌分开 vs 两掌贴合。
+ */
+function handGap(img) {
+    const X0 = 400, Y0 = 320, X1 = 640, Y1 = 500;
+    const W = X1 - X0, H = Y1 - Y0;
+    const on = new Uint8Array(W * H);
+    for (let y = Y0; y < Y1; y++) {
+        for (let x = X0; x < X1; x++) {
+            const i = (y * img.width + x) * 4;
+            const R = img.data[i], G = img.data[i + 1], B = img.data[i + 2];
+            if (img.data[i + 3] > 40 && R > 200 && G > 165 && B < 228 && (R - B) > 18) {
+                on[(y - Y0) * W + (x - X0)] = 1;
+            }
+        }
+    }
+    const seen = new Uint8Array(W * H);
+    const comps = [];
+    for (let s = 0; s < on.length; s++) {
+        if (!on[s] || seen[s]) continue;
+        const stack = [s]; seen[s] = 1; let n = 0, lo = 1e9, hi = -1;
+        while (stack.length) {
+            const p = stack.pop();
+            const py = (p / W) | 0, px = p - py * W;
+            n++; if (px < lo) lo = px; if (px > hi) hi = px;
+            for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+                const ny = py + dy, nx = px + dx;
+                if (ny < 0 || ny >= H || nx < 0 || nx >= W) continue;
+                const q = ny * W + nx;
+                if (on[q] && !seen[q]) { seen[q] = 1; stack.push(q); }
+            }
+        }
+        if (n >= 150) comps.push({ n, lo, hi });
+    }
+    if (comps.length < 2) return 0;
+    comps.sort((a, b) => a.lo - b.lo);
+    const left = comps[0], right = comps[comps.length - 1];
+    if (left === right) return 0;
+    return Math.max(0, right.lo - left.hi);
+}
 /** 角色**实心像素总面积** —— 整体水平压缩会等比缩小它, 旋转/平移不会。 */
 function areaOf(img) {
     let n = 0;
@@ -311,17 +354,25 @@ test('C3 cheer_wave: 右臂真的抬到了头侧 (手臂区像素从空变为有
     }
 });
 
-test('C4 cheer_hands_up: 两条手臂都举高 (左右两侧手臂区都从空变为有内容)', () => {
-    const lBefore = solidCount(BASE_IMG, 210, 200, 300, 320);
-    const rBefore = solidCount(BASE_IMG, 720, 200, 810, 320);
-    assert.strictEqual(lBefore, 0, '基准帧左臂举起区本应为空');
-    assert.strictEqual(rBefore, 0, '基准帧右臂举起区本应为空');
+test('C4 cheer_hands_up: 两条手臂都举高 (左右两侧**高处**都出现手部肤色)', () => {
+    // R162 修正判据: 旧判据用固定矩形 (x210-300 / x720-810, y200-320) 当地基,
+    //   手臂骨架重标定后手臂整体外移了十几个像素, 矩形只擦到手臂边缘 ⇒ 假失败
+    //   (实测 R162 hands_up_1 左臂明明举着, 左臂举起区实心像素却只有 0)。
+    //   改用**与坐标无关**的判据: 抬手时手是**皮肤**, 且必然高于头部下缘。
+    //   ⇒ 判"y<300 且在左右两侧"是否都出现了皮肤像素。
+    //   基准帧里手垂在髋部 (y>560), 所以这个判据不会被基准帧污染。
+    //   注意要**避开脸的两侧脸颊**: 底图里脸颊肤色一直延伸到 x391 / x633,
+    //   所以两翼只能取 x200-380 / x644-830 (那里底图 y<300 必定没有肤色,
+    //   实测底图 0 像素), 而举起的手恰好落在这两翼里 (x273-375 / x649-751)。
+    const skinAbove = (img, x0, x1) => skinCount(img, x0, 0, x1, 300);
+    assert.strictEqual(skinAbove(BASE_IMG, 200, 380), 0, '基准帧左侧高处本应无手部肤色');
+    assert.strictEqual(skinAbove(BASE_IMG, 644, 830), 0, '基准帧右侧高处本应无手部肤色');
     for (const rel of LIB_ACTIONS.cheer_hands_up.frames) {
         const img = load(rel);
-        assert.ok(solidCount(img, 210, 200, 300, 320) > 150,
-            `cheer_hands_up ${rel}: 左臂举起区内容不足`);
-        assert.ok(solidCount(img, 720, 200, 810, 320) > 150,
-            `cheer_hands_up ${rel}: 右臂举起区内容不足`);
+        const l = skinAbove(img, 200, 380);
+        const r = skinAbove(img, 644, 830);
+        assert.ok(l > 300, `cheer_hands_up ${rel}: 左侧高处手部肤色只有 ${l} px → 左臂没举起来`);
+        assert.ok(r > 300, `cheer_hands_up ${rel}: 右侧高处手部肤色只有 ${r} px → 右臂没举起来`);
     }
 });
 
@@ -334,15 +385,23 @@ test('C5 cheer_heart: 手真的到了胸前 (胸前区的肤色像素大幅增�
     }
 });
 
-test('C6 cheer_clap: 张开帧的剪影宽度明显大于合拢帧 (开/合两种剪影)', () => {
+test('C6 cheer_clap: 双手**张开→合拢** (两只手之间的间距明显收窄并贴合)', () => {
+    // R162 修正判据: 旧判据是"张开帧的**剪影宽度**比合拢帧大 60px",
+    //   那对应的是 R158 旧参数 (a_s=±30/a_e=-34) —— 那是"双臂平举"而不是鼓掌,
+    //   而且 6 个动作里"比心"和"鼓掌"两个帧几乎长得一样。
+    //   R162 把鼓掌改成"手心相对、领口高度张开→合拢"后, 剪影宽度本来就不该差 60px。
+    //   改用**鼓掌本身的定义**来判定: 胸区两只手之间的**空隙**必须显著收窄。
+    //   实测 (纹理 px): 张开帧两掌间距 ≈78, 合拢帧 ≈0 (两掌相接连成一块)。
     const [f0, f1, f2] = LIB_ACTIONS.cheer_clap.frames;
-    const wOpen = silhouetteWidth(load(f0));
-    const wShut = silhouetteWidth(load(f1));
-    const wOpen2 = silhouetteWidth(load(f2));
-    assert.ok(wOpen > wShut + 60,
-        `cheer_clap 张开帧宽度 ${wOpen} 应比合拢帧 ${wShut} 大 60px 以上`);
-    assert.ok(wOpen2 > wShut + 60,
-        `cheer_clap 第三帧宽度 ${wOpen2} 应比合拢帧 ${wShut} 大 60px 以上`);
+    const gap0 = handGap(load(f0));
+    const gap1 = handGap(load(f1));
+    const gap2 = handGap(load(f2));
+    assert.ok(gap0 >= 40,
+        `cheer_clap 张开帧两掌间距只有 ${gap0.toFixed(1)}px → 根本没有"张开"`);
+    assert.ok(gap1 <= gap0 - 25,
+        `cheer_clap 合拢帧间距 ${gap1.toFixed(1)}px 应比张开帧 ${gap0.toFixed(1)}px 小 25px 以上`);
+    assert.ok(gap2 >= 40,
+        `cheer_clap 第三帧两掌间距只有 ${gap2.toFixed(1)}px → 没有"张开→合拢→张开"`);
 });
 
 test('C7 cheer_jump: 蓄力帧被压扁, 腾空帧靠 ground_tex_y 离地, 且腾空帧双臂上扬', () => {
@@ -656,8 +715,13 @@ test('G1 抬手后髋部没有残留的原手轮廓 (虚线鬼影), 且大褂门
 
 test('G2 修复动作必须落在 arm_rig 里 (鬼影修复不能只靠手工改图)', () => {
     const src = fs.readFileSync(path.join(CAND, '36_R158_arm_rig.py'), 'utf8');
-    assert.ok(/大褂外缘之外/.test(src) || /edge_by_row/.test(src),
-        'arm_rig 必须包含"大褂外缘之外整段清透明"的逻辑');
+    // R162: 衣身还原机制整体重写 —— 旧的"大褂外缘之外整段清透明"换成了
+    //   "按**实测接缝线**重建衣身边缘 + 保留底图剪影描边带"。
+    //   断言随之更新为检查新机制的关键标记 (仍然要求修复落在 arm_rig 里)。
+    assert.ok(/SEAM_L|seam_x/.test(src),
+        'arm_rig 必须包含"按实测接缝线 (seam) 重建衣身边缘"的逻辑');
+    assert.ok(/OUT_KEEP/.test(src),
+        'arm_rig 必须保留底图剪影描边带 (否则衣身边缘会退化成虚线)');
     assert.ok(/near_skin|skin_relaxed/.test(src),
         'arm_rig 必须用"紧贴手部皮肤"的几何判据来清原手轮廓');
 });

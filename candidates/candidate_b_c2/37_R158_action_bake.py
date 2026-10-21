@@ -87,17 +87,24 @@ POSES = {
         dict(L=(-126, -10, 0), R=(126, 10, 0)),
         dict(L=(-112, 0, 0), R=(112, 0, 0)),
     ],
-    # 3. 比心: 双手在胸前合拢 (最高点 a_e=140), 配爱心特效
+    # 3. 比心: 双手在胸前/下颌**合成心形**(最高点 a_e=141), 配头侧爱心特效
+    #    R162 重标定: 旧参数 a_s=-6 / a_e=140 把手举到**领口正中央**, 两只手
+    #    互相压住只剩一团深色 ⇒ 200x240 下完全读不出"比心"。
+    #    实测 (200px 实际显示尺寸逐帧比对): a_s=-22 时手掌分开、掌缘朝上,
+    #    满分辨率下能看出心形; 再配合头侧的大颗爱心特效 ⇒ 显示尺寸下可读。
     'cheer_heart': [
-        dict(L=(-6, 116, -18), R=(6, -116, 18)),
-        dict(L=(-6, 140, 0), R=(6, -140, 0)),
-        dict(L=(-6, 132, -8), R=(6, -132, 8)),
+        dict(L=(-20, 136, -6), R=(20, -136, 6)),
+        dict(L=(-22, 141, 0), R=(22, -141, 0)),
+        dict(L=(-20, 137, -5), R=(20, -137, 5)),
     ],
-    # 4. 鼓掌: 双手在身前张开→合拢→张开
+    # 4. 鼓掌: 双手在身前**张开→合拢→张开**(手心相对)
+    #    R162 重标定: 旧参数 a_s=±30/a_e=-34 是"双臂平举", 根本不是鼓掌;
+    #    且与比心帧几乎同姿态 ⇒ 6 个动作里有两个长得一样。
+    #    实测: a_s=32 时肘部外张、双手在领口高度张开, 200px 下"两只手对着"清晰可读。
     'cheer_clap': [
-        dict(L=(-30, -34, 0), R=(30, 34, 0)),
-        dict(L=(-6, 142, 0), R=(6, -142, 0)),
-        dict(L=(-32, -30, 0), R=(32, 30, 0)),
+        dict(L=(32, 112, 0), R=(-32, -112, 0)),   # 张开 (两掌间距 ~92 纹理 px)
+        dict(L=(32, 140, 0), R=(-32, -140, 0)),   # 合拢 (两掌贴合, 间距 0)
+        dict(L=(32, 120, 0), R=(-32, -120, 0)),   # 再张开 (间距 ~64)
     ],
     # 5. 开心跳跃: 蓄力下蹲 → 腾空(双臂上扬+离地) → 落地压缩
     'cheer_jump': [
@@ -178,17 +185,21 @@ def bake():
             im = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), 'RGBA')
             tmp = os.path.join(OUT, '_tmp_' + name)
             im.save(tmp)
-            # 2) 头部连续权重场
-            rot, dy = HEAD[action][i]
-            if rot or dy:
-                head_transform(tmp, tmp, rotate=rot, dy=dy, tag=action)
-            # 3) 跳跃剪影 (压扁/伸展, 支点在脚底)
-            if action == 'cheer_jump':
-                body_shift(tmp, tmp, shift_up=0, scale_y=JUMP_SCALE[i], pivot_y=FOOT_Y, tag=action)
-            # 4) 眼部表情
+            # 2) 眼部表情 —— 必须在**头部变换与整体压缩之前**做
+            #    R162 修正: 原顺序是 头部变换 → 整体压缩 → 贴五官,
+            #    而 donor 是**未压缩**的底图帧, 于是五官被按原坐标贴进已被压扁/转过的头,
+            #    跳跃蓄力帧 (scale_y=0.80) 上五官直接落在**头顶** ⇒ 看起来像"头顶图像破损"。
+            #    先贴五官(此时目标与 donor 同坐标系, 严丝合缝), 再让后续变换把五官一起带走。
             donor = FACE[action][i]
             if donor:
                 face_swap(tmp, donor, tmp, tag=action)
+            # 3) 头部连续权重场
+            rot, dy = HEAD[action][i]
+            if rot or dy:
+                head_transform(tmp, tmp, rotate=rot, dy=dy, tag=action)
+            # 4) 跳跃剪影 (压扁/伸展, 支点在脚底)
+            if action == 'cheer_jump':
+                body_shift(tmp, tmp, shift_up=0, scale_y=JUMP_SCALE[i], pivot_y=FOOT_Y, tag=action)
             os.replace(tmp, path)
             res = Image.open(path)
             emit({'file': name, 'action': action, 'index': i,
@@ -202,9 +213,10 @@ def bake():
     # ---------- 爱心特效 (程序化矢量, 与 R156 道具同一纹理坐标系) ----------
     heart_path = os.path.join(OUT, 'prop_heart.png')
     draw_heart(heart_path)
+    _hp = Image.open(heart_path)
     emit({'file': 'prop_heart.png', 'action': 'cheer_heart', 'index': -1,
-          'bbox': [452, 350, 572, 450],
-          'note': '程序化矢量爱心特效 (叠在双手合拢处上方, front 层)'} )
+          'bbox': list(_hp.getbbox()),
+          'note': '程序化矢量爱心特效 (头侧左上空白区, front 层, 不遮手不遮脸)'} )
 
     # ---------- 唯一性自检 ----------
     def sha(fp):
@@ -239,7 +251,7 @@ def bake():
     return 0
 
 
-def draw_heart(path, size=140):
+def draw_heart(path, size=120):
     """画一颗柔和的爱心特效 (1024x1024 纹理坐标系)。"""
     SS = 4
     W = H = 1024
@@ -268,8 +280,12 @@ def draw_heart(path, size=140):
     glow = big.filter(ImageFilter.GaussianBlur(radius=6))
     glow.putalpha(glow.getchannel('A').point(lambda v: int(v * 0.55)))
     canvas = Image.alpha_composite(glow, big)
-    # 贴到画布: 中心 (512, 400)
-    cx, cy = 512, 400
+    # 贴到画布: **角色头侧左上角** (R162 改)
+    #   旧位置 (512,400) 正好压在手心/领口上 ⇒ 把"手在胸前合拢"的手势整个盖掉,
+    #   200x240 显示尺寸下反而更看不清比心。
+    #   新位置: 头部左外侧空白区 (底图该处 x186-304 完全空白, 头发最左只到 x331)
+    #   ⇒ 爱心不遮脸、不遮手, 且在 200px 下是 23x23 px 的清晰粉色块。
+    cx, cy = 245, 222
     img.alpha_composite(canvas, (cx - canvas.width // 2, cy - canvas.height // 2))
     img.save(path)
 

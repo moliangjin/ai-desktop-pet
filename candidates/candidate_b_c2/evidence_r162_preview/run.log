@@ -1,0 +1,630 @@
+[main] window show
+[main] window focus
+[renderer:1] [renderer] PIXI version: 7.4.3 dev_mode= false
+[main] renderer-ready: pixi=7.4.3
+[main] R144 manifest sent, waiting for renderer assets-ready
+[main] window ready-to-show
+[renderer:2] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[renderer:1] [renderer] R147 idle-director enabled=true spec={"enabled":true,"base_index":0,"blink_sequence":[5],"blink_frame_ms":[130],"blink_interval_ms":[1600,3400],"excluded_frames":[1,2,3,4],"note":"R153: blink_sequence 由 [4,5] 改为 [5] —— idle_04 并不是眨眼帧, 它是**右手横在胸前**的姿势, 站立时每 1.6~3.4s 抽手到胸前会被读成\"莫名抬手\"; idle_05 是纯闭眼且手臂下垂。idle_04 与胸腔膨胀帧 1/2/3 一并列入永不播放的排除帧"}
+[main] asset-report: idle loaded=6 failed=0
+[renderer:1] [renderer] R100 asset-report idle: loaded=6 failed=0
+[main] asset-report: walk_left loaded=4 failed=0
+[renderer:1] [renderer] R100 asset-report walk_left: loaded=4 failed=0
+[main] asset-report: walk_right loaded=4 failed=0
+[renderer:1] [renderer] R100 asset-report walk_right: loaded=4 failed=0
+[main] asset-report: sleep_enter loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report sleep_enter: loaded=3 failed=0
+[main] asset-report: sleep_loop loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report sleep_loop: loaded=3 failed=0
+[main] asset-report: wake_up loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report wake_up: loaded=3 failed=0
+[main] window blur
+[renderer:1] [renderer] R153 library-asset-report look_around: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report tilt_head: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report head_nod: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report happy: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report blink_soft: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report stretch: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report sit_rest: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report doze: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report sleep_breath: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report work: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_wave: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_hands_up: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_clap: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_tilt: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_heart: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_jump: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-assets-ready {"ok":true,"actions":16,"loaded":34,"failed":0}
+[renderer:1] [renderer] R156 props-asset-report loaded=8 failed=0
+[renderer:1] [renderer] R144 LAYOUT mode=compact canvas=200x240 scale=0.196319 groundY=236 margin=4 frames=57 missingBBox=0
+[renderer:1] %cPixiJS Deprecation Warning: %c%s color:#614108;background:#fffbe6 font-weight:normal;color:#614108;background:#fffbe6 Setting interactive is deprecated, use eventMode = 'none'/'passive'/'auto'/'static'/'dynamic' instead.
+Deprecated since v7.2.0
+[renderer:2]     at IpcRenderer.<anonymous> (file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/src/renderer.js:1274:25)
+[renderer:1] console.groupEnd
+[renderer:1] [renderer] R144 sprite enabled: mode=compact canvas=200x240 scale=0.196319 groundY=236 hitArea={"x":-0.5153374075889587,"y":42.23312759399414,"width":201.03067249059677,"height":201.03068161010742,"type":1}
+[renderer:1] [renderer] R111 canvas listeners attached (move/up/cancel) to CANVAS#
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R144 assets-ready {"total":23,"loaded":23,"failed":0,"actions":{"idle":{"loaded":6,"failed":0,"total":6},"walk_left":{"loaded":4,"failed":0,"total":4},"walk_right":{"loaded":4,"failed":0,"total":4},"sleep_enter":{"loaded":3,"failed":0,"total":3},"sleep_loop":{"loaded":3,"failed":0,"total":3},"wake_up":{"loaded":3,"failed":0,"total":3}},"ok":true}
+[main] R144 ASSETS_READY loaded=23/23 actions=idle,walk_left,walk_right,sleep_enter,sleep_loop,wake_up
+[main] R144 behavior engine started state=IDLE
+[main] R147 PREVIEW start dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r162_preview
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE IDLE -> WALK_LEFT (idle-decision)
+[main] R141 BEHAVIOR action=walk_left state=WALK_LEFT
+[renderer:1] [renderer] R156 PROPS action=walk_left scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> walk_left (220ms)
+[renderer:1] [renderer] R147 set-action walk_left applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=599 y=300 target=(599,300) actual=(599,300) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=593 y=300 target=(593,300) actual=(593,300) moved=(-1,0) step=(-1,0) dx=-1.050 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=587 y=300 target=(587,300) actual=(587,300) moved=(-1,0) step=(-1,0) dx=-1.050 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=580 y=300 target=(580,300) actual=(580,300) moved=(-1,0) step=(-1,0) dx=-1.020 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=574 y=300 target=(574,300) actual=(574,300) moved=(-1,0) step=(-1,0) dx=-1.050 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=567 y=300 target=(567,300) actual=(567,300) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=561 y=300 target=(561,300) actual=(561,300) moved=(-1,0) step=(-1,0) dx=-0.990 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=554 y=300 target=(554,300) actual=(554,300) moved=(-1,0) step=(-1,0) dx=-0.990 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=548 y=300 target=(548,300) actual=(548,300) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=541 y=300 target=(541,300) actual=(541,300) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=534 y=300 target=(534,300) actual=(534,300) moved=(-2,0) step=(-2,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=528 y=300 target=(528,300) actual=(528,300) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=522 y=300 target=(522,300) actual=(522,300) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND walk_left -> idle (220ms)
+[main] R144 MOVE x=515 y=300 target=(515,300) actual=(515,300) moved=(-1,0) step=(-1,0) dx=-1.170 blocked=false state=WALK_LEFT
+[main] R141 STATE WALK_LEFT -> WALK_RIGHT (idle-decision)
+[main] R141 BEHAVIOR action=walk_right state=WALK_RIGHT
+[renderer:1] [renderer] R156 PROPS action=walk_right scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> walk_right (220ms)
+[renderer:1] [renderer] R147 set-action walk_right applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=511 y=300 target=(511,300) actual=(511,300) moved=(1,0) step=(1,0) dx=1.080 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=517 y=300 target=(517,300) actual=(517,300) moved=(1,0) step=(1,0) dx=1.110 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=524 y=300 target=(524,300) actual=(524,300) moved=(1,0) step=(1,0) dx=1.080 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=530 y=300 target=(530,300) actual=(530,300) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=537 y=300 target=(537,300) actual=(537,300) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=544 y=300 target=(544,300) actual=(544,300) moved=(2,0) step=(2,0) dx=1.080 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=550 y=300 target=(550,300) actual=(550,300) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=556 y=300 target=(556,300) actual=(556,300) moved=(1,0) step=(1,0) dx=0.990 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=563 y=300 target=(563,300) actual=(563,300) moved=(1,0) step=(1,0) dx=1.020 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=569 y=300 target=(569,300) actual=(569,300) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=575 y=300 target=(575,300) actual=(575,300) moved=(1,0) step=(1,0) dx=1.020 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=582 y=300 target=(582,300) actual=(582,300) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=588 y=300 target=(588,300) actual=(588,300) moved=(1,0) step=(1,0) dx=1.140 blocked=false state=WALK_RIGHT
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND walk_right -> idle (220ms)
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+9812ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+9943ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+13223ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+13353ms
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE WALK_RIGHT -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_wave scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_wave frames=3 recent=cheer_wave
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=93ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_wave
+[main] R147 PREVIEW click result={"id":5,"cmd":"click","ok":true,"downSeen":true,"kind":"CLICK","action":"cheer_wave","clientX":100,"clientY":143}
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION end action=cheer_wave t=+17282ms
+[main] window focus
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.46484375,129.39453125) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUPOUTSIDE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-drag-end)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R141 behavior drag-state=false state=IDLE
+[renderer:1] [renderer] R147 PRESS_END kind=CANCEL elapsed=32ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (90.86328125,86.91015625) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[main] R113 DRAG_POLL_START intervalId=327
+[main] R113 DRAG_START win=(590,300,200,240) mouseStart=(678,385)
+[renderer:1] [renderer] R111 DRAG_START_ACK winStart=(590,300) mouseStart=(678,385)
+[main] R113 DRAG_REAL_START dx=-5dy=0 (3px 容忍通过)
+[main] R113 DRAG_POLL dx=-5dy=0 before=(590,300) after=(585,300) mouseNow=(673,385)
+[main] R113 DRAG_POLL dx=-54dy=11 before=(540,309) after=(536,311) mouseNow=(624,396)
+[main] R113 DRAG_POLL dx=-69dy=13 before=(521,313) after=(521,313) mouseNow=(609,398)
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R113 DRAG_POLL dx=-277dy=35 before=(332,334) after=(313,335) mouseNow=(401,420)
+[main] R113 DRAG_POLL dx=-314dy=37 before=(276,337) after=(276,337) mouseNow=(364,422)
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[main] R113 DRAG_POLL_STOP intervalId=327
+[main] R113 DRAG_STOP final=(276,337) size=200x240 dragStarted=true
+[main] R141 STATE DRAGGING -> IDLE (user-drag-end)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 behavior drag-state=false state=IDLE
+[renderer:1] [renderer] R147 PRESS_END kind=DRAG elapsed=569ms dist=354.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R156 PROPS action=sleep_loop scene=yes mounted=prop_bed,prop_moon,prop_quilt
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,175.92637634277344) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_bed,prop_moon,prop_quilt
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R147 CLICK_WAKE prev=sleep_loop (等待 wake_up 指令)
+[main] R141 STATE DRAGGING -> WAKE_UP (user-click-wake)
+[main] R141 BEHAVIOR action=wake_up state=WAKE_UP
+[main] R147 character-click prev=sleep_loop result=wake state=WAKE_UP hold=1100ms
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=sleep_loop
+[renderer:1] [renderer] R156 PROPS action=wake_up scene=none mounted=prop_bed,prop_moon,prop_quilt
+[renderer:1] [renderer] R153 BLEND idle -> wake_up (220ms)
+[renderer:1] [renderer] R147 set-action wake_up applied=true loop=false frame_ms=600 frames=3 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_wave
+[main] R147 PREVIEW wake result={"id":8,"cmd":"click","ok":true,"downSeen":true,"kind":"CLICK","action":"cheer_wave","clientX":100,"clientY":176}
+[renderer:1] [renderer] R153 FRAME_BLEND wake_up 0 -> 1 (280ms)
+[renderer:1] [renderer] R153 FRAME_BLEND wake_up 1 -> 2 (280ms)
+[renderer:1] [renderer] R144 oneshot last-frame wake_up index=2/2 t=+21062ms
+[renderer:1] [renderer] R144 animation-finished wake_up (one-shot, 末帧保持 600ms) t=+21663ms
+[main] R141 STATE WAKE_UP -> GESTURE (wake_up-finished)
+[main] R141 BEHAVIOR action=stretch state=GESTURE
+[main] R141 animation-finished wake_up handled=true state=GESTURE
+[renderer:1] [renderer] R156 PROPS action=stretch scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND wake_up -> stretch (220ms)
+[renderer:1] [renderer] R147 set-action stretch applied=true loop=false frame_ms=1000 frames=1 skew=0
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND stretch -> idle (220ms)
+[main] R148 PREVIEW edge-turn place x=104 (workArea.x=0)
+[main] R141 STATE GESTURE -> WALK_LEFT (idle-decision)
+[main] R141 BEHAVIOR action=walk_left state=WALK_LEFT
+[renderer:1] [renderer] R156 PROPS action=walk_left scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> walk_left (220ms)
+[renderer:1] [renderer] R147 set-action walk_left applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=103 y=337 target=(103,337) actual=(103,337) moved=(-1,0) step=(-1,0) dx=-1.050 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=97 y=337 target=(97,337) actual=(97,337) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=91 y=337 target=(91,337) actual=(91,337) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=84 y=337 target=(84,337) actual=(84,337) moved=(-1,0) step=(-1,0) dx=-0.990 blocked=false state=WALK_LEFT
+[main] window blur
+[main] R144 MOVE x=78 y=337 target=(78,337) actual=(78,337) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=72 y=337 target=(72,337) actual=(72,337) moved=(-1,0) step=(-1,0) dx=-1.050 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=65 y=337 target=(65,337) actual=(65,337) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=59 y=337 target=(59,337) actual=(59,337) moved=(-1,0) step=(-1,0) dx=-1.020 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=53 y=337 target=(53,337) actual=(53,337) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=46 y=337 target=(46,337) actual=(46,337) moved=(-2,0) step=(-2,0) dx=-1.020 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=40 y=337 target=(40,337) actual=(40,337) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=34 y=337 target=(34,337) actual=(34,337) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=27 y=337 target=(27,337) actual=(27,337) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=21 y=337 target=(21,337) actual=(21,337) moved=(-1,0) step=(-1,0) dx=-1.020 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=15 y=337 target=(15,337) actual=(15,337) moved=(-1,0) step=(-1,0) dx=-1.020 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=8 y=337 target=(8,337) actual=(8,337) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R141 STATE WALK_LEFT -> WALK_RIGHT (edge-turn)
+[main] R141 BEHAVIOR action=walk_right state=WALK_RIGHT
+[renderer:1] [renderer] R156 PROPS action=walk_right scene=none mounted=none
+[renderer:1] [renderer] R147 set-action walk_right applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=5 y=337 target=(5,337) actual=(5,337) moved=(1,0) step=(1,0) dx=0.990 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=12 y=337 target=(12,337) actual=(12,337) moved=(1,0) step=(1,0) dx=0.990 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=18 y=337 target=(18,337) actual=(18,337) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=25 y=337 target=(25,337) actual=(25,337) moved=(1,0) step=(1,0) dx=1.110 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=31 y=337 target=(31,337) actual=(31,337) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=38 y=337 target=(38,337) actual=(38,337) moved=(2,0) step=(2,0) dx=1.140 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=44 y=337 target=(44,337) actual=(44,337) moved=(1,0) step=(1,0) dx=1.170 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=50 y=337 target=(50,337) actual=(50,337) moved=(1,0) step=(1,0) dx=0.990 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=57 y=337 target=(57,337) actual=(57,337) moved=(1,0) step=(1,0) dx=1.080 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=63 y=337 target=(63,337) actual=(63,337) moved=(1,0) step=(1,0) dx=1.080 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=69 y=337 target=(69,337) actual=(69,337) moved=(1,0) step=(1,0) dx=1.110 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=76 y=337 target=(76,337) actual=(76,337) moved=(2,0) step=(2,0) dx=1.080 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=82 y=337 target=(82,337) actual=(82,337) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R141 STATE WALK_RIGHT -> IDLE (walk-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND walk_right -> idle (220ms)
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 PROPS action=look_around scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> look_around (220ms)
+[main] R153 PREVIEW lib action=look_around ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND look_around -> idle (220ms)
+[renderer:1] [renderer] R156 PROPS action=tilt_head scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> tilt_head (220ms)
+[main] R153 PREVIEW lib action=tilt_head ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND tilt_head -> idle (220ms)
+[renderer:1] [renderer] R156 PROPS action=head_nod scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> head_nod (220ms)
+[main] R153 PREVIEW lib action=head_nod ok=true
+[renderer:1] [renderer] R153 FRAME_BLEND head_nod 0 -> 1 (180ms)
+[renderer:1] [renderer] R144 oneshot last-frame head_nod index=1/1 t=+35053ms
+[renderer:1] [renderer] R144 animation-finished head_nod (one-shot, 末帧保持 260,380ms) t=+35443ms
+[main] R141 animation-finished head_nod handled=false state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND head_nod -> idle (220ms)
+[renderer:1] [renderer] R156 PROPS action=happy scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> happy (220ms)
+[main] R153 PREVIEW lib action=happy ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND happy -> idle (220ms)
+[renderer:1] [renderer] R156 PROPS action=blink_soft scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> blink_soft (220ms)
+[main] R153 PREVIEW lib action=blink_soft ok=true
+[renderer:1] [renderer] R144 oneshot last-frame blink_soft index=1/1 t=+37972ms
+[renderer:1] [renderer] R144 animation-finished blink_soft (one-shot, 末帧保持 130,170ms) t=+38142ms
+[main] R141 animation-finished blink_soft handled=false state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND blink_soft -> idle (220ms)
+[renderer:1] [renderer] R156 PROPS action=stretch scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> stretch (160ms)
+[main] R153 PREVIEW lib action=stretch ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND stretch -> idle (220ms)
+[renderer:1] [renderer] R156 PROPS action=sit_rest scene=yes mounted=prop_sofa
+[main] R153 PREVIEW lib action=sit_rest ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_sofa
+[renderer:1] [renderer] R156 PROPS action=doze scene=yes mounted=prop_sofa
+[main] R153 PREVIEW lib action=doze ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_sofa
+[renderer:1] [renderer] R156 PROPS action=sleep_breath scene=yes mounted=prop_bed,prop_moon,prop_quilt
+[main] R153 PREVIEW lib action=sleep_breath ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_bed,prop_moon,prop_quilt
+[renderer:1] [renderer] R156 PROPS action=work scene=yes mounted=prop_chair,prop_desk,prop_screen_glow
+[main] R153 PREVIEW lib action=work ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_chair,prop_desk,prop_screen_glow
+[renderer:1] [renderer] R156 PROPS action=sit_rest scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R156 PROPS action=sleep_enter scene=none mounted=prop_sofa
+[renderer:1] [renderer] R153 BLEND sit_rest -> sleep_enter (320ms)
+[renderer:1] [renderer] R153 FRAME_BLEND sleep_enter 0 -> 1 (320ms)
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND sleep_enter -> idle (220ms)
+[renderer:1] [renderer] R156 PROPS action=sit_rest scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R156 PROPS action=doze scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R153 BLEND sit_rest -> doze (260ms)
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_sofa
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_hands_up scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_hands_up frames=3 recent=cheer_wave>cheer_hands_up
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=92ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 PROPS action=cheer_wave scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_wave frames=3 recent=cheer_hands_up>cheer_wave
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_wave
+[main] R156 PREVIEW click-pool action=cheer_wave picked=cheer_wave ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION end action=cheer_wave t=+63623ms
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_tilt scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_tilt frames=3 recent=cheer_wave>cheer_tilt
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 PROPS action=cheer_hands_up scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_hands_up frames=3 recent=cheer_tilt>cheer_hands_up
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_hands_up
+[main] R156 PREVIEW click-pool action=cheer_hands_up picked=cheer_hands_up ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION end action=cheer_hands_up t=+65323ms
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_jump scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_jump frames=3 recent=cheer_hands_up>cheer_jump
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 PROPS action=cheer_heart scene=yes mounted=prop_heart
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_heart frames=3 recent=cheer_jump>cheer_heart
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_heart
+[main] R156 PREVIEW click-pool action=cheer_heart picked=cheer_heart ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_heart
+[renderer:1] [renderer] R156 CLICK_REACTION end action=cheer_heart t=+67083ms
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_hands_up scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_hands_up frames=3 recent=cheer_heart>cheer_hands_up
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=90ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 PROPS action=cheer_clap scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_clap frames=3 recent=cheer_hands_up>cheer_clap
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_clap
+[main] R156 PREVIEW click-pool action=cheer_clap picked=cheer_clap ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION end action=cheer_clap t=+68733ms
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_tilt scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_tilt frames=3 recent=cheer_clap>cheer_tilt
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=90ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 PROPS action=cheer_jump scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_jump frames=3 recent=cheer_tilt>cheer_jump
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_jump
+[main] R156 PREVIEW click-pool action=cheer_jump picked=cheer_jump ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION end action=cheer_jump t=+70362ms
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_wave scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_wave frames=3 recent=cheer_jump>cheer_wave
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 PROPS action=cheer_tilt scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_tilt frames=3 recent=cheer_wave>cheer_tilt
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_tilt
+[main] R156 PREVIEW click-pool action=cheer_tilt picked=cheer_tilt ok=true
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION end action=cheer_tilt t=+72163ms
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_heart scene=yes mounted=prop_heart
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_heart frames=3 recent=cheer_tilt>cheer_heart
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_heart
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_heart
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_hands_up scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_hands_up frames=3 recent=cheer_heart>cheer_hands_up
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=92ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_hands_up
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_wave scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_wave frames=3 recent=cheer_hands_up>cheer_wave
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_wave
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_tilt scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_tilt frames=3 recent=cheer_wave>cheer_tilt
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_tilt
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_hands_up scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_hands_up frames=3 recent=cheer_tilt>cheer_hands_up
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_hands_up
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_heart scene=yes mounted=prop_heart
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_heart frames=3 recent=cheer_hands_up>cheer_heart
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_heart
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_heart
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_wave scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_wave frames=3 recent=cheer_heart>cheer_wave
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_wave
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_tilt scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_tilt frames=3 recent=cheer_wave>cheer_tilt
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_tilt
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_hands_up scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_hands_up frames=3 recent=cheer_tilt>cheer_hands_up
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=91ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_hands_up
+[renderer:1] [renderer] R111 DRAG_POINTER_DOWN sprite at (99.99999883770943,142.74846839904785) interactive=true buttonMode=true
+[main] R141 STATE IDLE -> DRAGGING (user-drag-start)
+[main] R141 BEHAVIOR action=idle state=DRAGGING
+[main] R141 behavior drag-state=true state=DRAGGING
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R111 DRAG_SPRITE_POINTERUP
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[main] R141 STATE DRAGGING -> IDLE (user-click)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[main] R147 character-click prev=idle result=react state=IDLE hold=1100ms
+[renderer:1] [renderer] R156 PROPS action=cheer_clap scene=none mounted=none
+[renderer:1] [renderer] R156 CLICK_REACTION start action=cheer_clap frames=3 recent=cheer_hands_up>cheer_clap
+[renderer:1] [renderer] R147 PRESS_END kind=CLICK elapsed=90ms dist=0.0px prev=idle
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 PREVIEW_CLICK downSeen=true kind=CLICK action=cheer_clap
+[main] R156 PREVIEW click-pool random sequence = cheer_heart,cheer_hands_up,cheer_wave,cheer_tilt,cheer_hands_up,cheer_heart,cheer_wave,cheer_tilt,cheer_hands_up,cheer_clap
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R156 PROPS action=sleep_breath scene=yes mounted=prop_bed,prop_moon,prop_quilt
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_bed,prop_moon,prop_quilt
+[renderer:1] [renderer] R156 PROPS action=sit_rest scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_sofa
+[renderer:1] [renderer] R156 PROPS action=work scene=yes mounted=prop_chair,prop_desk,prop_screen_glow
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_chair,prop_desk,prop_screen_glow
+[renderer:1] [renderer] R156 PROPS action=sleep_breath scene=yes mounted=prop_bed,prop_moon,prop_quilt
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_bed,prop_moon,prop_quilt
+[main] R147 PREVIEW done meta=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r162_preview/preview_meta.json
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+96303ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+96433ms
+[main] R141 behavior engine stopped (before-quit)
+[main] window closed

@@ -117,9 +117,9 @@
       },
       "P3-6_bed_frame_visible_at_200x240_px": {
         "pass": true,
-        "wood_px": 1436,
-        "wood_in_bottom_band_px": 812,
-        "wood_in_headboard_corner_px": 569,
+        "wood_px": 1755,
+        "wood_in_bottom_band_px": 990,
+        "wood_in_headboard_corner_px": 657,
         "note": "200×240 里床头立板 ≥ 300 px 且底部床架条 ≥ 400 px (R162 旧床只有 122/238 ⇒ FAIL) = 床架清楚可见"
       },
       "P3-7_mattress_visible_at_200x240_px": {
@@ -239,14 +239,14 @@
       },
       "P3-6_bed_frame_visible_at_200x240_px": {
         "pass": false,
-        "wood_px": 396,
-        "wood_in_bottom_band_px": 238,
-        "wood_in_headboard_corner_px": 122,
+        "wood_px": 1480,
+        "wood_in_bottom_band_px": 1097,
+        "wood_in_headboard_corner_px": 294,
         "note": "200×240 里床头立板 ≥ 300 px 且底部床架条 ≥ 400 px (R162 旧床只有 122/238 ⇒ FAIL) = 床架清楚可见"
       },
       "P3-7_mattress_visible_at_200x240_px": {
         "pass": true,
-        "value": 7070,
+        "value": 7594,
         "note": "200×240 里床垫/床品的浅色像素 ≥ 120 = 床垫清楚可见"
       }
     }

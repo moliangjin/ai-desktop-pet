@@ -4,7 +4,7 @@
 > **对应任务书**：R173（承接 R172，基线 commit `21ff399`）
 > **作者**：MiniMax（Mavis）
 > **上一交付**：R172 `21ff399`（实现 `b34e7c9` / 索引 `545b4e5` / 归档 `21ff399`）
-> **本轮实现提交**：__IMPL_COMMIT__
+> **本轮实现提交**：ee54521
 > **状态**：`WORK_SCENE = PASS` / **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** / `V0_0_RELEASE_STATUS = NOT_FROZEN`
 > **范围声明**：本轮**只做任务书点名的办公场景透视与手部遮挡整改**，未扩展功能；**未进入 V0.1**；**未改动人物身份与服装**（R138 原始 23 帧 SHA256 逐字节未变）；**未改动任何点击动作素材**（`assets/character_R158/` 18 张帧与 `21ff399` 逐字节一致）；**未重新开发整个桌宠**；**未充值 i2i**（全程零 AI 生图调用）；R148 行走方向 / R153 自主行为 / R162 点击互动 / R165 手臂修复 / R167 睡眠场景 / **R170 吃水果场景全部成果** / R113 拖拽核心 / **R172 的全部成果（素材仍在磁盘、仍在 manifest library）**均未改动。
 
@@ -42,9 +42,9 @@
 | 候选实现 | `candidates/candidate_b_c2/` |
 | QA 报告 | `docs/R173_QA_REPORT.md` |
 | 交付索引 | `docs/R173_DELIVERY_INDEX.md`（本文件） |
-| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R173_review.zip`（__ZIP_FILES__ 文件 / __ZIP_BYTES__ 字节） |
-| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R173_review.zip.sha256`（`__ZIP_SHA256__`） |
-| 备份 | `backup/V0.0_backup_20261022_221445_r173.zip`（__BAK_FILES__ 文件 / __BAK_BYTES__ 字节）+ 同名 `.sha256`（`__BAK_SHA256__`） |
+| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R173_review.zip`（184 文件 / 23,578,908 字节） |
+| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R173_review.zip.sha256`（`5b00cb9457c1547155b50d5d22e2e1f0da00da47577644726de44b7f624555d6`） |
+| 备份 | `backup/V0.0_backup_20261022_235022_r173.zip`（274 文件 / 52,098,906 字节）+ 同名 `.sha256`（`f4c19c0bfcc7d1533ad5b0267fb0affe70edde9f53b5c4f4803084458dfdffb8`） |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`（**60 PASS / 0 FAIL / 0 NOT_VERIFIED**） |
 | **R173 客观判据** | `candidates/candidate_b_c2/evidence_r173_scene_verify.json`（**26/26 PASS**） |
 | 真实采集帧 | `candidates/candidate_b_c2/evidence_r173_preview/`（真实 Electron 采集 + `preview_meta.json` + `run.log`；**原始 PNG 不入库**） |

@@ -1,0 +1,174 @@
+{
+  "round": "R177",
+  "generated_at": "2026-10-23 03:28:49",
+  "electron": "/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/node_modules/.bin/electron",
+  "manifest": "/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/assets/character_R141_manifest.json",
+  "patch": {
+    "pet_scale": 1.25,
+    "activity_rate": "high",
+    "sleep_rate": "low",
+    "click_feedback": false,
+    "launch_at_login": false
+  },
+  "checks": [
+    {
+      "id": "A1",
+      "name": "本地存储目录 = 本次指定的 user-data-dir (确实写在本机, 不联网)",
+      "pass": true,
+      "detail": "dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A"
+    },
+    {
+      "id": "A2",
+      "name": "设置通过 applySettingsPatch 写入成功",
+      "pass": true,
+      "detail": "R177 APPLY_SETTINGS ok=true saved=true settings={\"pet_scale\":1.25,\"activity_rate\":\"high\",\"sleep_rate\":\"low\",\"click_feedback\":false,\"launch_at_login\":false}"
+    },
+    {
+      "id": "A3",
+      "name": "设置文件已落盘 (pet_settings.json)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "A4",
+      "name": "磁盘上的设置内容 = 写入的值 (逐字段)",
+      "pass": true,
+      "detail": "{\"pet_scale\": 1.25, \"activity_rate\": \"high\", \"sleep_rate\": \"low\", \"click_feedback\": false, \"launch_at_login\": false}"
+    },
+    {
+      "id": "A5",
+      "name": "菜单命令走正式行为系统: ok=true 且状态机切到 WORK",
+      "pass": true,
+      "detail": "R177 MENU command=work ok=true state=WORK error="
+    },
+    {
+      "id": "A6",
+      "name": "状态机留下 IDLE -> WORK 的正式转移记录",
+      "pass": true,
+      "detail": "R141 STATE IDLE -> WORK (idle-decision) t=1693ms"
+    },
+    {
+      "id": "A7",
+      "name": "渲染器真的切到了办公场景 (set-action work applied=true)",
+      "pass": true,
+      "detail": "[renderer:1] [renderer] R147 set-action work applied=true loop=true frame_ms=2600,2600 frames=2 skew=0"
+    },
+    {
+      "id": "A8",
+      "name": "办公场景道具按 R173 口径处理 (家具已内嵌, 故 mounted=none)",
+      "pass": true,
+      "detail": "[renderer:1] [renderer] R156 PROPS action=work scene=yes mounted=none"
+    },
+    {
+      "id": "A9",
+      "name": "桌宠大小生效: 视口 = 200×240 × 1.25 = 250×300 (且真实窗口尺寸一致)",
+      "pass": true,
+      "detail": "R177 PET_SCALE scale=1.25 viewport=250x300 bounds=(600,300,250,300)"
+    },
+    {
+      "id": "A10",
+      "name": "渲染画布与窗口同尺寸 (INITIAL_VIEWPORT)",
+      "pass": true,
+      "detail": "R177 INITIAL_VIEWPORT 250x300 scale=1.25"
+    },
+    {
+      "id": "A11",
+      "name": "频率档位换算正确并作用到引擎 (活动 high→间隔×0.6/权重×1.4, 睡眠 low→×0.35)",
+      "pass": true,
+      "detail": "R177 RATE activity=high sleep=low fx={\"idle_interval\":0.6,\"activity_weight\":1.4,\"sleep_weight\":0.35}"
+    },
+    {
+      "id": "A12",
+      "name": "点击反馈开关已下发到渲染器 (click_feedback=false)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "A13",
+      "name": "心情状态文件已落盘 (pet_mood_state.json)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "A14",
+      "name": "退出前保存了心情状态",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "C1",
+      "name": "吃水果命令走正式行为系统 (ok=true, state=EAT_FRUIT)",
+      "pass": true,
+      "detail": "R177 MENU command=eat_fruit ok=true state=EAT_FRUIT error="
+    },
+    {
+      "id": "C2",
+      "name": "吃水果场景道具真的挂载 (小凳 + 小边桌 + 果盘)",
+      "pass": true,
+      "detail": "R156 PROPS action=eat_fruit scene=yes mounted=prop_stool,prop_fruit_table"
+    },
+    {
+      "id": "C3",
+      "name": "渲染器真的切到了吃水果动作",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "D1",
+      "name": "睡觉命令走正式行为系统 (ok=true, state=SLEEP_ENTER)",
+      "pass": true,
+      "detail": "R177 MENU command=sleep ok=true state=SLEEP_ENTER error="
+    },
+    {
+      "id": "D2",
+      "name": "睡眠场景道具真的挂载 (床 + 月亮 + 被子)",
+      "pass": true,
+      "detail": "R156 PROPS action=sleep_breath scene=yes mounted=prop_bed,prop_moon,prop_quilt"
+    },
+    {
+      "id": "E1",
+      "name": "设置面板窗口被真实创建",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "id": "E2",
+      "name": "设置面板读到的是**磁盘上已保存**的设置",
+      "pass": true,
+      "detail": "{\"pet_scale\":1.25,\"activity_rate\":\"high\",\"sleep_rate\":\"low\",\"click_feedback\":false,\"launch_at_login\":false}"
+    },
+    {
+      "id": "B1",
+      "name": "重启后设置逐字段恢复 (大小/活动频率/睡眠频率/点击反馈/自启)",
+      "pass": true,
+      "detail": "{\"pet_scale\": 1.25, \"activity_rate\": \"high\", \"sleep_rate\": \"low\", \"click_feedback\": false, \"launch_at_login\": false}"
+    },
+    {
+      "id": "B2",
+      "name": "重启后心情状态从磁盘恢复 (mood_restored_raw 非空)",
+      "pass": true,
+      "detail": "{\"version\": 1, \"mood\": \"sleepy\", \"energy\": 0.9983996388888887, \"interactionCount\": 1, \"interactionWindowStart\": 1792697252556, \"lastInteractionAt\": 1792697252556, \"lastActivityAt\": 1792697309929, \"lastSleepAt\": 0, \"awakeSince\": 1792697250930, \"sleepCount\": 0, \"savedAt\": 1792697316337}"
+    },
+    {
+      "id": "B3",
+      "name": "恢复的心情状态 = 启动时磁盘文件内容 (逐字段一致)",
+      "pass": true,
+      "detail": "disk.mood=sleepy restored.mood=sleepy energy 0.9983996388888887 → 0.9983996388888887"
+    },
+    {
+      "id": "B4",
+      "name": "重启后桌宠大小仍然生效 (视口与真实窗口尺寸都是 250×300)",
+      "pass": true,
+      "detail": "R177 PET_SCALE scale=1.25 viewport=250x300 bounds=(600,300,250,300)"
+    },
+    {
+      "id": "B5",
+      "name": "重启后频率档位仍然作用到引擎",
+      "pass": true,
+      "detail": "R177 RATE activity=high sleep=low fx={\"idle_interval\":0.6,\"activity_weight\":1.4,\"sleep_weight\":0.35}"
+    }
+  ],
+  "passed": 26,
+  "failed": 0,
+  "total": 26
+}

@@ -169,6 +169,8 @@ let manifestCanvasSize_ = 256;
 let oldStageEl_ = null;
 let oldPointerMoveHandler_ = null;
 let oldPointerUpHandler_ = null;
+// R177: 右键菜单的 DOM 监听引用 (同样要在重建前解绑)
+let oldContextMenuHandler_ = null;
 // R100 P0-5 修复: asset 加载统计 + 失败标记
 let assetLoadTotal_ = 0;
 let assetLoadFailed_ = 0;
@@ -224,6 +226,11 @@ let clickClock_ = new AnimationClock();  // 点击反馈专用时钟 (与主动�
 let clickRecent_ = [];               // 最近播放过的点击动作 (避免连续重复)
 let lastClickAction_ = null;          // 最近一次点击反馈选中的动作 (预览采集/自检用)
 let lastPropT_ = performance.now();  // 道具淡入淡出的时间基准
+// ====== R177: 心情 / 设置 / 右键菜单 ======
+let moodState_ = { mood: 'calm', label: '平静', click_weights: {}, suppress_click: false };
+let clickFeedbackEnabled_ = true;     // 设置面板的"点击反馈开关"
+let lastContextMenuAt_ = 0;           // 右键菜单去重 (同一次右键只弹一次)
+let initialViewport_ = null;          // R177: 启动时的生效视口 (基础尺寸 × 桌宠大小倍率)
 
 const frameDeltas = [];
 function tick() {
@@ -288,11 +295,16 @@ function detachCanvasListeners() {
         if (oldPointerUpHandler_) {
             oldStageEl_.removeEventListener('pointerup', oldPointerUpHandler_);
         }
+        // R177: 解绑右键菜单监听 (避免重建后重复绑定)
+        if (oldContextMenuHandler_) {
+            oldStageEl_.removeEventListener('contextmenu', oldContextMenuHandler_);
+        }
     } finally {
         // R102: 全部解绑后才清空引用
         oldStageEl_ = null;
         oldPointerMoveHandler_ = null;
         oldPointerUpHandler_ = null;
+        oldContextMenuHandler_ = null;
         console.log('[renderer] R102 canvas listeners detached (move+up cleared atomically)');
     }
 }
@@ -341,11 +353,24 @@ function attachCanvasListeners(stageEl) {
     stageEl.addEventListener('pointermove', onMove);
     stageEl.addEventListener('pointerup', onUp);
     stageEl.addEventListener('pointercancel', onCancel);
+    // R177: 右键 ⇒ 弹桌宠控制菜单 (只有点在角色身上才弹; 透明区不弹)
+    const onContextMenu = (ev) => {
+        // 永远屏蔽 WebView 默认右键菜单 (我们要的是桌宠自己的菜单)
+        ev.preventDefault();
+        const x = ev.clientX, y = ev.clientY;
+        if (isPointOnSprite(x, y)) {
+            requestContextMenu(x, y);
+        } else {
+            console.log(`[renderer] R177 CONTEXT_MENU_IGNORED (not on sprite) at=(${x},${y})`);
+        }
+    };
+    stageEl.addEventListener('contextmenu', onContextMenu);
     // 保留引用供下次 detach
     oldStageEl_ = stageEl;
     oldPointerMoveHandler_ = onMove;
     oldPointerUpHandler_ = onUp;
-    console.log(`[renderer] R111 canvas listeners attached (move/up/cancel) to ${stageEl.tagName}#${stageEl.id || ''}`);
+    oldContextMenuHandler_ = onContextMenu;
+    console.log(`[renderer] R111 canvas listeners attached (move/up/cancel/contextmenu) to ${stageEl.tagName}#${stageEl.id || ''}`);
 }
 
 // ====== R100 P0-1 修复: tickerCallback 在 module-scope ======
@@ -749,7 +774,8 @@ function startClickReaction(forcedAction) {
     // forcedAction 仅用于预览采集 (要逐个看清每个动作的全过程); 正常点击走随机池
     const action = (forcedAction && spritesByAction[forcedAction])
         ? forcedAction
-        : pickClickReaction(Math.random, clickRecent_, pool);
+        // R177: 心情给点击动作池加权 (开心→偏活泼; 困倦→偏轻量)
+        : pickClickReaction(Math.random, clickRecent_, pool, moodClickWeight);
     const meta = spritesByAction[action];
     if (!meta || meta.frames.length === 0) {
         console.warn(`[renderer] R156 CLICK_REACTION skipped: ${action} has no frames`);
@@ -774,8 +800,19 @@ function startClickReaction(forcedAction) {
     //   否则道具永远不出现 (R158 之前点击路径从不调用 applyPropsFor)
     applyPropsFor(action);
     console.log(`[renderer] R156 CLICK_REACTION start action=${action} ` +
-        `frames=${meta.frames.length} recent=${clickRecent_.join('>')}`);
+        `frames=${meta.frames.length} recent=${clickRecent_.join('>')} mood=${moodState_.mood}`);
     return true;
+}
+
+/**
+ * R177: 当前心情对某个点击动作的权重乘子 (缺省 1 = 不加权)。
+ * 权重表由主进程随心情一起下发 (renderer 不自己判断规则, 保持单一事实源)。
+ */
+function moodClickWeight(action) {
+    const table = moodState_ && moodState_.click_weights;
+    if (!table || typeof table !== 'object') return 1;
+    const w = table[action];
+    return typeof w === 'number' && Number.isFinite(w) ? w : 1;
 }
 
 /**
@@ -829,9 +866,53 @@ function applyLayoutToSprite() {
 
 // ====== R100 P0-3 修复: sprite 事件绑定抽函数 ======
 // 在 applyModeToScene 重建后重新调用, 不依赖 manifest IPC 一次性绑定
+
+/**
+ * R177: 取指针事件的按键号 (0=左, 1=中, 2=右)。
+ * Pixi 的 FederatedPointerEvent 自带 button; 拿不到时退回 DOM 原始事件。
+ */
+function getEventButton(ev) {
+    if (ev && typeof ev.button === 'number') return ev.button;
+    const orig = ev && ev.data && ev.data.originalEvent;
+    if (orig && typeof orig.button === 'number') return orig.button;
+    return 0;
+}
+
+/**
+ * R177: 请求主进程弹出右键菜单 (400ms 内不重复请求)。
+ * @param {number} x 视口坐标 x
+ * @param {number} y 视口坐标 y
+ */
+function requestContextMenu(x, y) {
+    const now = Date.now();
+    if (now - lastContextMenuAt_ < 400) return false;
+    lastContextMenuAt_ = now;
+    ipcRenderer.send('context-menu', { x: Math.round(x), y: Math.round(y) });
+    console.log(`[renderer] R177 CONTEXT_MENU_REQUEST at=(${Math.round(x)},${Math.round(y)})`);
+    return true;
+}
+
+/** R177: 点是否落在角色身上 (用于判断右键是否打在桌宠上)。 */
+function isPointOnSprite(x, y) {
+    if (!sprite_) return false;
+    const b = sprite_.getBounds();
+    return x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height;
+}
+
 function bindSpriteEvents() {
     if (!sprite_) return;
     sprite_.on('pointerdown', (ev) => {
+        // R177: **只有左键**才可能开始拖拽/点击。
+        //   右键必须被隔离, 否则右键会误触发拖拽 (角色被"拖走") 也会误触发点击反馈。
+        const btn = getEventButton(ev);
+        if (btn === 2) {
+            // 右键 ⇒ 请求弹出菜单 (菜单由主进程用原生 Menu 弹出)
+            try { ev.originalEvent && ev.originalEvent.preventDefault && ev.originalEvent.preventDefault(); } catch (e) {}
+            const g = ev.data && ev.data.global;
+            requestContextMenu(g ? g.x : 0, g ? g.y : 0);
+            return;
+        }
+        if (btn !== 0) return;   // 中键等一律忽略
         // R111 诊断: 记录 pointerdown 触发 (真实物理鼠标必触发)
         console.log(`[renderer] R111 DRAG_POINTER_DOWN sprite at (${ev.data.global.x},${ev.data.global.y}) interactive=${sprite_.interactive} buttonMode=${sprite_.buttonMode}`);
         dragging = true;
@@ -931,8 +1012,17 @@ function endDrag(opts = {}) {
             // R156: 点击池动作有 3 帧 (总时长最长 ~1.0s), 暂缓自主行为要覆盖整个反馈
             holdMs: R156_CLICK_HOLD_MS,
         });
-        // 非睡眠状态下的可见反馈: 轻微弹跳 + 眨眼
-        if (!wasSleeping) startClickReaction();
+        // R177: 可见反馈受两个开关约束 ——
+        //   ① 设置面板的"点击反馈"开关
+        //   ② 心情抑制 (困倦时她只想睡, 见 mood_engine.sleepy_suppress_click)
+        // 注意: 无论是否出反馈, 上面那条 character-click 都要发 ——
+        //   睡眠中点击必须仍然能唤醒角色。
+        const suppressed = moodState_.suppress_click === true;
+        if (!wasSleeping && clickFeedbackEnabled_ && !suppressed) {
+            startClickReaction();
+        } else if (!wasSleeping) {
+            console.log(`[renderer] R177 CLICK_FEEDBACK_SKIPPED enabled=${clickFeedbackEnabled_} suppress=${suppressed} mood=${moodState_.mood}`);
+        }
     } else if (releasesPress(kind)) {
         // R141 §四: 松开鼠标后恢复自主行为 (main 侧带过渡延迟)
         ipcRenderer.send('behavior-drag-state', false);
@@ -984,8 +1074,10 @@ function setupAnimationPreviewKeys() {
 //   - 重置 lastAdvanceAt 和 frameIdx
 function applyModeToScene(mode, opts) {
     opts = opts || {};
-    const w = mode === 'compact' ? compactWidth_ : standardSize_;
-    const h = mode === 'compact' ? compactHeight_ : standardSize_;
+    // R177: opts.w / opts.h 可覆盖画布尺寸 —— "桌宠大小"就是靠它把画布重建到新尺寸的
+    const useOverride = (typeof opts.w === 'number' && opts.w > 0 && typeof opts.h === 'number' && opts.h > 0);
+    const w = useOverride ? Math.round(opts.w) : (mode === 'compact' ? compactWidth_ : standardSize_);
+    const h = useOverride ? Math.round(opts.h) : (mode === 'compact' ? compactHeight_ : standardSize_);
     currentMode_ = mode;
     // R100 P0-4: main 传 sprite 屏幕中心, 模式切换保持中心稳定
     const cx = (typeof opts.centerX === 'number') ? opts.centerX : null;
@@ -1102,6 +1194,21 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
     idleDirector_ = new IdleDirector({ spec: idleSpec });
     console.log(`[renderer] R147 idle-director enabled=${idleDirector_ && idleDirector_.enabled} spec=${JSON.stringify(idleSpec)}`);
     currentMode_ = payload.initialMode || 'standard';
+    // R177: 桌宠大小 —— 首帧就按生效视口建画布 (避免先按基础尺寸画一遍再跳)
+    if (payload.viewport && typeof payload.viewport.w === 'number' && typeof payload.viewport.h === 'number') {
+        initialViewport_ = { w: payload.viewport.w, h: payload.viewport.h };
+        console.log(`[renderer] R177 INITIAL_VIEWPORT ${payload.viewport.w}x${payload.viewport.h} scale=${payload.petScale}`);
+    }
+    if (typeof payload.clickFeedback === 'boolean') clickFeedbackEnabled_ = payload.clickFeedback;
+    if (payload.mood && typeof payload.mood === 'object') {
+        moodState_ = {
+            mood: payload.mood.mood || 'calm',
+            label: payload.mood.label || '平静',
+            energy: typeof payload.mood.energy === 'number' ? payload.mood.energy : 1,
+            click_weights: payload.mood.click_weights || {},
+            suppress_click: !!payload.mood.suppress_click,
+        };
+    }
     // R102 P0-2: 记录 initial mode 供 R100 self-test 结束后恢复
     originalMode_ = currentMode_;
     // R100: 接收 {w, h} 尺寸 (compact 200x240, standard 256x256)
@@ -1249,8 +1356,9 @@ ipcRenderer.on('manifest', async (_evt, payload) => {
         return;  // 阻止后续 applyModeToScene 创建假 sprite
     }
 
-    const w = currentMode_ === 'compact' ? compactWidth_ : standardSize_;
-    const h = currentMode_ === 'compact' ? compactHeight_ : standardSize_;
+    // R177: 首帧画布 = 生效视口 (基础尺寸 × 桌宠大小倍率)
+    const w = initialViewport_ ? initialViewport_.w : (currentMode_ === 'compact' ? compactWidth_ : standardSize_);
+    const h = initialViewport_ ? initialViewport_.h : (currentMode_ === 'compact' ? compactHeight_ : standardSize_);
     stageCssWidth = w;
     stageCssHeight = h;
     app_ = new PIXI.Application({
@@ -1415,7 +1523,14 @@ ipcRenderer.on('set-mode', (_evt, payload) => {
         return;
     }
     console.log(`[renderer] R100 set-mode=${payload.mode} size=${payload.size} center=(${payload.centerX},${payload.centerY})`);
-    const result = applyModeToScene(payload.mode, { centerX: payload.centerX, centerY: payload.centerY });
+    // R177: 传 payload.size 作为画布尺寸覆盖 —— "桌宠大小"缩放后窗口尺寸已变,
+    //   画布必须用同一个尺寸, 否则角色会被拉伸或裁切。
+    const result = applyModeToScene(payload.mode, {
+        centerX: payload.centerX,
+        centerY: payload.centerY,
+        w: payload.size && payload.size.w,
+        h: payload.size && payload.size.h,
+    });
     // 通知 main 确认 (R100 P0-2 要求)
     ipcRenderer.send('renderer-mode-ready', {
         mode: payload.mode,
@@ -1424,6 +1539,53 @@ ipcRenderer.on('set-mode', (_evt, payload) => {
         centerY: payload.centerY,
         ok: result.ok,
     });
+});
+
+// ====== R177: 心情 / 设置 / 视口尺寸 ======
+
+// 心情变化 ⇒ 点击动作池换权重 (并决定是否抑制点击反馈)
+ipcRenderer.on('mood-changed', (_evt, payload) => {
+    if (!payload || typeof payload !== 'object') return;
+    moodState_ = {
+        mood: payload.mood || 'calm',
+        label: payload.label || '平静',
+        energy: typeof payload.energy === 'number' ? payload.energy : 1,
+        click_weights: payload.click_weights || {},
+        suppress_click: !!payload.suppress_click,
+    };
+    console.log(`[renderer] R177 MOOD_CHANGED mood=${moodState_.mood} label=${moodState_.label} suppress=${moodState_.suppress_click}`);
+});
+
+// 设置变更 ⇒ 点击反馈开关 / 频率等 (频率由主进程直接作用在行为引擎上)
+ipcRenderer.on('settings-changed', (_evt, payload) => {
+    if (!payload || typeof payload !== 'object') return;
+    if (typeof payload.click_feedback === 'boolean') clickFeedbackEnabled_ = payload.click_feedback;
+    if (payload.mood) {
+        moodState_ = {
+            mood: payload.mood.mood || 'calm',
+            label: payload.mood.label || '平静',
+            energy: typeof payload.mood.energy === 'number' ? payload.mood.energy : 1,
+            click_weights: payload.mood.click_weights || {},
+            suppress_click: !!payload.mood.suppress_click,
+        };
+    }
+    console.log(`[renderer] R177 SETTINGS_CHANGED click_feedback=${clickFeedbackEnabled_} settings=${JSON.stringify(payload.settings || {})}`);
+});
+
+// 桌宠大小变化 ⇒ 按新尺寸重建画布 (窗口尺寸由主进程同步改好)
+ipcRenderer.on('set-viewport', (_evt, payload) => {
+    if (!payload || typeof payload.w !== 'number' || typeof payload.h !== 'number') {
+        console.warn('[renderer] R177 set-viewport refused: invalid payload', payload);
+        return;
+    }
+    const mode = (payload.mode === 'compact' || payload.mode === 'standard') ? payload.mode : currentMode_;
+    const result = applyModeToScene(mode, {
+        w: payload.w,
+        h: payload.h,
+        centerX: payload.w / 2,
+        centerY: payload.h,
+    });
+    console.log(`[renderer] R177 SET_VIEWPORT ${payload.w}x${payload.h} scale=${payload.scale} ok=${result.ok}`);
 });
 
 // R100 P0-2 修复: window.__setMode 走 ipcRenderer.invoke 同步等 main ack

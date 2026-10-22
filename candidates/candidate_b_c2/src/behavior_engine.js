@@ -75,6 +75,13 @@ const DEFAULT_CONFIG = Object.freeze({
     stretch_after_wake: true,       // 醒来后伸个懒腰
     activity_repeat_penalty: 0.25,   // 连续做同一类活动的权重折扣
     no_sleep_after_wake_ms: 45000,  // 醒来后这段时间内不再触发睡眠 (避免 睡→醒→睡)
+    // R177: 设置面板的频率档位换算成这三个乘子 (运行时可改, 见 applyConfig)
+    //   activity_rate_interval_scale : 自主决策间隔乘子 (越大越迟钝)
+    //   activity_weight_scale        : 非睡眠类自主活动权重乘子
+    //   sleep_weight_scale           : 睡眠权重乘子
+    activity_rate_interval_scale: 1.0,
+    activity_weight_scale: 1.0,
+    sleep_weight_scale: 1.0,
 });
 
 const STATES = Object.freeze({
@@ -165,6 +172,11 @@ class BehaviorEngine {
         this._setInterval = opts.setInterval || ((fn, ms) => setInterval(fn, ms));
         this._clearInterval = opts.clearInterval || ((h) => clearInterval(h));
 
+        // R177: 心情适配器 (纯逻辑, 由 mood_engine.js 提供)
+        //   接口: { getMood(), activityWeight(kind, mood), idleIntervalScale(mood) }
+        //   传 null ⇒ 全部系数为 1 (行为与 R176 完全一致, 不影响既有测试)
+        this._moodAdapter = opts.moodAdapter || null;
+
         this.state = STATES.IDLE;
         this._timer = null;          // 唯一的行为计时器
         this._moveTimer = null;      // 行走位移计时器
@@ -245,11 +257,29 @@ class BehaviorEngine {
 
     _scheduleIdle() {
         if (!this._running || this._dragging) return;
-        const ms = this._randInt(this.config.idle_min_ms, this.config.idle_max_ms);
+        const ms = Math.round(this._randInt(this.config.idle_min_ms, this.config.idle_max_ms)
+            * this._idleIntervalFactor());
         this._timer = this._setTimeout(() => {
             this._timer = null;
             this._decideNextFromIdle();
         }, ms);
+    }
+
+    /**
+     * R177: 自主决策间隔系数 = 心情系数 × 设置里的"自主活动频率"系数。
+     * 心情越开心/无聊 ⇒ 越活跃 (间隔越短); 越困 ⇒ 越迟钝。
+     */
+    _idleIntervalFactor() {
+        const mood = this._moodAdapter ? this._moodAdapter.idleIntervalScale(this._moodAdapter.getMood()) : 1;
+        const rate = this.config.activity_rate_interval_scale || 1;
+        const v = mood * rate;
+        return Number.isFinite(v) && v > 0 ? v : 1;
+    }
+
+    /** R177: 当前心情 (无适配器时返回 null)。 */
+    getMood() {
+        if (!this._moodAdapter) return null;
+        try { return this._moodAdapter.getMood(); } catch (e) { return null; }
     }
 
     _decideNextFromIdle() {
@@ -307,6 +337,15 @@ class BehaviorEngine {
             //   真机观感是"刚吃完又吃 / 刚放下电脑又坐下", 所以要真正的冷却。
             if (it.kind === 'work' && (now - this._lastWorkAt) < cfg.work_cooldown_ms) w = 0;
             if (it.kind === 'eat_fruit' && (now - this._lastEatFruitAt) < cfg.eat_fruit_cooldown_ms) w = 0;
+            // R177: 心情调制 (开心→爱动 / 困倦→爱打盹 / 无聊→想找事做)
+            if (this._moodAdapter) {
+                const mood = this._moodAdapter.getMood();
+                w *= this._moodAdapter.activityWeight(it.kind, mood);
+            }
+            // R177: 设置面板的频率档位 (自主活动频率 / 睡眠频率分别缩放)
+            w *= (it.kind === 'sleep')
+                ? (cfg.sleep_weight_scale || 1)
+                : (cfg.activity_weight_scale || 1);
             return { kind: it.kind, w };
         });
         const total = items.reduce((s, it) => s + it.w, 0);
@@ -801,6 +840,62 @@ class BehaviorEngine {
         return true;
     }
 
+    // ====== R177: 桌宠控制菜单的命令入口 ======
+    //
+    // 【硬约束】菜单里的每一项都必须走**正式行为系统**:
+    //   调用的就是自主决策用的那几条内部路径 (_enterSleep / _startSit / _startWork /
+    //   _startEatFruit / _startGesture / wakeUpByUser),
+    //   因此状态转移、冷却、计时器、道具挂载、动作结束后的回落**全部复用**,
+    //   **不存在"只播一张演示图"的旁路**。
+    //   与自主决策的差别只有两点:
+    //     ① 不受"同类冷却"限制 (用户明确要求, 就该立刻生效);
+    //     ② 接管当前排程 (清掉待触发的计时器), 否则会被下一次自主决策立刻覆盖。
+
+    /**
+     * 手动触发一类活动。
+     * @param {'sleep'|'wake'|'sit'|'doze'|'work'|'eat_fruit'|'gesture'} kind
+     * @returns {{ok:boolean, kind?:string, state?:string, error?:string}}
+     */
+    command(kind) {
+        if (!this._running) return { ok: false, error: 'engine not running' };
+        if (this._dragging) return { ok: false, error: 'dragging' };
+        const sleeping = (this.state === STATES.SLEEP_ENTER || this.state === STATES.SLEEP_LOOP);
+        if (kind === 'sleep' && sleeping) return { ok: false, error: 'already sleeping' };
+        if (kind === 'wake' && !sleeping && this.state !== STATES.WAKE_UP) {
+            return { ok: false, error: 'not sleeping' };
+        }
+        // 接管排程: 清掉待触发的行为计时器 + 停掉行走位移 (否则会边走边做)
+        this._clearPendingTimers();
+        if (this._moveTimer !== null) { this._stopMoveTimer(); this._movePaused = false; }
+        switch (kind) {
+            case 'sleep': this._enterSleep(); break;
+            case 'wake': this.wakeUpByUser(); break;
+            case 'sit': this._startSit(); break;
+            case 'doze': this._startDoze(); break;
+            case 'work': this._startWork(); break;
+            case 'eat_fruit': this._startEatFruit(); break;
+            case 'gesture': this._startGesture(); break;
+            default: return { ok: false, error: `unknown command: ${kind}` };
+        }
+        return { ok: true, kind, state: this.state };
+    }
+
+    /**
+     * R177: 运行时更新行为参数 (设置面板改频率档位时调用)。
+     * 只改数值, **不改状态机逻辑**。
+     * @param {object} patch
+     * @returns {object} 合并后的 config
+     */
+    applyConfig(patch) {
+        if (patch && typeof patch === 'object') {
+            for (const [k, v] of Object.entries(patch)) {
+                if (typeof v === 'number' && Number.isFinite(v)) this.config[k] = v;
+                else if (typeof v === 'boolean') this.config[k] = v;
+            }
+        }
+        return Object.assign({}, this.config);
+    }
+
     _clearPendingTimers() {
         if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
         if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
@@ -835,6 +930,11 @@ class BehaviorEngine {
             stateTimerKind: this._stateTimerKind,
             stateDeadline: this._stateDeadline,
             hasSleepShiftTimer: this._sleepShiftTimer !== null,
+            // R177: 当前心情与生效的频率系数 (供设置面板/诊断读取)
+            mood: this.getMood(),
+            activityRateIntervalScale: this.config.activity_rate_interval_scale,
+            activityWeightScale: this.config.activity_weight_scale,
+            sleepWeightScale: this.config.sleep_weight_scale,
             pendingTimerCount: [this._timer, this._moveTimer, this._holdTimer, this._pendingResume]
                 .filter((t) => t !== null).length,
             transitionLog: this.transitionLog.slice(-20),

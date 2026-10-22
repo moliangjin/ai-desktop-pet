@@ -22,6 +22,12 @@ const fs = require('fs');
 const { BehaviorEngine, STATES } = require('./behavior_engine');
 // R144: 资源就绪判定 (main 与测试共用同一份代码)
 const { evaluateAssetReadiness, REQUIRED_ACTIONS } = require('./asset_gate');
+// R177: 本地心情系统 + 本地设置存储 (纯离线 —— 不联网、不调模型、不上传任何数据)
+const { MoodEngine } = require('./mood_engine');
+const { SettingsStore, DEFAULT_SETTINGS, rateEffects, SCALE_MIN, SCALE_MAX, RATES } = require('./settings_store');
+// R177: 右键菜单要用 Electron 原生 Menu (模板本身在纯模块里, 可单测)
+const { Menu } = require('electron');
+const { buildMenuTemplate } = require('./menu_template');
 
 const args = process.argv.slice(1);
 // R170: 行为状态日志的相对时间基准 (ms) —— 让"持续了多久/间隔多久"能从日志直接算
@@ -34,6 +40,11 @@ let sleepProbabilityOverride = null;   // R144: 行为概率覆盖 (0=只走, 1=
 let previewDir_ = null;        // R147: 运行时预览采集目录 (仅验收/预览用, 正式运行为 null)
 let demoScene_ = null;         // R170: 验收专用入口 —— 直接进入某个场景 (work / eat_fruit / ...)
                               //   与"正式自主行为"**完全分离**: 自主决策被暂停, 不会随机跑掉
+// ====== R177: 验收专用入口 (仅用于自动化验证, 正式运行不触发) ======
+let r177Command_ = null;       // --r177-command <kind>       走**菜单同一条**代码路径触发行为
+let r177ApplySettings_ = null; // --r177-apply-settings <json> 走**设置面板同一条**代码路径改设置
+let r177DumpSettings_ = false; // --r177-dump-settings        启动后打印本地设置与心情状态
+let r177OpenPanel_ = false;    // --r177-panel                启动后打开设置面板
 for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--manifest' && args[i+1]) manifestPath = args[++i];
@@ -54,6 +65,11 @@ for (let i = 0; i < args.length; i++) {
     else if (a === '--acceptance-mode' && args[i+1]) acceptanceMode = (args[++i] !== 'off');
     // R144: 行为概率覆盖 — 只改 manifest 配置里的概率值, 不改状态机逻辑
     else if (a === '--sleep-probability' && args[i+1]) sleepProbabilityOverride = parseFloat(args[++i]);
+    // ====== R177 验收专用入口 ======
+    else if (a === '--r177-command' && args[i+1]) r177Command_ = args[++i];
+    else if (a === '--r177-apply-settings' && args[i+1]) r177ApplySettings_ = args[++i];
+    else if (a === '--r177-dump-settings') r177DumpSettings_ = true;
+    else if (a === '--r177-panel') r177OpenPanel_ = true;
 }
 
 if (!manifestPath) {
@@ -73,6 +89,19 @@ const COMPACT_HEIGHT = parseInt(process.env.COMPACT_HEIGHT || '240', 10);
 
 let mainWindow = null;
 let currentMode = initialMode === 'compact' ? 'compact' : 'standard';
+
+// ====== R177: 本地状态 (设置 + 心情) ======
+//   · 只落在本机 userData 目录, 不联网、不上传
+//   · 设置 = 用户偏好; 心情状态 = "基础心情", 不是长期记忆
+let settingsStore_ = null;
+let settings_ = null;
+let moodEngine_ = null;
+let settingsWindow_ = null;
+let moodTimer_ = null;
+// R177: 启动时从磁盘读到的**原始**心情状态 (未重算) —— 用于"重启后正确恢复"的客观取证
+let moodLoadedRaw_ = null;
+// R177: 上次已生效的视口尺寸 (窗口 + 画布); 用来判断"要不要重建画布"
+let lastViewport_ = null;
 
 // ====== R141: 自主行为引擎接入 ======
 // 行为引擎只负责"决定做什么"; 窗口坐标/边界由 main 侧 adapter 提供.
@@ -150,10 +179,322 @@ function moveWindowBy(dx, dy) {
     return { blocked: actualBlocked, moved: movedX, requested: stepX, x: actual.x, y: actual.y };
 }
 
+// ====== R177: 本地状态初始化 / 菜单 / 设置面板 ======
+
+/**
+ * R177: 读取本地设置与心情状态。
+ * 启动时调用; 读不到/损坏 ⇒ 用默认值 (绝不拖垮启动)。
+ */
+function initLocalState() {
+    try {
+        settingsStore_ = new SettingsStore({ dir: app.getPath('userData') });
+        const loaded = settingsStore_.loadAll();
+        settings_ = loaded.settings;
+        moodLoadedRaw_ = loaded.mood;
+        moodEngine_ = new MoodEngine({ state: loaded.mood });
+        moodEngine_.noteAwake();
+        console.log(`[main] R177 LOCAL_STATE dir=${settingsStore_.dir} mood=${moodEngine_.getMood()} settings=${JSON.stringify(settings_)}`);
+    } catch (e) {
+        console.error('[main] R177 LOCAL_STATE_INIT_FAILED', e && e.message);
+        settings_ = Object.assign({}, DEFAULT_SETTINGS);
+        moodEngine_ = new MoodEngine({});
+    }
+}
+
+/** 当前心情的快照 (给渲染器/设置面板用)。 */
+function moodPayload() {
+    if (!moodEngine_) return { mood: 'calm', label: '平静', energy: 1, click_weights: {}, suppress_click: false };
+    const mood = moodEngine_.getMood();
+    return {
+        mood,
+        label: moodEngine_.getLabel(),
+        energy: moodEngine_.getEnergy(),
+        // R177: 点击动作池的权重乘子 (渲染器用它挑动作) + 是否禁用点击反馈
+        click_weights: Object.assign({}, moodEngine_.config.click_weights[mood] || {}),
+        suppress_click: moodEngine_.shouldSuppressClick(mood),
+    };
+}
+
+/** 心情适配器 (交给行为引擎; null ⇒ 系数全为 1)。 */
+function moodAdapter() {
+    if (!moodEngine_) return null;
+    return {
+        getMood: () => moodEngine_.getMood(),
+        activityWeight: (kind, mood) => moodEngine_.activityWeight(kind, mood),
+        idleIntervalScale: (mood) => moodEngine_.idleIntervalScale(mood),
+        clickWeight: (action, mood) => moodEngine_.clickWeight(action, mood),
+        shouldSuppressClick: (mood) => moodEngine_.shouldSuppressClick(mood),
+    };
+}
+
+/**
+ * R177: 心情变化时广播给渲染器 (渲染器用它给点击反馈加权) 并落盘。
+ */
+function refreshMood(reason) {
+    if (!moodEngine_) return;
+    const snap = moodEngine_.update();
+    if (snap.changed) {
+        console.log(`[main] R177 MOOD ${snap.prev} -> ${snap.mood} (${reason || 'tick'}) scores=${JSON.stringify(snap.scores)}`);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('mood-changed', moodPayload());
+        }
+        if (settingsWindow_ && !settingsWindow_.isDestroyed() && settingsWindow_.webContents) {
+            settingsWindow_.webContents.send('mood-changed', moodPayload());
+        }
+    }
+    try { if (settingsStore_) settingsStore_.saveMoodState(moodEngine_.toJSON()); } catch (e) { /* 忽略 */ }
+    return snap;
+}
+
+/** 每 30 秒重判一次心情 (规则驱动, 不烧 CPU)。 */
+function startMoodTicker() {
+    if (moodTimer_) clearInterval(moodTimer_);
+    moodTimer_ = setInterval(() => {
+        if (!moodEngine_) return;
+        refreshMood('tick');
+    }, 30000);
+}
+
+/** 开机自动启动是否可用 (macOS/Windows 有登录项 API; Linux 没有)。 */
+function canLaunchAtLogin() {
+    return process.platform === 'darwin' || process.platform === 'win32';
+}
+
+/** 应用"开机自动启动"。失败只记录, 不影响其它功能。 */
+function applyLaunchAtLogin() {
+    if (!settings_ || !canLaunchAtLogin()) return false;
+    try {
+        app.setLoginItemSettings({ openAtLogin: !!settings_.launch_at_login, openAsHidden: true });
+        console.log(`[main] R177 LOGIN_ITEM set=${!!settings_.launch_at_login}`);
+        return true;
+    } catch (e) {
+        console.error('[main] R177 LOGIN_ITEM_FAILED', e && e.message);
+        return false;
+    }
+}
+
+/**
+ * R177: 当前模式下的**实际视口尺寸** = 基础尺寸 × 桌宠大小倍率。
+ * 窗口与渲染画布必须用同一个尺寸, 否则角色会被拉伸/裁切。
+ */
+function getViewportSize(mode) {
+    const base = getModeSize(mode);
+    const s = settings_ ? (Number(settings_.pet_scale) || 1) : 1;
+    return {
+        w: Math.max(120, Math.round(base.w * s)),
+        h: Math.max(120, Math.round(base.h * s)),
+        scale: s,
+    };
+}
+
+/** 桌宠大小: 基础尺寸 × 倍率 (窗口与渲染画布同步)。 */
+function applyPetScale(force) {
+    if (!mainWindow || mainWindow.isDestroyed() || !settings_) return;
+    const { w, h, scale } = getViewportSize(currentMode);
+    const b = mainWindow.getBounds();
+    const cx = b.x + b.width / 2;
+    const cy = b.y + b.height / 2;
+    mainWindow.setBounds({ x: Math.round(cx - w / 2), y: Math.round(cy - h / 2), width: w, height: h });
+    const after = mainWindow.getBounds();
+    // R177: 尺寸没变就不必让渲染器重建画布 (重建 = 销毁再重建 Pixi 应用,
+    //   启动时多来一次会看到一瞬间的闪烁)
+    const unchanged = !force && lastViewport_ && lastViewport_.w === w && lastViewport_.h === h;
+    if (!unchanged) {
+        lastViewport_ = { w, h, scale };
+        if (mainWindow.webContents) {
+            mainWindow.webContents.send('set-viewport', { w, h, scale, mode: currentMode });
+        }
+    }
+    // 日志里带上**真实窗口 bounds** —— 这样验收判据看的是实际尺寸, 而不是日志措辞
+    console.log(`[main] R177 PET_SCALE scale=${scale} viewport=${w}x${h} ` +
+        `bounds=(${after.x},${after.y},${after.width},${after.height}) ` +
+        `${unchanged ? 'unchanged(跳过画布重建)' : 'rebuild'}`);
+}
+
+/**
+ * R177: 把设置整体应用到运行时。
+ *   · 频率档位 → 行为引擎 config (只改数值, 不改状态机逻辑)
+ *   · 点击反馈 → 渲染器
+ *   · 桌宠大小 → 窗口 + 渲染画布
+ *   · 开机自启 → 系统登录项
+ */
+function applySettingsToRuntime() {
+    if (!settings_) return;
+    const fx = rateEffects(settings_.activity_rate, settings_.sleep_rate);
+    if (behaviorEngine) {
+        behaviorEngine.applyConfig({
+            activity_rate_interval_scale: fx.idle_interval,
+            activity_weight_scale: fx.activity_weight,
+            sleep_weight_scale: fx.sleep_weight,   // 注意键名是 sleep_weight (rateEffects 的返回键)
+        });
+        console.log(`[main] R177 RATE activity=${settings_.activity_rate} sleep=${settings_.sleep_rate} fx=${JSON.stringify(fx)}`);
+    }
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+        mainWindow.webContents.send('settings-changed', {
+            settings: settings_,
+            click_feedback: !!settings_.click_feedback,
+            launch_at_login: !!settings_.launch_at_login,
+            rate_effects: fx,
+            mood: moodPayload(),
+        });
+    }
+    // R177: 设置面板也跟着刷新 (它开着的时候要显示最新值)
+    if (settingsWindow_ && !settingsWindow_.isDestroyed() && settingsWindow_.webContents) {
+        settingsWindow_.webContents.send('settings-changed', {
+            settings: settings_,
+            click_feedback: !!settings_.click_feedback,
+            launch_at_login: !!settings_.launch_at_login,
+            rate_effects: fx,
+            mood: moodPayload(),
+        });
+    }
+    applyPetScale();
+    applyLaunchAtLogin();
+}
+
+/**
+ * R177: 设置变更的唯一入口 (设置面板 IPC 与验收专用入口都走这里)。
+ *   ① 逐字段夹紧 (非法值回退默认, 绝不写坏数据)
+ *   ② 原子落盘到本机 userData
+ *   ③ 应用到运行时 (引擎参数 / 渲染器 / 窗口尺寸 / 登录项)
+ *
+ * @param {object} patch 设置补丁
+ * @returns {{ok:boolean, settings:object, saved:boolean, error?:string}}
+ */
+function applySettingsPatch(patch) {
+    if (!settingsStore_) {
+        return { ok: false, error: 'settings store not ready', settings: settings_ };
+    }
+    const res = settingsStore_.saveSettings(patch);
+    settings_ = res.settings;
+    applySettingsToRuntime();
+    console.log(`[main] R177 SETTINGS saved=${res.ok} settings=${JSON.stringify(settings_)}`);
+    return { ok: true, settings: settings_, saved: res.ok, error: res.ok ? undefined : (settingsStore_.lastError || 'write failed') };
+}
+
+// ====== R177: 验收专用入口 (仅自动化验证用; 正式运行不触发) ======
+// 这些入口存在的唯一目的: 让"菜单命令真的走正式行为系统"和
+// "重启后设置/心情真的恢复"能被**客观**取证, 而不是靠一句口头声明。
+// 它们调用的是与真机完全相同的函数 (sendMenuCommand / applySettingsPatch)。
+
+/** 打印本地状态 (一行 JSON, 供验收脚本解析)。 */
+function dumpLocalState(tag) {
+    const payload = {
+        tag: tag || 'dump',
+        dir: settingsStore_ ? settingsStore_.dir : null,
+        settings: settings_ || null,
+        mood: moodPayload(),
+        mood_scores: moodEngine_ ? moodEngine_.getScores() : null,
+        mood_restored_raw: moodLoadedRaw_,
+        mood_state_now: moodEngine_ ? moodEngine_.toJSON() : null,
+        settings_file: settingsStore_ ? settingsStore_.settingsPath : null,
+        mood_file: settingsStore_ ? settingsStore_.moodPath : null,
+        platform: process.platform,
+    };
+    console.log(`[main] R177 DUMP ${JSON.stringify(payload)}`);
+    return payload;
+}
+
+/** 启动阶段的验收钩子 (应用设置 / 打印本地状态 / 打开设置面板)。 */
+function runR177StartupHooks() {
+    // ① 应用设置 —— 走 applySettingsPatch (与设置面板 IPC 完全同一条路径)
+    if (r177ApplySettings_) {
+        let patch = null;
+        try { patch = JSON.parse(r177ApplySettings_); }
+        catch (e) { console.error('[main] R177 APPLY_SETTINGS_BAD_JSON', e && e.message); }
+        if (patch && typeof patch === 'object') {
+            const r = applySettingsPatch(patch);
+            console.log(`[main] R177 APPLY_SETTINGS ok=${r.ok} saved=${r.saved} settings=${JSON.stringify(r.settings)}`);
+        }
+    }
+    // ② 打印本地状态 (重启恢复取证)
+    if (r177DumpSettings_) {
+        dumpLocalState('startup');
+    }
+    // ③ 打开设置面板 (验收"面板能真实打开并读到本地设置")
+    if (r177OpenPanel_) {
+        setTimeout(() => {
+            try { openSettingsWindow(); }
+            catch (e) { console.error('[main] R177 PANEL_FAILED', e && e.message); }
+        }, 800);
+    }
+}
+
+/**
+ * R177: 右键菜单 —— 每一项都走**正式行为系统** (behaviorEngine.command),
+ * 不是播演示图片。菜单里没有"调试"项, 不会污染桌宠外观。
+ * 模板本身在 src/menu_template.js (纯模块), 可被单元测试逐项断言。
+ */
+function buildContextMenu() {
+    const label = moodEngine_ ? moodEngine_.getLabel() : '平静';
+    return Menu.buildFromTemplate(buildMenuTemplate({
+        moodLabel: label,
+        onCommand: (kind) => sendMenuCommand(kind),
+        onOpenSettings: () => openSettingsWindow(),
+        onQuit: () => app.quit(),
+    }));
+}
+
+/**
+ * R177: 把菜单命令交给行为引擎。
+ * 引擎走的是自主决策**完全相同**的内部路径 ⇒ 状态转移/计时器/道具挂载全部复用。
+ */
+function sendMenuCommand(kind) {
+    if (!behaviorEngine) {
+        console.log(`[main] R177 MENU command=${kind} ignored (engine not started)`);
+        return { ok: false, error: 'engine not started' };
+    }
+    const res = behaviorEngine.command(kind);
+    console.log(`[main] R177 MENU command=${kind} ok=${res.ok} state=${res.state || behaviorEngine.getState()} error=${res.error || ''}`);
+    if (moodEngine_) {
+        moodEngine_.noteInteraction();
+        refreshMood('menu');
+    }
+    return res;
+}
+
+/** R177: 设置面板窗口 (独立窗口, 不叠在桌宠上)。 */
+function openSettingsWindow() {
+    if (settingsWindow_ && !settingsWindow_.isDestroyed()) {
+        settingsWindow_.focus();
+        return settingsWindow_;
+    }
+    settingsWindow_ = new BrowserWindow({
+        width: 340,
+        height: 486,
+        title: '桌宠设置',
+        titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+        resizable: false,
+        minimizable: false,
+        maximizable: false,
+        fullscreenable: false,
+        backgroundColor: '#f4f7fc',
+        show: false,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+        },
+    });
+    settingsWindow_.loadFile(path.join(__dirname, 'settings_panel.html'));
+    settingsWindow_.once('ready-to-show', () => settingsWindow_.show());
+    // R177: 把设置面板的 console 输出转发到主进程日志 (验收证据)
+    settingsWindow_.webContents.on('console-message', (...args) => {
+        const event = args[0];
+        const legacyMessage = args[2];
+        const msg = (event && event.message) || legacyMessage || '(no-message)';
+        console.log(`[settings:${(event && event.level) || 'log'}] ${msg}`);
+    });
+    settingsWindow_.on('closed', () => { settingsWindow_ = null; });
+    console.log('[main] R177 SETTINGS_WINDOW opened');
+    return settingsWindow_;
+}
+
 function createBehaviorEngine(config) {
     behaviorConfig = config;
     const engine = new BehaviorEngine({
         config,
+        // R177: 心情适配器 (null ⇒ 行为与 R176 完全一致)
+        moodAdapter: moodAdapter(),
         onAction: (action, state) => {
             if (!mainWindow) return;
             console.log(`[main] R141 BEHAVIOR action=${action} state=${state}`);
@@ -164,6 +505,19 @@ function createBehaviorEngine(config) {
             // R170: 带相对时间戳 —— 这样"办公场景持续了多久""两次间隔多久"可以从日志
             //   直接算出来 (之前只有顺序, 算不出时长, 也就无法证明"没有刚出现就消失")。
             console.log(`[main] R141 STATE ${from} -> ${to} (${reason}) t=${Date.now() - R170_T0_}ms`);
+            // R177: 自主活动切换 ⇒ 更新心情 (无聊看的是"既没交互也没活动")
+            if (moodEngine_ && from !== to) {
+                const kind = to === 'WORK' ? 'work'
+                    : to === 'EAT_FRUIT' ? 'eat_fruit'
+                        : to === 'SIT' ? 'sit'
+                            : to === 'DOZE' ? 'doze'
+                                : to === 'SLEEP_LOOP' ? 'sleep'
+                                    : to === 'SLEEP_ENTER' ? 'sleep'
+                                        : to === 'GESTURE' ? 'gesture'
+                                            : to === 'WALK_LEFT' || to === 'WALK_RIGHT' ? 'walk' : null;
+                if (kind) moodEngine_.noteActivity(kind);
+                else if (to === 'WAKE_UP') moodEngine_.noteAwake();
+            }
         },
     });
     return engine;
@@ -173,9 +527,10 @@ function applyMode(mode) {
     // R100 P0-4 修复: 模式切换保持角色屏幕中心稳定
     //   不再用固定 winX/winY, 而是用当前窗口中心算切换后位置
     // R102 P0-1: 用统一 getModeSize (compact=200x240, standard=256x256)
+    // R177: 叠加"桌宠大小"倍率 —— 窗口与画布必须同尺寸
     currentMode = mode;
     if (!mainWindow) return;
-    const { w, h } = getModeSize(mode);
+    const { w, h, scale } = getViewportSize(mode);
     // R100 P0-4: 用当前实际 bounds 算中心, 保持角色视觉位置稳定
     const oldBounds = mainWindow.getBounds();
     const oldCenterX = oldBounds.x + oldBounds.width / 2;
@@ -183,6 +538,8 @@ function applyMode(mode) {
     const newX = Math.round(oldCenterX - w / 2);
     const newY = Math.round(oldCenterY - h / 2);
     mainWindow.setBounds({ x: newX, y: newY, width: w, height: h });
+    // R177: 模式切换后的视口尺寸 = 新的"已生效视口"
+    lastViewport_ = { w, h, scale };
     // 保持可点击
     mainWindow.setIgnoreMouseEvents(false);
     // R100 P0-4: 传 centerX/centerY 给 renderer, 角色锚点对齐
@@ -192,9 +549,10 @@ function applyMode(mode) {
             size: { w, h },
             centerX: w / 2,
             centerY: h,  // anchor 0.9 → sprite 中心 y = h
+            scale,
         });
     }
-    console.log(`[main] R100 mode=${mode} bounds=(${newX},${newY},${w},${h}) center=(${oldCenterX},${oldCenterY}) preserved`);
+    console.log(`[main] R100 mode=${mode} bounds=(${newX},${newY},${w},${h}) center=(${oldCenterX},${oldCenterY}) preserved scale=${scale}`);
 }
 
 // R102 P0-1: 统一用 size 对象 — compact=200x240, standard=256x256
@@ -204,7 +562,10 @@ function getModeSize(mode) {
 }
 
 function createWindow() {
-    const startSize = getModeSize(currentMode);
+    // R177: 初始窗口 = 基础尺寸 × 桌宠大小倍率 (与渲染画布同尺寸)
+    const startSize = getViewportSize(currentMode);
+    // 渲染器会用同一个尺寸建首帧画布 (manifest IPC 里带 viewport), 这里先记下来
+    lastViewport_ = { w: startSize.w, h: startSize.h, scale: startSize.scale };
     mainWindow = new BrowserWindow({
         x: winX, y: winY,
         width: startSize.w, height: startSize.h,
@@ -278,6 +639,11 @@ function createWindow() {
             initialMode: currentMode,
             compactSize: { w: COMPACT_SIZE, h: COMPACT_HEIGHT },
             standardSize: { w: STANDARD_SIZE, h: STANDARD_SIZE },
+            // R177: 桌宠大小倍率 + 生效视口 (renderer 首帧就按这个尺寸建画布, 不闪一下)
+            petScale: settings_ ? (Number(settings_.pet_scale) || 1) : 1,
+            viewport: getViewportSize(currentMode),
+            clickFeedback: settings_ ? !!settings_.click_feedback : true,
+            mood: moodPayload(),
         });
 
         // R144 P0-3: 这里**不再**启动行为引擎。
@@ -302,7 +668,14 @@ function createWindow() {
     }
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    // R177: 先读本地设置与心情状态 (窗口尺寸要按"桌宠大小"来开, 所以必须早于 createWindow)
+    initLocalState();
+    runR177StartupHooks();
+    createWindow();
+    // R177: 30 秒一次心情重判 (纯规则, 不烧 CPU)
+    startMoodTicker();
+});
 
 app.on('window-all-closed', () => {
     // R141 §六 7/§七: 关闭前清理所有定时器
@@ -324,7 +697,17 @@ app.on('before-quit', () => {
         console.log('[main] R141 behavior engine stopped (before-quit)');
     }
     if (assetsWatchdog_) { clearTimeout(assetsWatchdog_); assetsWatchdog_ = null; }
+    if (moodTimer_) { clearInterval(moodTimer_); moodTimer_ = null; }
     stopDragPolling();
+    // R177: 退出前保存心情状态 (重启后能恢复"基础心情")
+    try {
+        if (moodEngine_ && settingsStore_) {
+            settingsStore_.saveMoodState(moodEngine_.toJSON());
+            console.log(`[main] R177 MOOD_SAVED mood=${moodEngine_.getMood()}`);
+        }
+    } catch (e) {
+        console.error('[main] R177 MOOD_SAVE_FAILED', e && e.message);
+    }
 });
 
 ipcMain.on('renderer-ready', (_evt, info) => {
@@ -385,6 +768,8 @@ function startBehaviorEngine() {
     if (demoScene_) behaviorEngine.setAutonomousPaused(true);
     behaviorEngine.start();
     console.log(`[main] R144 behavior engine started state=${behaviorEngine.getState()}`);
+    // R177: 引擎起来后把本地设置里的频率档位应用上去 (只改数值, 不改状态机逻辑)
+    applySettingsToRuntime();
     return true;
 }
 
@@ -416,6 +801,15 @@ ipcMain.on('assets-ready', (_evt, report) => {
     // R147: 运行时预览采集 (仅 --preview <dir> 时启用; 不影响正式运行)
     if (previewDir_) {
         setTimeout(() => { runPreviewSequence().catch((e) => console.error('[main] R147 PREVIEW_ERROR', e && e.message)); }, 900);
+    }
+    // R177: 验收专用入口 —— 用**菜单同一条**代码路径 (sendMenuCommand) 触发行为,
+    //   以便客观证明"菜单命令确实驱动了正式行为系统"。
+    if (r177Command_) {
+        setTimeout(() => {
+            const res = sendMenuCommand(r177Command_);
+            console.log(`[main] R177 ACCEPTANCE_COMMAND kind=${r177Command_} result=${JSON.stringify(res)}`);
+            if (r177DumpSettings_) dumpLocalState('after-command');
+        }, 500);
     }
 });
 
@@ -669,6 +1063,48 @@ ipcMain.on('character-click', (_evt, payload) => {
     const holdMs = (payload && typeof payload.holdMs === 'number') ? payload.holdMs : 700;
     const result = behaviorEngine.onUserClick(prevAction, holdMs);
     console.log(`[main] R147 character-click prev=${prevAction} result=${result} state=${behaviorEngine.getState()} hold=${holdMs}ms`);
+});
+
+// ====== R177: 右键菜单 / 设置面板 IPC ======
+
+// renderer 右键角色 → 主进程弹出原生菜单 (菜单项全部走正式行为系统)
+ipcMain.on('context-menu', (_evt, payload) => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    try {
+        const menu = buildContextMenu();
+        menu.popup({ window: mainWindow });
+        console.log(`[main] R177 CONTEXT_MENU opened payload=${JSON.stringify(payload || {})}`);
+    } catch (e) {
+        console.error('[main] R177 CONTEXT_MENU_FAILED', e && e.message);
+    }
+});
+
+// 设置面板读取当前设置 + 心情 + 能力边界
+ipcMain.handle('settings-get', async () => {
+    return {
+        ok: true,
+        settings: settings_ || Object.assign({}, DEFAULT_SETTINGS),
+        mood: moodPayload(),
+        capabilities: {
+            // 开机自启只在有登录项 API 的系统上提供 (macOS / Windows)
+            launch_at_login: canLaunchAtLogin(),
+            scale_min: SCALE_MIN,
+            scale_max: SCALE_MAX,
+            rates: RATES.slice(),
+        },
+    };
+});
+
+// 设置面板写回设置 (与验收入口 applySettingsPatch 同一条路径)
+ipcMain.handle('settings-set', async (_evt, patch) => {
+    const r = applySettingsPatch(patch || {});
+    return {
+        ok: r.ok,
+        settings: r.settings,
+        saved: r.saved,
+        error: r.error || null,
+        mood: moodPayload(),
+    };
 });
 
 // 行为状态查询 (测试/诊断)

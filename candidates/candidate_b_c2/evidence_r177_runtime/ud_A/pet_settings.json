@@ -1,0 +1,7 @@
+{
+  "pet_scale": 1.25,
+  "activity_rate": "high",
+  "sleep_rate": "low",
+  "click_feedback": false,
+  "launch_at_login": false
+}

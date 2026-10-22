@@ -64,7 +64,7 @@
       "status": "PASS",
       "id": "TD2",
       "desc": "单击被判定为 CLICK 且触发了可见反馈 (真实 pointer 事件路径)",
-      "detail": "kind=CLICK elapsed=94ms dist=0.0px | "
+      "detail": "kind=CLICK elapsed=91ms dist=0.0px | "
     },
     {
       "status": "PASS",
@@ -76,19 +76,19 @@
       "status": "PASS",
       "id": "TD4",
       "desc": "睡眠点击走完整 wake_up 过渡 (不瞬移成站姿)",
-      "detail": "DRAGGING -> WAKE_UP (user-click-wake) t=20303ms → wake_up 播完回 IDLE"
+      "detail": "DRAGGING -> WAKE_UP (user-click-wake) t=19952ms → wake_up 播完回 IDLE"
     },
     {
       "status": "PASS",
       "id": "TD5",
       "desc": "待机眨眼用 frame=5 (纯闭眼, 手臂下垂), frame=4 '手放胸前'零出现",
-      "detail": "眨眼 2 次, 手放胸前帧出现 0 次, gaps=3399 count=2"
+      "detail": "眨眼 3 次, 手放胸前帧出现 0 次, gaps=2258,2690 count=3"
     },
     {
       "status": "PASS",
       "id": "TE1",
       "desc": "真实撞到屏幕边缘后动作方向同步反向 (窗口真的掉头)",
-      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -34 (6 次 MOVE) → 转向后 72 (47 次 MOVE)"
+      "detail": "edge-turn: STATE WALK_LEFT -> WALK_RIGHT (edge-turn) | 转向前 x 变化 -34 (6 次 MOVE) → 转向后 70 (47 次 MOVE)"
     },
     {
       "status": "PASS",
@@ -106,7 +106,7 @@
       "status": "PASS",
       "id": "TG3",
       "desc": "真实行走帧的上半身倾斜方向正确 (左负右正)",
-      "detail": "walk_left 均值=-2.21 (32/32 帧为负) / walk_right 均值=+2.28 (1/32 帧为负)"
+      "detail": "walk_left 均值=-2.32 (32/32 帧为负) / walk_right 均值=+2.28 (1/32 帧为负)"
     },
     {
       "status": "PASS",
@@ -124,19 +124,19 @@
       "status": "PASS",
       "id": "TH1",
       "desc": "行走躯干偏心: 左右符号相反且 < 身高的 3% (修复\"前倾像摔倒\")",
-      "detail": "walk_left 均值=-0.01179 walk_right 均值=+0.01217 最大绝对值=0.01689 门槛=0.03"
+      "detail": "walk_left 均值=-0.01239 walk_right 均值=+0.01220 最大绝对值=0.01689 门槛=0.03"
     },
     {
       "status": "PASS",
       "id": "TH2",
       "desc": "坐→躺之间存在多帧渐变 (修复\"坐下瞬间变成躺姿\")",
-      "detail": "中间态帧 14 帧 (门槛 ≥3) [{\"frame\": 1, \"d_sit\": 4.176, \"d_lie\": 63.312}, {\"frame\": 2, \"d_sit\": 7.148, \"d_lie\": 63.09}, {\"frame\": 3, \"d_sit\": 9.836, \"d_lie\": 63.69}, {\"frame\": 4, \"d_sit\": 13.194, \"d_lie\": 65.071}, {\"frame\": 5, \"d_sit\": 31.289, \"d_lie\": 64.883}, {\"frame\": 6, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 7, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 8, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 9, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 10, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 11, \"d_sit\": 38.273, \"d_lie\": 75.266}, {\"frame\": 12, \"d_sit\": 40.043, \"d_lie\": 68.609}, {\"frame\": 13, \"d_sit\": 41.733, \"d_lie\": 60.207}, {\"frame\": 14, \"d_sit\": 42.329, \"d_lie\": 46.254}]"
+      "detail": "中间态帧 15 帧 (门槛 ≥3) [{\"frame\": 1, \"d_sit\": 3.821, \"d_lie\": 63.243}, {\"frame\": 2, \"d_sit\": 6.866, \"d_lie\": 63.134}, {\"frame\": 3, \"d_sit\": 9.241, \"d_lie\": 63.33}, {\"frame\": 4, \"d_sit\": 12.257, \"d_lie\": 64.582}, {\"frame\": 5, \"d_sit\": 31.542, \"d_lie\": 64.921}, {\"frame\": 6, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 7, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 8, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 9, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 10, \"d_sit\": 30.448, \"d_lie\": 65.261}, {\"frame\": 11, \"d_sit\": 38.069, \"d_lie\": 75.146}, {\"frame\": 12, \"d_sit\": 40.109, \"d_lie\": 68.571}, {\"frame\": 13, \"d_sit\": 41.579, \"d_lie\": 61.446}, {\"frame\": 14, \"d_sit\": 42.086, \"d_lie\": 50.757}, {\"frame\": 15, \"d_sit\": 43.586, \"d_lie\": 35.301}]"
     },
     {
       "status": "PASS",
       "id": "TH3",
       "desc": "多帧库动作在真实运行时确实逐帧推进 (防 anim_clock 每帧时长回归)",
-      "detail": "各动作最大\"变化像素数\" {\"look_around\": 2698, \"tilt_head\": 3040, \"head_nod\": 8954, \"blink_soft\": 8764, \"sleep_breath\": 425} (门槛 ≥25); 静止的动作: 无"
+      "detail": "各动作最大\"变化像素数\" {\"look_around\": 2698, \"tilt_head\": 3040, \"head_nod\": 8953, \"blink_soft\": 8832, \"sleep_breath\": 425} (门槛 ≥25); 静止的动作: 无"
     },
     {
       "status": "PASS",
@@ -148,13 +148,13 @@
       "status": "PASS",
       "id": "TH5",
       "desc": "点击反馈明显区别于僵立待机 (R156: 表情变化或姿态变化, 二者满足其一)",
-      "detail": "点击段虹膜像素 min=13 / 睁眼待机 min=90 / happy 参照 min=9 / 点击段到最近待机帧的最大平均差=23.33 (门槛 6)"
+      "detail": "点击段虹膜像素 min=10 / 睁眼待机 min=90 / happy 参照 min=9 / 点击段到最近待机帧的最大平均差=6.54 (门槛 6)"
     },
     {
       "status": "PASS",
       "id": "TH6",
       "desc": "睡眠期间有可见呼吸起伏, 且幅度不过大",
-      "detail": "最大帧间差=0.1525 (需 >0.05), 身高=154px, 粗估比例=0.0000 (门槛 <0.02)"
+      "detail": "最大帧间差=0.2721 (需 >0.05), 身高=154px, 粗估比例=0.0000 (门槛 <0.02)"
     },
     {
       "status": "PASS",
@@ -184,7 +184,7 @@
       "status": "PASS",
       "id": "TI1_1",
       "desc": "1. 真实点击 10 次触发的动作 ≥3 种",
-      "detail": "序列 = cheer_wave,cheer_heart,cheer_hands_up,cheer_wave,cheer_jump,cheer_heart,cheer_wave,cheer_clap,cheer_tilt,cheer_heart (共 6 种)"
+      "detail": "序列 = cheer_wave,cheer_clap,cheer_hands_up,cheer_jump,cheer_wave,cheer_heart,cheer_tilt,cheer_wave,cheer_hands_up,cheer_heart (共 6 种)"
     },
     {
       "status": "PASS",
@@ -196,7 +196,7 @@
       "status": "PASS",
       "id": "TI1_3",
       "desc": "2. click_cheer_wave 至少有 3 个互不相同的画面 (开始/中间/结束)",
-      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.0821"
+      "detail": "16 帧 → 4 个不同画面, 帧间差异 0.0000~0.0608"
     },
     {
       "status": "PASS",
@@ -214,7 +214,7 @@
       "status": "PASS",
       "id": "TI1_6",
       "desc": "2. click_cheer_clap 至少有 3 个互不相同的画面 (开始/中间/结束)",
-      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.0945"
+      "detail": "16 帧 → 5 个不同画面, 帧间差异 0.0000~0.0929"
     },
     {
       "status": "PASS",
@@ -322,7 +322,7 @@
       "status": "PASS",
       "id": "TI1_24",
       "desc": "8. 点击反馈明显区别于僵立待机 (表情变化或姿态变化)",
-      "detail": "点击段虹膜 min=13 / 睁眼待机 min=90 → 表情变化=True; 到最近待机帧的最大整图平均差=23.33 (门槛 6) → 姿态变化=True"
+      "detail": "点击段虹膜 min=10 / 睁眼待机 min=90 → 表情变化=True; 到最近待机帧的最大整图平均差=6.54 (门槛 6) → 姿态变化=True"
     },
     {
       "status": "PASS",
@@ -346,7 +346,7 @@
       "status": "PASS",
       "id": "TI5",
       "desc": "道具按场景挂载 (床+月亮+被子 / 沙发 / 办公=家具内嵌故 mounted=none / 小凳+果盘), 无道具动作时 mounted=none",
-      "detail": "sleep=3 sit=4 work=2 eat=2 none=113"
+      "detail": "sleep=3 sit=4 work=2 eat=2 none=117"
     },
     {
       "status": "PASS",

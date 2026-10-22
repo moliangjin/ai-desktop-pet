@@ -171,24 +171,40 @@ const CLICK_POOL = Object.freeze([
  * 规则:
  *   · 按权重随机
  *   · **不重复最近用过的** (recent 里的动作全部排除; 若全被排除则退回全集)
+ *   · R177: 可选 weightFn(action) => 乘子 —— 心情用它给不同动作加权
+ *     (例如"开心"偏活泼 → cheer_heart / cheer_jump 权重更高)。
+ *     乘子 ≤ 0 的动作会被**排除** (权重为 0 ⇒ 不该被抽中)。
  *
  * @param {function} random () => [0,1)
  * @param {string[]|string} [recent] 最近播放过的动作 (字符串或数组)
  * @param {Array<{action:string,weight?:number}>} [pool] 池 (缺省用 CLICK_POOL)
+ * @param {function} [weightFn] (action) => 权重乘子 (缺省不加权)
  * @returns {string} 动作名
  */
-function pickClickReaction(random, recent, pool) {
+function pickClickReaction(random, recent, pool, weightFn) {
     const rng = typeof random === 'function' ? random : Math.random;
     const p = (pool && pool.length) ? pool : CLICK_POOL;
     const used = new Set(
         Array.isArray(recent) ? recent.filter(Boolean) : (recent ? [recent] : [])
     );
-    let candidates = p.filter((x) => !used.has(x.action));
+    // R177: 先算每个候选的最终权重 (基础权重 × 心情乘子); 乘子 ≤ 0 ⇒ 排除
+    const mult = (action) => {
+        if (typeof weightFn !== 'function') return 1;
+        let m = 1;
+        try { m = Number(weightFn(action)); } catch (e) { m = 1; }
+        return Number.isFinite(m) ? m : 1;
+    };
+    let candidates = p.filter((x) => !used.has(x.action) && mult(x.action) > 0);
+    if (candidates.length === 0) {
+        // R177: 全部被心情压成 0 ⇒ 退回"排除最近用过的"全集 (保证永远有一个反馈)
+        candidates = p.filter((x) => !used.has(x.action));
+    }
     if (candidates.length === 0) candidates = p.slice();
-    const total = candidates.reduce((s, x) => s + ((x && x.weight) || 1), 0);
+    const weightOf = (x) => ((x && x.weight) || 1) * mult(x.action);
+    const total = candidates.reduce((s, x) => s + weightOf(x), 0);
     let r = rng() * total;
     for (const c of candidates) {
-        r -= ((c && c.weight) || 1);
+        r -= weightOf(c);
         if (r <= 0) return c.action;
     }
     return candidates[candidates.length - 1].action;

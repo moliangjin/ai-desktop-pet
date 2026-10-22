@@ -1,0 +1,76 @@
+[main] R177 LOCAL_STATE dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_C mood=sleepy settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
+[renderer:1] [renderer] PIXI version: 7.4.3 dev_mode= false
+[main] renderer-ready: pixi=7.4.3
+[main] R144 manifest sent, waiting for renderer assets-ready
+[renderer:2] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[renderer:1] [renderer] R147 idle-director enabled=true spec={"enabled":true,"base_index":0,"blink_sequence":[5],"blink_frame_ms":[130],"blink_interval_ms":[1600,3400],"excluded_frames":[1,2,3,4],"note":"R153: blink_sequence 由 [4,5] 改为 [5] —— idle_04 并不是眨眼帧, 它是**右手横在胸前**的姿势, 站立时每 1.6~3.4s 抽手到胸前会被读成\"莫名抬手\"; idle_05 是纯闭眼且手臂下垂。idle_04 与胸腔膨胀帧 1/2/3 一并列入永不播放的排除帧"}
+[renderer:1] [renderer] R177 INITIAL_VIEWPORT 200x240 scale=1
+[main] window ready-to-show
+[main] asset-report: idle loaded=6 failed=0
+[renderer:1] [renderer] R100 asset-report idle: loaded=6 failed=0
+[main] asset-report: walk_left loaded=4 failed=0
+[renderer:1] [renderer] R100 asset-report walk_left: loaded=4 failed=0
+[main] asset-report: walk_right loaded=4 failed=0
+[renderer:1] [renderer] R100 asset-report walk_right: loaded=4 failed=0
+[main] asset-report: sleep_enter loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report sleep_enter: loaded=3 failed=0
+[main] asset-report: sleep_loop loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report sleep_loop: loaded=3 failed=0
+[main] asset-report: wake_up loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report wake_up: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report look_around: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report tilt_head: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report head_nod: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report happy: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report blink_soft: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report stretch: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report sit_rest: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report doze: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report sleep_breath: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report work: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_wave: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_hands_up: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_clap: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_tilt: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report eat_fruit: loaded=5 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_heart: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_jump: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-assets-ready {"ok":true,"actions":17,"loaded":39,"failed":0}
+[renderer:1] [renderer] R156 props-asset-report loaded=14 failed=0
+[renderer:1] [renderer] R144 LAYOUT mode=compact canvas=200x240 scale=0.196319 groundY=236 margin=4 frames=62 missingBBox=0
+[renderer:1] %cPixiJS Deprecation Warning: %c%s color:#614108;background:#fffbe6 font-weight:normal;color:#614108;background:#fffbe6 Setting interactive is deprecated, use eventMode = 'none'/'passive'/'auto'/'static'/'dynamic' instead.
+Deprecated since v7.2.0
+[renderer:2]     at IpcRenderer.<anonymous> (file:///Users/musk123/Downloads/minimax%E5%B7%A5%E4%BD%9C%E6%96%87%E4%BB%B6%E5%A4%B9/%E8%BD%AF%E4%BB%B6%E5%BC%80%E5%8F%91/AI%E6%A1%8C%E5%AE%A0_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/src/renderer.js:1389:25)
+[renderer:1] console.groupEnd
+[renderer:1] [renderer] R144 sprite enabled: mode=compact canvas=200x240 scale=0.196319 groundY=236 hitArea={"x":-0.5153374075889587,"y":42.23312759399414,"width":201.03067249059677,"height":201.03068161010742,"type":1}
+[renderer:1] [renderer] R111 canvas listeners attached (move/up/cancel/contextmenu) to CANVAS#
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R144 assets-ready {"total":23,"loaded":23,"failed":0,"actions":{"idle":{"loaded":6,"failed":0,"total":6},"walk_left":{"loaded":4,"failed":0,"total":4},"walk_right":{"loaded":4,"failed":0,"total":4},"sleep_enter":{"loaded":3,"failed":0,"total":3},"sleep_loop":{"loaded":3,"failed":0,"total":3},"wake_up":{"loaded":3,"failed":0,"total":3}},"ok":true}
+[main] R144 ASSETS_READY loaded=23/23 actions=idle,walk_left,walk_right,sleep_enter,sleep_loop,wake_up
+[main] R144 behavior engine started state=IDLE
+[main] R177 RATE activity=normal sleep=normal fx={"idle_interval":1,"activity_weight":1,"sleep_weight":1}
+[main] R177 PET_SCALE scale=1 viewport=200x240 bounds=(600,300,200,240) unchanged(跳过画布重建)
+[53122:1023/032748.354503:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
+[main] R177 LOGIN_ITEM set=false
+[renderer:1] [renderer] R177 SETTINGS_CHANGED click_feedback=true settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
+[main] R141 STATE IDLE -> EAT_FRUIT (idle-decision) t=1464ms
+[main] R141 BEHAVIOR action=eat_fruit state=EAT_FRUIT
+[main] R177 MENU command=eat_fruit ok=true state=EAT_FRUIT error=
+[main] R177 ACCEPTANCE_COMMAND kind=eat_fruit result={"ok":true,"kind":"eat_fruit","state":"EAT_FRUIT"}
+[renderer:1] [renderer] R156 PROPS action=eat_fruit scene=yes mounted=prop_stool,prop_fruit_table
+[renderer:1] [renderer] R147 set-action eat_fruit applied=true loop=true frame_ms=820,760,900,700,1150 frames=5 skew=0
+[main] R141 STATE EAT_FRUIT -> IDLE (eat_fruit-complete) t=15787ms
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_stool,prop_fruit_table
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[main] quit-after elapsed, terminating
+[main] R141 behavior engine stopped (before-quit)
+[main] R177 MOOD_SAVED mood=sleepy
+[main] window closed

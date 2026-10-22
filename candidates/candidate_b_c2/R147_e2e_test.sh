@@ -29,8 +29,15 @@ LOGDIR="/tmp/r147_e2e_$$"
 PREVIEW_DIR="/tmp/r147_e2e_preview_$$"
 REPORT="$CAND/evidence_r147_e2e.json"
 RESULTS_TSV="/tmp/r147_e2e_results_$$.tsv"
+# R177: e2e 必须用**隔离的本地数据目录**, 否则会读到用户(或上一次测试)留下的设置:
+#   pet_scale 改了 → 采集帧尺寸与判据里的 200x240 对不上 → 判据脚本直接崩;
+#   click_feedback 关了 → 点击反馈被禁用 → "点击池随机性"类判据必然 FAIL。
+#   所以这里统一用临时 user-data-dir, 保证 e2e 的前置条件恒定。
+#   注意必须是 --user-data-dir=<path> (带等号) —— 写成两个独立参数会被 Electron 忽略。
+E2E_UD="$LOGDIR/userdata"
+E2E_UD_ARG="--user-data-dir=$E2E_UD"
 
-mkdir -p "$LOGDIR" "$PREVIEW_DIR"
+mkdir -p "$LOGDIR" "$PREVIEW_DIR" "$E2E_UD"
 PASS=0; FAIL=0; NA=0
 : > "$RESULTS_TSV"
 
@@ -124,7 +131,7 @@ record PASS TB1 "全部单元测试通过 (R141/R144/R147/R148/R153/R156/R158 �
 echo ""
 echo "  [C] 真实运行时自检 (PET_R147_SELFTEST=1)..."
 LOG_MAIN="$LOGDIR/selftest.log"
-PET_R147_SELFTEST=1 "$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 400 --y 200 --quit-after=8 > "$LOG_MAIN" 2>&1
+PET_R147_SELFTEST=1 "$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 400 --y 200 "$E2E_UD_ARG" --quit-after=8 > "$LOG_MAIN" 2>&1
 SEL=$(grep -E "R147 self-test" "$LOG_MAIN" | tail -6)
 if echo "$SEL" | grep -q "\[R147 self-test\] PASS"; then
     record PASS TC1 "运行时自检 PASS (首帧同步/地面线/方向倾斜/待机无膨胀帧/点击可见反馈)" "$(echo "$SEL" | grep -oE 'issues=[0-9]+' | tail -1) | $(echo "$SEL" | grep -oE 'peakBump=[0-9.]+px' | tail -1)"
@@ -142,7 +149,7 @@ fi
 
 # 200x240 零裁切 (R144 真实 PixiJS 矩阵自检)
 LOG_BOUNDS="$LOGDIR/bounds.log"
-PET_R144_SELFTEST=1 "$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 400 --y 200 --quit-after=8 > "$LOG_BOUNDS" 2>&1
+PET_R144_SELFTEST=1 "$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 400 --y 200 "$E2E_UD_ARG" --quit-after=8 > "$LOG_BOUNDS" 2>&1
 BS=$(grep "bounds self-test] SUMMARY" "$LOG_BOUNDS" | tail -1)
 if echo "$BS" | grep -qE "clipped=0 issues=0"; then
     record PASS TC3 "真实 PixiJS 矩阵下全部帧零裁切 (R156: 114 帧 = R138 23 + R153 + R156 20; 含方向倾斜与逐帧地面行)" "$(echo "$BS" | grep -oE 'frames=[0-9]+ clipped=[0-9]+ issues=[0-9]+')"
@@ -158,7 +165,7 @@ echo "  [D] 真实运行时: 行走方向 / 点击 / 睡眠唤醒 (采集预览�
 LOG_PREVIEW="$LOGDIR/preview.log"
 # R156: 预览流程新增 6 个点击动作场景 + 4 个道具场景, 采集时间从 ~60s 涨到 ~120s,
 #       所以把安全网从 180s 提到 600s (仅兜底; preview 流程自己结束就会 app.quit)
-"$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 600 --y 300 --preview "$PREVIEW_DIR" --quit-after=600 > "$LOG_PREVIEW" 2>&1
+"$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 600 --y 300 "$E2E_UD_ARG" --preview "$PREVIEW_DIR" --quit-after=600 > "$LOG_PREVIEW" 2>&1
 
 WL_SKEW=$(grep -oE "set-action walk_left applied=true.*skew=[-0-9.]+" "$LOG_PREVIEW" | head -1 | grep -oE "skew=[-0-9.]+" | head -1)
 WR_SKEW=$(grep -oE "set-action walk_right applied=true.*skew=[-0-9.]+" "$LOG_PREVIEW" | head -1 | grep -oE "skew=[-0-9.]+" | head -1)
@@ -213,7 +220,7 @@ fi
 echo ""
 echo "  [E] 真实运行时: 撞边反向 (窗口置于屏幕左缘)..."
 LOG_EDGE="$LOGDIR/edge.log"
-"$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 40 --y 300 --preview "$PREVIEW_DIR/edge" --quit-after=120 > "$LOG_EDGE" 2>&1
+"$ELECTRON" src/main.js --manifest "$MANIFEST" --mode compact --x 40 --y 300 "$E2E_UD_ARG" --preview "$PREVIEW_DIR/edge" --quit-after=120 > "$LOG_EDGE" 2>&1
 # 撞边的权威信号是引擎状态机的 edge-turn 转换;
 # 并且必须验证"转向后窗口真的反向移动" (MOVE 日志里的 x 由减转增)
 EDGE_TURN=$(grep -E "edge-turn" "$LOG_EDGE" | head -1)

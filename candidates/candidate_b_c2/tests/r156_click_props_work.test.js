@@ -240,6 +240,15 @@ test('C1 14 个道具文件齐全 (R156 8 + R158 爱心 + R167 键盘 + R170 吃
             assert.ok(PROPS_LIB[n], `场景 ${action} 引用了未登记的道具 ${n}`);
         }
         // R158: 允许"纯 front 层特效"场景 (比心的爱心特效只有 front 层, 没有 back 层道具)
+        if (!(scene.back || []).length && !(scene.front || []).length) {
+            // R173: 允许"**全部内嵌进角色帧**"的场景 —— 办公场景的椅子/桌面/键盘/
+            // 显示器/双手全部画进 PNG 内部 (运行时按 action 整组挂载道具, 做不到
+            // 逐帧换层), 所以 work 场景的 back/front 必然为空。
+            // 仍然要求说明写清原因, 不允许"悄悄没道具"。
+            assert.ok(/内嵌|画进角色帧/.test(scene.desc || ''),
+                `场景 ${action} 没有任何道具, 说明必须写清"全部内嵌进角色帧"`);
+            continue;
+        }
         if (!(scene.back || []).length) {
             assert.ok((scene.front || []).length > 0,
                 `场景 ${action} 既没有 back 层也没有 front 层道具`);
@@ -264,7 +273,7 @@ test('C2 front 层道具不得侵入脸部区域 (不挡脸) — 用真实像素
     }
 });
 
-test('C3 睡觉有床 + 月亮, 坐下有沙发, 办公有转椅 + 可见内容的显示器 (R172 构图重做)', () => {
+test('C3 睡觉有床 + 月亮, 坐下有沙发, 办公有转椅 + **斜置且有内容**的显示器 (R173 透视整改)', () => {
     const sleep = PROPS_SCENES.sleep_breath;
     assert.ok(sleep, '缺少 sleep_breath 道具场景 (睡觉必须有场景)');
     const sleepAll = (sleep.back || []).concat(sleep.front || []);
@@ -275,24 +284,73 @@ test('C3 睡觉有床 + 月亮, 坐下有沙发, 办公有转椅 + 可见内容�
     assert.ok((sit.back || []).includes('prop_sofa'), '坐下场景必须有小沙发');
     const work = PROPS_SCENES.work;
     assert.ok(work, '缺少 work 道具场景 (办公必须有场景)');
-    const workAll = (work.back || []).concat(work.front || []);
-    // R172: 办公场景换了图层归属 —— 桌面/键盘/手画进角色帧, 场景里只留
-    //       back=办公转椅, front=3/4 显示器 (R167 的"笔记本背板"被淘汰)。
-    assert.ok(workAll.includes('prop_office_chair'), '办公场景必须有办公转椅');
-    assert.ok(workAll.includes('prop_office_monitor'), '办公场景必须有显示器');
-    assert.ok((work.back || []).includes('prop_office_chair'), '办公转椅必须在 back 层 (人坐在椅子上)');
-    assert.ok((work.front || []).includes('prop_office_monitor'), '显示器必须在 front 层 (挡住桌沿才对)');
-    // 显示器必须**真的有屏幕内容** (R172 的核心诉求: 不能再是笔记本背板)
-    const mon = decodePNG(path.join(ASSETS, PROPS_LIB.prop_office_monitor.file));
-    let bright = 0, dark = 0;
-    for (let i = 0; i + 3 < mon.data.length; i += 4) {
-        if (mon.data[i + 3] < 40) continue;
-        const lum = (mon.data[i] + mon.data[i + 1] + mon.data[i + 2]) / 3;
-        if (lum > 150) bright++;
-        if (lum < 90) dark++;
+    // R173: 办公场景的椅子/桌面/键盘/显示器/双手**全部内嵌进角色帧**
+    //       (运行时道具按 action 整组挂载, 做不到逐帧换层)
+    assert.deepStrictEqual(work.back || [], [], 'R173 办公场景的 back 层应为空 (全部内嵌)');
+    assert.deepStrictEqual(work.front || [], [], 'R173 办公场景的 front 层应为空 (全部内嵌)');
+    assert.ok(/内嵌|画进角色帧/.test(work.desc || ''),
+        'R173 办公场景的说明必须写清"全部内嵌进角色帧"');
+
+    // R172 的旧道具文件仍在磁盘上 (历史成果不删)
+    for (const n of ['prop_office_chair', 'prop_office_monitor']) {
+        assert.ok(fs.existsSync(path.join(ASSETS, PROPS_LIB[n].file)),
+            `R172 道具 ${n} 被删了 (历史成果必须保留)`);
     }
-    assert.ok(bright >= 2000, `显示器屏幕必须有亮色界面内容 (实际亮像素 ${bright})`);
-    assert.ok(dark >= 500, `显示器必须有深色边框/底座 (实际深色像素 ${dark})`);
+
+    // ===== 以下判定全部在**角色帧像素**上做 (R173: 场景道具已内嵌) =====
+    const frame = decodePNG(path.join(ASSETS, 'character_R173/work_1.png'));
+    const px = (x, y) => {
+        const i = (y * frame.width + x) * 4;
+        return [frame.data[i], frame.data[i + 1], frame.data[i + 2], frame.data[i + 3]];
+    };
+
+    // (1) 办公转椅画在角色帧里 (椅背颜色 176,191,214, 位于角色右侧 x700~812)
+    let chairPx = 0;
+    for (let y = 300; y <= 605; y++) {
+        for (let x = 700; x <= 812; x++) {
+            const [r, g, b, a] = px(x, y);
+            if (a < 40) continue;
+            if (Math.abs(r - 176) < 30 && Math.abs(g - 191) < 30 && Math.abs(b - 214) < 30) chairPx++;
+        }
+    }
+    assert.ok(chairPx >= 1500, `办公转椅必须画在角色帧里 (实际椅背像素 ${chairPx})`);
+
+    // (2) 显示器必须是**斜置**的 —— 与几何无关的像素判定:
+    //     逐列量"屏面内容的竖直跨度", 斜置屏的跨度必须随 x 增大而**变大**
+    //     (上边朝近侧抬升); 正面显示器两侧一样高, 跨度恒定。
+    const spans = [];
+    for (let x = 180; x <= 385; x++) {
+        let top = -1;
+        for (let y = 250; y <= 545; y++) {
+            const [r, g, b, a] = px(x, y);
+            if (a < 40) continue;
+            const blue = b > 140 && b > r + 15;
+            const bright = r > 200 && g > 210 && b > 220;
+            if (blue || bright) { top = y; break; }
+        }
+        if (top >= 0) spans.push([x, 546 - top]);
+    }
+    assert.ok(spans.length > 40, `显示器屏幕内容太少, 无法判定透视 (列数 ${spans.length})`);
+    // 远侧 = 最靠左的一批列; 近侧 = 跨度最大的列 (斜置屏的上边抬到近侧 ⇒ 跨度最大)
+    const lo = spans[Math.floor(spans.length * 0.15)];
+    let hi = spans[0];
+    for (const s of spans) if (s[1] > hi[1]) hi = s;
+    assert.ok(hi[1] >= lo[1] * 1.25,
+        `显示器必须斜置 (近侧竖直跨度 ${hi[1]}@x=${hi[0]} 应 ≥ 远侧 ${lo[1]}@x=${lo[0]} 的 1.25 倍)`);
+
+    // (3) 屏内必须有可见内容 (蓝白科技界面), 不能是空板
+    let brightPx = 0, darkPx = 0;
+    for (let y = 300; y <= 640; y++) {
+        for (let x = 180; x <= 380; x++) {
+            const [r, g, b, a] = px(x, y);
+            if (a < 40) continue;
+            const lum = (r + g + b) / 3;
+            if (lum > 150) brightPx++;
+            if (lum < 90) darkPx++;
+        }
+    }
+    assert.ok(brightPx >= 3000, `显示器屏幕必须有亮色界面内容 (实际亮像素 ${brightPx})`);
+    assert.ok(darkPx >= 500, `显示器必须有深色边框/底座 (实际深色像素 ${darkPx})`);
 });
 
 test('C4 道具与角色帧在两种画布下都**零裁切** (用生产布局算法核算)', () => {

@@ -471,14 +471,17 @@ MOUNT_SLEEP=$(grep -c "R156 PROPS action=sleep_breath scene=yes mounted=prop_bed
 MOUNT_SIT=$(grep -c "R156 PROPS action=sit_rest scene=yes mounted=prop_sofa" "$LOG_PREVIEW")
 # R165 修正期望值: 办公场景的桌子拆成 back 层台面(prop_desk_surface) 与
 #   front 层前沿/桌腿/笔记本(prop_desk) ⇒ 挂载列表多一项, 判据意图不变。
-# R172 修正: 办公场景换图层归属 —— 桌面/键盘/双手画进角色帧内部,
-#   场景里只挂 back=办公转椅 + front=3/4 显示器 (判据意图不变: 办公动作必须挂上道具)。
-MOUNT_WORK=$(grep -c "R156 PROPS action=work scene=yes mounted=prop_office_chair,prop_office_monitor" "$LOG_PREVIEW")
+# R173 修正: 办公场景的家具 (椅子/桌面/键盘/显示器/双手) 全部**内嵌进角色帧**,
+#   运行时按 action 整组挂载道具做不到逐帧换层 ⇒ work 场景的 back/front 为空,
+#   日志里必然是 "action=work scene=yes mounted=none"。
+#   判据意图不变 (办公动作必须切到办公场景), 只是"挂上道具"变成"切到场景且家具内嵌";
+#   家具**真的可见**由 34_R156_runtime_verify.py 在角色帧像素上另行判定。
+MOUNT_WORK=$(grep -c "R156 PROPS action=work scene=yes mounted=none" "$LOG_PREVIEW")
 # R170: 吃水果场景必须挂载小凳 + 小边桌(果盘), 且不得残留其它场景的道具
 MOUNT_EAT=$(grep -c "R156 PROPS action=eat_fruit scene=yes mounted=prop_stool,prop_fruit_table" "$LOG_PREVIEW")
 MOUNT_NONE=$(grep -c "R156 PROPS .* mounted=none" "$LOG_PREVIEW")
 if [ "${MOUNT_SLEEP:-0}" -ge 1 ] && [ "${MOUNT_SIT:-0}" -ge 1 ] && [ "${MOUNT_WORK:-0}" -ge 1 ] && [ "${MOUNT_EAT:-0}" -ge 1 ] && [ "${MOUNT_NONE:-0}" -ge 1 ]; then
-    record PASS TI5 "道具按场景挂载 (床+月亮+被子 / 沙发 / 转椅+显示器 / 小凳+果盘), 无道具动作时 mounted=none" "sleep=$MOUNT_SLEEP sit=$MOUNT_SIT work=$MOUNT_WORK eat=$MOUNT_EAT none=$MOUNT_NONE"
+    record PASS TI5 "道具按场景挂载 (床+月亮+被子 / 沙发 / 办公=家具内嵌故 mounted=none / 小凳+果盘), 无道具动作时 mounted=none" "sleep=$MOUNT_SLEEP sit=$MOUNT_SIT work=$MOUNT_WORK eat=$MOUNT_EAT none=$MOUNT_NONE"
 else
     record FAIL TI5 "道具挂载/卸载" "sleep=$MOUNT_SLEEP sit=$MOUNT_SIT work=$MOUNT_WORK eat=$MOUNT_EAT none=$MOUNT_NONE"
 fi

@@ -1,1322 +1,1341 @@
 {
-  "character_id": "default_scientist",
-  "version": "R158-RUNTIME",
-  "source_round": "R138",
-  "source_manifest": "/Users/musk123/Downloads/minimax工作文件夹/图文工作/character_animation_R138/08_MANIFEST/R138_manifest.json",
-  "a1_reference_sha256": "3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df",
-  "canvas_px": [
-    1024,
-    1024
+ "character_id": "default_scientist",
+ "version": "R158-RUNTIME",
+ "source_round": "R138",
+ "source_manifest": "/Users/musk123/Downloads/minimax工作文件夹/图文工作/character_animation_R138/08_MANIFEST/R138_manifest.json",
+ "a1_reference_sha256": "3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df",
+ "canvas_px": [
+  1024,
+  1024
+ ],
+ "anchor": {
+  "stand": [
+   0.5,
+   0.9
   ],
-  "anchor": {
-    "stand": [
-      0.5,
-      0.9
+  "sit": [
+   0.5,
+   0.86
+  ],
+  "lie": [
+   0.5,
+   0.78
+  ]
+ },
+ "animation_order": [
+  "idle",
+  "walk_left",
+  "walk_right",
+  "sleep_enter",
+  "sleep_loop",
+  "wake_up"
+ ],
+ "actions": {
+  "idle": {
+   "frames": [
+    "character_R138/idle/idle_00_base.png",
+    "character_R138/idle/idle_01_inhale_peak.png",
+    "character_R138/idle/idle_02_exhale_mid.png",
+    "character_R138/idle/idle_03_exhale_low.png",
+    "character_R138/idle/idle_04_blink_half.png",
+    "character_R138/idle/idle_05_blink_closed.png"
+   ],
+   "frame_ms": 200,
+   "fps": 5,
+   "loop": true,
+   "anchor": "stand",
+   "director": {
+    "enabled": true,
+    "base_index": 0,
+    "blink_sequence": [
+     5
     ],
-    "sit": [
-      0.5,
-      0.86
+    "blink_frame_ms": [
+     130
     ],
-    "lie": [
-      0.5,
-      0.78
-    ]
+    "blink_interval_ms": [
+     1600,
+     3400
+    ],
+    "excluded_frames": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "note": "R153: blink_sequence 由 [4,5] 改为 [5] —— idle_04 并不是眨眼帧, 它是**右手横在胸前**的姿势, 站立时每 1.6~3.4s 抽手到胸前会被读成\"莫名抬手\"; idle_05 是纯闭眼且手臂下垂。idle_04 与胸腔膨胀帧 1/2/3 一并列入永不播放的排除帧"
+   },
+   "note": "R153: 播放序列 = 稳定站姿(idle_00) + 自然眨眼(idle_05); idle_01/02/03 (胸腔膨胀) 与 idle_04 (手放胸前) 永不播放"
   },
-  "animation_order": [
+  "walk_left": {
+   "frames": [
+    "character_R138/walk_left/walk_left_00_stand.png",
+    "character_R138/walk_left/walk_left_01_left_step.png",
+    "character_R138/walk_left/walk_left_02_pass.png",
+    "character_R138/walk_left/walk_left_03_right_step.png"
+   ],
+   "frame_ms": 130,
+   "fps": 7.69,
+   "loop": true,
+   "anchor": "stand",
+   "lean": {
+    "skew_x": 0.0,
+    "pivot_y": 921.6,
+    "direction": -1,
+    "note": "R153: 整体错切归零 —— R147 的方向倾斜在正面 3/4 视角下被用户读作\"身体明显前倾像要摔倒\"; R148 已把步态本身修对 (落地脚/鞋尖朝正确方向), 方向不再需要靠剪切表达, 归零后重心端正"
+   },
+   "note": "R147/R148: 4 帧为已确认**方向正确**的向左步态 (落地脚在左、鞋尖朝左, 由 18_R148_direction_verify.py 客观测量确认); R153 去掉整体倾斜, 重心端正"
+  },
+  "walk_right": {
+   "frames": [
+    "character_R138_derived/walk_right_mirror/walk_right_m_00.png",
+    "character_R138_derived/walk_right_mirror/walk_right_m_01.png",
+    "character_R138_derived/walk_right_mirror/walk_right_m_02.png",
+    "character_R138_derived/walk_right_mirror/walk_right_m_03.png"
+   ],
+   "frame_ms": 130,
+   "fps": 7.69,
+   "loop": true,
+   "anchor": "stand",
+   "lean": {
+    "skew_x": 0.0,
+    "pivot_y": 921.6,
+    "direction": 1,
+    "note": "R153: 同 walk_left, 整体错切归零 (同上); R148 的派生镜像帧自带正确的迈步方向"
+   },
+   "frame_source": {
+    "derived_from": "character_R138/walk_left/ (R147 已确认其迈步方向正确)",
+    "method": "整体水平镜像 + 胸口徽章 Poisson 无缝归位",
+    "script": "17_R148_mirror_derive.py",
+    "verify": "18_R148_direction_verify.py (鞋尖几何客观测量)"
+   },
+   "note": "R148: 由 walk_left 4 帧整体水平镜像 + 徽章归位派生 (落脚脚在右、鞋尖朝右); R153 去掉整体倾斜, 重心端正"
+  },
+  "sleep_enter": {
+   "frames": [
+    "character_R138/sleep_enter/sleep_enter_01_sit.png",
+    "character_R138/sleep_enter/sleep_enter_02_lie.png",
+    "character_R138/sleep_enter/sleep_enter_03_settled.png"
+   ],
+   "frame_ms": 600,
+   "fps": 1.67,
+   "loop": false,
+   "anchor": "sit",
+   "frame_blend_ms": 320,
+   "frame_blend_ms_note": "R153: 帧级溶解 320ms —— sleep_enter 第 0 帧本身就是坐姿, 动作级溶解是\"坐→坐\"(无变化); 真正的躺姿出现在换帧那一瞬, 用帧级溶解把它变成渐变过渡 (修复\"坐下瞬间变成躺姿\")"
+  },
+  "sleep_loop": {
+   "frames": [
+    "character_R138/sleep_loop/sleep_loop_00_base.png",
+    "character_R138/sleep_loop/sleep_loop_01_breath_in.png",
+    "character_R138/sleep_loop/sleep_loop_02_stable.png"
+   ],
+   "frame_ms": 700,
+   "fps": 1.43,
+   "loop": true,
+   "anchor": "lie",
+   "ground_tex_y": 818,
+   "ground_tex_y_note": "R156: 该动作的\"地面行\"(哪一条纹理行落在屏幕地面线上)。有道具时真正的地面是道具的底, 不是角色内容的底边"
+  },
+  "wake_up": {
+   "frames": [
+    "character_R138/wake_up/wake_up_00_lift.png",
+    "character_R138/wake_up/wake_up_01_sit_up.png",
+    "character_R138/wake_up/wake_up_02_stand.png"
+   ],
+   "frame_ms": 600,
+   "fps": 1.67,
+   "loop": false,
+   "anchor": "stand",
+   "frame_blend_ms": 280,
+   "frame_blend_ms_note": "R153: 帧级溶解 280ms —— 躺→坐起→站 的两处大姿态变化都走渐变"
+  }
+ },
+ "behavior": {
+  "engine": "src/behavior_engine.js",
+  "state_machine": {
+   "states": [
+    "IDLE",
+    "WALK_LEFT",
+    "WALK_RIGHT",
+    "SLEEP_ENTER",
+    "SLEEP_LOOP",
+    "WAKE_UP",
+    "DRAGGING"
+   ],
+   "transitions": [
+    "IDLE -> WALK_LEFT | WALK_RIGHT | SLEEP_ENTER (随机选择)",
+    "WALK_LEFT | WALK_RIGHT -> IDLE (走完距离 或 到达屏幕边缘转向)",
+    "SLEEP_ENTER -> SLEEP_LOOP (动画播完回调)",
+    "SLEEP_LOOP -> WAKE_UP (睡眠时长到)",
+    "WAKE_UP -> IDLE (动画播完回调)",
+    "任意状态 -> DRAGGING (用户拖拽)",
+    "DRAGGING -> IDLE (松开鼠标 + 过渡延迟)"
+   ],
+   "one_shot_animations": [
+    "sleep_enter",
+    "wake_up"
+   ],
+   "loop_animations": [
     "idle",
     "walk_left",
     "walk_right",
-    "sleep_enter",
-    "sleep_loop",
-    "wake_up"
-  ],
-  "actions": {
-    "idle": {
-      "frames": [
-        "character_R138/idle/idle_00_base.png",
-        "character_R138/idle/idle_01_inhale_peak.png",
-        "character_R138/idle/idle_02_exhale_mid.png",
-        "character_R138/idle/idle_03_exhale_low.png",
-        "character_R138/idle/idle_04_blink_half.png",
-        "character_R138/idle/idle_05_blink_closed.png"
-      ],
-      "frame_ms": 200,
-      "fps": 5,
-      "loop": true,
-      "anchor": "stand",
-      "director": {
-        "enabled": true,
-        "base_index": 0,
-        "blink_sequence": [
-          5
-        ],
-        "blink_frame_ms": [
-          130
-        ],
-        "blink_interval_ms": [
-          1600,
-          3400
-        ],
-        "excluded_frames": [
-          1,
-          2,
-          3,
-          4
-        ],
-        "note": "R153: blink_sequence 由 [4,5] 改为 [5] —— idle_04 并不是眨眼帧, 它是**右手横在胸前**的姿势, 站立时每 1.6~3.4s 抽手到胸前会被读成\"莫名抬手\"; idle_05 是纯闭眼且手臂下垂。idle_04 与胸腔膨胀帧 1/2/3 一并列入永不播放的排除帧"
-      },
-      "note": "R153: 播放序列 = 稳定站姿(idle_00) + 自然眨眼(idle_05); idle_01/02/03 (胸腔膨胀) 与 idle_04 (手放胸前) 永不播放"
-    },
-    "walk_left": {
-      "frames": [
-        "character_R138/walk_left/walk_left_00_stand.png",
-        "character_R138/walk_left/walk_left_01_left_step.png",
-        "character_R138/walk_left/walk_left_02_pass.png",
-        "character_R138/walk_left/walk_left_03_right_step.png"
-      ],
-      "frame_ms": 130,
-      "fps": 7.69,
-      "loop": true,
-      "anchor": "stand",
-      "lean": {
-        "skew_x": 0.0,
-        "pivot_y": 921.6,
-        "direction": -1,
-        "note": "R153: 整体错切归零 —— R147 的方向倾斜在正面 3/4 视角下被用户读作\"身体明显前倾像要摔倒\"; R148 已把步态本身修对 (落地脚/鞋尖朝正确方向), 方向不再需要靠剪切表达, 归零后重心端正"
-      },
-      "note": "R147/R148: 4 帧为已确认**方向正确**的向左步态 (落地脚在左、鞋尖朝左, 由 18_R148_direction_verify.py 客观测量确认); R153 去掉整体倾斜, 重心端正"
-    },
-    "walk_right": {
-      "frames": [
-        "character_R138_derived/walk_right_mirror/walk_right_m_00.png",
-        "character_R138_derived/walk_right_mirror/walk_right_m_01.png",
-        "character_R138_derived/walk_right_mirror/walk_right_m_02.png",
-        "character_R138_derived/walk_right_mirror/walk_right_m_03.png"
-      ],
-      "frame_ms": 130,
-      "fps": 7.69,
-      "loop": true,
-      "anchor": "stand",
-      "lean": {
-        "skew_x": 0.0,
-        "pivot_y": 921.6,
-        "direction": 1,
-        "note": "R153: 同 walk_left, 整体错切归零 (同上); R148 的派生镜像帧自带正确的迈步方向"
-      },
-      "frame_source": {
-        "derived_from": "character_R138/walk_left/ (R147 已确认其迈步方向正确)",
-        "method": "整体水平镜像 + 胸口徽章 Poisson 无缝归位",
-        "script": "17_R148_mirror_derive.py",
-        "verify": "18_R148_direction_verify.py (鞋尖几何客观测量)"
-      },
-      "note": "R148: 由 walk_left 4 帧整体水平镜像 + 徽章归位派生 (落脚脚在右、鞋尖朝右); R153 去掉整体倾斜, 重心端正"
-    },
-    "sleep_enter": {
-      "frames": [
-        "character_R138/sleep_enter/sleep_enter_01_sit.png",
-        "character_R138/sleep_enter/sleep_enter_02_lie.png",
-        "character_R138/sleep_enter/sleep_enter_03_settled.png"
-      ],
-      "frame_ms": 600,
-      "fps": 1.67,
-      "loop": false,
-      "anchor": "sit",
-      "frame_blend_ms": 320,
-      "frame_blend_ms_note": "R153: 帧级溶解 320ms —— sleep_enter 第 0 帧本身就是坐姿, 动作级溶解是\"坐→坐\"(无变化); 真正的躺姿出现在换帧那一瞬, 用帧级溶解把它变成渐变过渡 (修复\"坐下瞬间变成躺姿\")"
-    },
-    "sleep_loop": {
-      "frames": [
-        "character_R138/sleep_loop/sleep_loop_00_base.png",
-        "character_R138/sleep_loop/sleep_loop_01_breath_in.png",
-        "character_R138/sleep_loop/sleep_loop_02_stable.png"
-      ],
-      "frame_ms": 700,
-      "fps": 1.43,
-      "loop": true,
-      "anchor": "lie",
-      "ground_tex_y": 818,
-      "ground_tex_y_note": "R156: 该动作的\"地面行\"(哪一条纹理行落在屏幕地面线上)。有道具时真正的地面是道具的底, 不是角色内容的底边"
-    },
-    "wake_up": {
-      "frames": [
-        "character_R138/wake_up/wake_up_00_lift.png",
-        "character_R138/wake_up/wake_up_01_sit_up.png",
-        "character_R138/wake_up/wake_up_02_stand.png"
-      ],
-      "frame_ms": 600,
-      "fps": 1.67,
-      "loop": false,
-      "anchor": "stand",
-      "frame_blend_ms": 280,
-      "frame_blend_ms_note": "R153: 帧级溶解 280ms —— 躺→坐起→站 的两处大姿态变化都走渐变"
-    }
+    "sleep_loop"
+   ]
   },
-  "behavior": {
-    "engine": "src/behavior_engine.js",
-    "state_machine": {
-      "states": [
-        "IDLE",
-        "WALK_LEFT",
-        "WALK_RIGHT",
-        "SLEEP_ENTER",
-        "SLEEP_LOOP",
-        "WAKE_UP",
-        "DRAGGING"
-      ],
-      "transitions": [
-        "IDLE -> WALK_LEFT | WALK_RIGHT | SLEEP_ENTER (随机选择)",
-        "WALK_LEFT | WALK_RIGHT -> IDLE (走完距离 或 到达屏幕边缘转向)",
-        "SLEEP_ENTER -> SLEEP_LOOP (动画播完回调)",
-        "SLEEP_LOOP -> WAKE_UP (睡眠时长到)",
-        "WAKE_UP -> IDLE (动画播完回调)",
-        "任意状态 -> DRAGGING (用户拖拽)",
-        "DRAGGING -> IDLE (松开鼠标 + 过渡延迟)"
-      ],
-      "one_shot_animations": [
-        "sleep_enter",
-        "wake_up"
-      ],
-      "loop_animations": [
-        "idle",
-        "walk_left",
-        "walk_right",
-        "sleep_loop"
-      ]
-    },
-    "config": {
-      "idle_min_ms": 3000,
-      "idle_max_ms": 8000,
-      "walk_speed_px_per_sec": 30,
-      "walk_min_distance_px": 80,
-      "walk_max_distance_px": 250,
-      "walk_move_tick_ms": 33,
-      "sleep_min_ms": 20000,
-      "sleep_max_ms": 45000,
-      "sleep_probability": 0.1,
-      "walk_probability": 0.62,
-      "drag_resume_delay_ms": 800,
-      "edge_margin_px": 4,
-      "gesture_probability": 0.46,
-      "sit_probability": 0.22,
-      "doze_probability": 0.22,
-      "gesture_min_ms": 1600,
-      "gesture_max_ms": 3400,
-      "sit_min_ms": 6000,
-      "sit_max_ms": 13000,
-      "doze_min_ms": 7000,
-      "doze_max_ms": 15000,
-      "sleep_shift_min_ms": 7000,
-      "sleep_shift_max_ms": 15000,
-      "sleep_shift_duration_ms": 4200,
-      "stretch_after_wake": true,
-      "activity_repeat_penalty": 0.25,
-      "no_sleep_after_wake_ms": 45000,
-      "work_probability": 0.55,
-      "work_min_ms": 16000,
-      "work_max_ms": 28000,
-      "work_cooldown_ms": 60000,
-      "eat_fruit_probability": 0.36,
-      "eat_fruit_min_ms": 14000,
-      "eat_fruit_max_ms": 22000,
-      "eat_fruit_cooldown_ms": 50000
-    },
-    "r170_note": "R170: manifest 里的 behavior.config 之前是 **R141 时代的陈旧快照**, 静默覆盖了引擎(src/behavior_engine.js) 的 R153/R156 默认值 —— sleep_probability 被改回 0.3 (引擎 R153 已降到 0.10)、walk_probability 0.7 (引擎 0.62), 并且**没有** work / eat_fruit 权重。加上 work_probability 本身只有 0.10, 单次空闲决策命中率仅 5%, 而长活动把空闲决策压到 ~20s 一次 ⇒ 真机 180s 连跑 **触发 0 次**, 用户看到的就是\"办公场景消失不见了\"。本轮把配置与引擎对齐, 并按真机实测重标定办公/吃水果的权重(0.55/0.36)、时长(16~28s / 14~22s)与冷却(60s / 50s)。"
+  "config": {
+   "idle_min_ms": 3000,
+   "idle_max_ms": 8000,
+   "walk_speed_px_per_sec": 30,
+   "walk_min_distance_px": 80,
+   "walk_max_distance_px": 250,
+   "walk_move_tick_ms": 33,
+   "sleep_min_ms": 20000,
+   "sleep_max_ms": 45000,
+   "sleep_probability": 0.1,
+   "walk_probability": 0.62,
+   "drag_resume_delay_ms": 800,
+   "edge_margin_px": 4,
+   "gesture_probability": 0.46,
+   "sit_probability": 0.22,
+   "doze_probability": 0.22,
+   "gesture_min_ms": 1600,
+   "gesture_max_ms": 3400,
+   "sit_min_ms": 6000,
+   "sit_max_ms": 13000,
+   "doze_min_ms": 7000,
+   "doze_max_ms": 15000,
+   "sleep_shift_min_ms": 7000,
+   "sleep_shift_max_ms": 15000,
+   "sleep_shift_duration_ms": 4200,
+   "stretch_after_wake": true,
+   "activity_repeat_penalty": 0.25,
+   "no_sleep_after_wake_ms": 45000,
+   "work_probability": 0.55,
+   "work_min_ms": 16000,
+   "work_max_ms": 28000,
+   "work_cooldown_ms": 60000,
+   "eat_fruit_probability": 0.36,
+   "eat_fruit_min_ms": 14000,
+   "eat_fruit_max_ms": 22000,
+   "eat_fruit_cooldown_ms": 50000
   },
-  "notes": [
-    "R141 运行时 manifest: 帧路径相对本 manifest 所在目录 (assets/character_R141_manifest.json -> character_R138/...)",
-    "R138 六组动作 23 帧全部为 1024x1024 RGBA PNG (R153 起**逐字节未变**, R156 仍逐字节未变)",
-    "sleep_enter / wake_up 为一次性动画, 由 renderer 播完回报主进程",
-    "R148: walk_right 运行时使用 4 张派生帧 (character_R138_derived/walk_right_mirror/)",
-    "R153: 新增 action_library 段 (9 个新动作, 12 张新烘焙帧在 character_R153/); 核心 6 组动作的帧槽位仍是 23 个互不相同的文件",
-    "R153: 行走整体错切归零 (用户反馈\"身体前倾像摔倒\"), 方向由 R148 的步态本身承担",
-    "R156: 新增 props 段 —— 7 个程序化绘制的小道具 + 6 个动作的道具场景 (back/front 分层)",
-    "R156: 新增 ground_tex_y (地面行) —— 有道具时地面是道具底, 腾空帧用更高的地面行表示离地",
-    "R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; R156 的几何形变点击动作 (cheer_spin/cheer_sway/cheer_heart/cheer_wink/cheer_hands) 已下架",
-    "R158: 新增 arm_rig 技术 (36_R158_arm_rig.py) —— 把 R138 切层脚本漏掉的\"张开的手\"切出来, 肩/肘/腕三关节圆形咬口旋转 + 摘袖后按行重建大褂边缘",
-    "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做",
-    "R170: 新增吃水果行为 EAT_FRUIT (5 帧: 拿果→送到嘴边→咬一口→咀嚼→满足微笑, 动作与道具在 character_R156/eat_fruit_*.png 与 prop_stool/prop_fruit_table)",
-    "R170: 修掉\"办公场景在真机消失\"—— manifest 的 behavior.config 是 R141 陈旧快照, 静默覆盖引擎默认值 (sleep 0.3 / walk 0.7), 且没有 work 权重; 已与引擎对齐并按真机实测重标定办公/吃水果的权重·时长·冷却"
-  ],
-  "layout": {
-    "source": "R144 08_R144_layout_builder.py — 真实 PNG alpha 通道逐帧测量",
-    "bbox_convention": "PIL getbbox 约定 [left, top, right, bottom], right/bottom 为开区间, 单位=纹素",
-    "margin_px": 4,
-    "anchor": {
-      "x": 0.5,
-      "y": 0.9
-    },
-    "scale_rule": "全局统一缩放: scale = min over 23 frames of fit; 逐帧禁止改大小",
-    "ground_rule": "每帧内容底边贴 canvasH - margin_px (同一地面接触线) | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地",
-    "frame_bboxes": {
-      "idle": [
-        [
-          329,
-          37,
-          704,
-          987
-        ],
-        [
-          320,
-          39,
-          721,
-          987
-        ],
-        [
-          329,
-          37,
-          704,
-          987
-        ],
-        [
-          329,
-          37,
-          704,
-          987
-        ],
-        [
-          320,
-          37,
-          704,
-          987
-        ],
-        [
-          320,
-          37,
-          704,
-          987
-        ]
-      ],
-      "walk_left": [
-        [
-          320,
-          37,
-          704,
-          987
-        ],
-        [
-          299,
-          37,
-          733,
-          987
-        ],
-        [
-          306,
-          37,
-          718,
-          987
-        ],
-        [
-          301,
-          38,
-          723,
-          987
-        ]
-      ],
-      "walk_right": [
-        [
-          320,
-          37,
-          704,
-          987
-        ],
-        [
-          291,
-          37,
-          725,
-          987
-        ],
-        [
-          306,
-          37,
-          718,
-          987
-        ],
-        [
-          301,
-          38,
-          723,
-          987
-        ]
-      ],
-      "sleep_enter": [
-        [
-          338,
-          38,
-          721,
-          1002
-        ],
-        [
-          23,
-          279,
-          993,
-          725
-        ],
-        [
-          44,
-          299,
-          997,
-          747
-        ]
-      ],
-      "sleep_loop": [
-        [
-          68,
-          265,
-          966,
-          747
-        ],
-        [
-          63,
-          344,
-          980,
-          744
-        ],
-        [
-          49,
-          330,
-          977,
-          691
-        ]
-      ],
-      "wake_up": [
-        [
-          36,
-          271,
-          994,
-          693
-        ],
-        [
-          312,
-          39,
-          718,
-          925
-        ],
-        [
-          320,
-          37,
-          704,
-          987
-        ]
-      ],
-      "look_around": [
-        [
-          338,
-          37,
-          709,
-          987
-        ],
-        [
-          324,
-          37,
-          694,
-          987
-        ]
-      ],
-      "tilt_head": [
-        [
-          338,
-          36,
-          711,
-          987
-        ],
-        [
-          322,
-          37,
-          692,
-          987
-        ]
-      ],
-      "head_nod": [
-        [
-          334,
-          35,
-          699,
-          987
-        ],
-        [
-          326,
-          42,
-          702,
-          987
-        ]
-      ],
-      "happy": [
-        [
-          338,
-          36,
-          710,
-          987
-        ]
-      ],
-      "blink_soft": [
-        [
-          329,
-          37,
-          704,
-          987
-        ],
-        [
-          329,
-          37,
-          704,
-          987
-        ]
-      ],
-      "stretch": [
-        [
-          320,
-          39,
-          721,
-          987
-        ]
-      ],
-      "sit_rest": [
-        [
-          338,
-          38,
-          721,
-          1002
-        ]
-      ],
-      "doze": [
-        [
-          338,
-          38,
-          721,
-          1002
-        ]
-      ],
-      "sleep_breath": [
-        [
-          49,
-          330,
-          977,
-          691
-        ],
-        [
-          49,
-          330,
-          977,
-          691
-        ]
-      ],
-      "work": [
-        [
-          257,
-          109,
-          905,
-          1002
-        ],
-        [
-          257,
-          117,
-          905,
-          1002
-        ]
-      ],
-      "cheer_heart": [
-        [
-          324,
-          36,
-          698,
-          987
-        ],
-        [
-          323,
-          39,
-          696,
-          987
-        ],
-        [
-          325,
-          36,
-          700,
-          987
-        ]
-      ],
-      "cheer_jump": [
-        [
-          304,
-          227,
-          726,
-          987
-        ],
-        [
-          241,
-          39,
-          791,
-          987
-        ],
-        [
-          254,
-          186,
-          774,
-          987
-        ]
-      ],
-      "cheer_spin": [
-        [
-          338,
-          35,
-          710,
-          987
-        ],
-        [
-          401,
-          39,
-          645,
-          987
-        ],
-        [
-          367,
-          36,
-          675,
-          987
-        ]
-      ],
-      "cheer_wink": [
-        [
-          338,
-          37,
-          712,
-          987
-        ],
-        [
-          338,
-          37,
-          712,
-          987
-        ],
-        [
-          337,
-          35,
-          710,
-          987
-        ]
-      ],
-      "cheer_hands": [
-        [
-          320,
-          37,
-          721,
-          987
-        ],
-        [
-          320,
-          39,
-          721,
-          987
-        ],
-        [
-          320,
-          76,
-          721,
-          987
-        ]
-      ],
-      "cheer_sway": [
-        [
-          291,
-          29,
-          665,
-          987
-        ],
-        [
-          368,
-          30,
-          742,
-          987
-        ],
-        [
-          331,
-          36,
-          706,
-          987
-        ]
-      ],
-      "cheer_wave": [
-        [
-          333,
-          35,
-          769,
-          987
-        ],
-        [
-          335,
-          37,
-          758,
-          987
-        ],
-        [
-          332,
-          36,
-          818,
-          987
-        ]
-      ],
-      "cheer_hands_up": [
-        [
-          216,
-          37,
-          810,
-          987
-        ],
-        [
-          286,
-          39,
-          763,
-          987
-        ],
-        [
-          197,
-          36,
-          827,
-          987
-        ]
-      ],
-      "cheer_clap": [
-        [
-          309,
-          36,
-          722,
-          987
-        ],
-        [
-          334,
-          37,
-          708,
-          987
-        ],
-        [
-          315,
-          36,
-          716,
-          987
-        ]
-      ],
-      "cheer_tilt": [
-        [
-          338,
-          39,
-          712,
-          987
-        ],
-        [
-          338,
-          39,
-          712,
-          987
-        ],
-        [
-          338,
-          36,
-          711,
-          987
-        ]
-      ],
-      "eat_fruit": [
-        [
-          254,
-          38,
-          721,
-          1002
-        ],
-        [
-          321,
-          38,
-          721,
-          1002
-        ],
-        [
-          338,
-          29,
-          721,
-          1002
-        ],
-        [
-          338,
-          35,
-          721,
-          1002
-        ],
-        [
-          338,
-          38,
-          721,
-          1002
-        ]
-      ]
-    }
+  "r170_note": "R170: manifest 里的 behavior.config 之前是 **R141 时代的陈旧快照**, 静默覆盖了引擎(src/behavior_engine.js) 的 R153/R156 默认值 —— sleep_probability 被改回 0.3 (引擎 R153 已降到 0.10)、walk_probability 0.7 (引擎 0.62), 并且**没有** work / eat_fruit 权重。加上 work_probability 本身只有 0.10, 单次空闲决策命中率仅 5%, 而长活动把空闲决策压到 ~20s 一次 ⇒ 真机 180s 连跑 **触发 0 次**, 用户看到的就是\"办公场景消失不见了\"。本轮把配置与引擎对齐, 并按真机实测重标定办公/吃水果的权重(0.55/0.36)、时长(16~28s / 14~22s)与冷却(60s / 50s)。"
+ },
+ "notes": [
+  "R141 运行时 manifest: 帧路径相对本 manifest 所在目录 (assets/character_R141_manifest.json -> character_R138/...)",
+  "R138 六组动作 23 帧全部为 1024x1024 RGBA PNG (R153 起**逐字节未变**, R156 仍逐字节未变)",
+  "sleep_enter / wake_up 为一次性动画, 由 renderer 播完回报主进程",
+  "R148: walk_right 运行时使用 4 张派生帧 (character_R138_derived/walk_right_mirror/)",
+  "R153: 新增 action_library 段 (9 个新动作, 12 张新烘焙帧在 character_R153/); 核心 6 组动作的帧槽位仍是 23 个互不相同的文件",
+  "R153: 行走整体错切归零 (用户反馈\"身体前倾像摔倒\"), 方向由 R148 的步态本身承担",
+  "R156: 新增 props 段 —— 7 个程序化绘制的小道具 + 6 个动作的道具场景 (back/front 分层)",
+  "R156: 新增 ground_tex_y (地面行) —— 有道具时地面是道具底, 腾空帧用更高的地面行表示离地",
+  "R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; R156 的几何形变点击动作 (cheer_spin/cheer_sway/cheer_heart/cheer_wink/cheer_hands) 已下架",
+  "R158: 新增 arm_rig 技术 (36_R158_arm_rig.py) —— 把 R138 切层脚本漏掉的\"张开的手\"切出来, 肩/肘/腕三关节圆形咬口旋转 + 摘袖后按行重建大褂边缘",
+  "R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work 待机动作原样保留, 本轮未重做",
+  "R170: 新增吃水果行为 EAT_FRUIT (5 帧: 拿果→送到嘴边→咬一口→咀嚼→满足微笑, 动作与道具在 character_R156/eat_fruit_*.png 与 prop_stool/prop_fruit_table)",
+  "R170: 修掉\"办公场景在真机消失\"—— manifest 的 behavior.config 是 R141 陈旧快照, 静默覆盖引擎默认值 (sleep 0.3 / walk 0.7), 且没有 work 权重; 已与引擎对齐并按真机实测重标定办公/吃水果的权重·时长·冷却"
+ ],
+ "layout": {
+  "source": "R144 08_R144_layout_builder.py — 真实 PNG alpha 通道逐帧测量",
+  "bbox_convention": "PIL getbbox 约定 [left, top, right, bottom], right/bottom 为开区间, 单位=纹素",
+  "margin_px": 4,
+  "anchor": {
+   "x": 0.5,
+   "y": 0.9
   },
-  "r148_walk_direction_fix": {
-    "issue": "R148 用户真机截图: walk_right 窗口向右移动, 但人物迈步像在向左 (倒退走)",
-    "root_cause": "R138 的 walk_left / walk_right 都是正面 3/4 立绘, 脚尖方向本身不携带行进信息; 实测两组步态的抬脚腿序列几乎相同, 且 walk_right 与 walk_left 的落脚脚/鞋尖朝向指向同一侧 (均���左脚落地且鞋尖朝左) → 向右移动时观感为倒退",
-    "fix": "整体水平镜像**已确认方向正确**的 walk_left 4 帧, 派生 walk_right 4 帧; 并把胸口烧瓶徽章按原样 (不镜像) 归位回角色自己的左胸 (观者右侧)",
-    "not_leg_only_mirror": "逐像素校验: 派生帧在徽章区外与源帧的水平镜像差异 = 0 像素",
-    "source_of_truth": "character_R138_derived/walk_right_mirror/ (由 17_R148_mirror_derive.py 生成)",
-    "original_walk_right_frames": {
-      "paths": [
-        "character_R138/walk_right/walk_right_00_stand.png",
-        "character_R138/walk_right/walk_right_01_right_step.png",
-        "character_R138/walk_right/walk_right_02_pass.png",
-        "character_R138/walk_right/walk_right_03_left_step.png"
-      ],
-      "status": "保留在 character_R138/walk_right/, 字节未改动; R148 起不再被 manifest 引用",
-      "reason": "其步向与 walk_left 同向, 直接播放会造成\"向右移动却向左迈步\"的倒退观感"
-    }
-  },
-  "action_library": {
-    "enabled": true,
-    "round": "R158",
-    "note": "R153 新增动作库: 每个动作都有独立帧资源与独立语义 (禁止重命名/重复播放/整体旋转虚增)。所有新帧由 22_R153_pose_bake.py 基于现有素材做**局部**处理生成: 眼部区域合成 / 头部连续权重场弯曲 / 胸口软遮罩微缩 | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。",
-    "actions": {
-      "look_around": {
-        "frames": [
-          "character_R153/glance_left.png",
-          "character_R153/glance_right.png"
-        ],
-        "frame_ms": [
-          800,
-          800
-        ],
-        "loop": true,
-        "anchor": "stand",
-        "desc": "左右张望: 头部局部横移 + 微缩 + 微旋 (连续权重场变形, 非整体旋转)",
-        "source": "R153 局部烘焙"
-      },
-      "tilt_head": {
-        "frames": [
-          "character_R153/head_tilt.png",
-          "character_R153/head_tilt_other.png"
-        ],
-        "frame_ms": [
-          950,
-          950
-        ],
-        "loop": true,
-        "anchor": "stand",
-        "desc": "歪头观察: 头部绕颈部支点 ±11° 局部弯曲",
-        "source": "R153 局部烘焙"
-      },
-      "head_nod": {
-        "frames": [
-          "character_R153/head_nod.png",
-          "character_R153/head_nod_back.png"
-        ],
-        "frame_ms": [
-          260,
-          380
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "点头回应: 头部下移+压扁 → 抬起回位 (两帧, 非定格)",
-        "source": "R153 局部烘焙",
-        "frame_blend_ms": 180
-      },
-      "happy": {
-        "frames": [
-          "character_R153/happy.png"
-        ],
-        "frame_ms": [
-          700
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "开心反馈: 歪头 + 眯眼笑 (点击时使用)",
-        "source": "R153 局部烘焙"
-      },
-      "blink_soft": {
-        "frames": [
-          "character_R153/blink_half.png",
-          "character_R153/blink_closed.png"
-        ],
-        "frame_ms": [
-          130,
-          170
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "柔和眨眼: 仅换眼部区域, 手臂始终自然下垂",
-        "source": "R153 局部烘焙"
-      },
-      "stretch": {
-        "frames": [
-          "character_R138/idle/idle_01_inhale_peak.png"
-        ],
-        "frame_ms": [
-          1000
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "伸懒腰: 复用 R138 idle_01 (双臂抬起), 仅在\"醒来后伸展\"这一明确语义下播放",
-        "source": "R138 既有帧 (语义化复用)"
-      },
-      "sit_rest": {
-        "frames": [
-          "character_R138/sleep_enter/sleep_enter_01_sit.png"
-        ],
-        "frame_ms": [
-          1500
-        ],
-        "loop": true,
-        "anchor": "sit",
-        "desc": "坐下休息: 复用 R138 坐姿, 作为独立活动持续一段时间",
-        "source": "R138 既有帧 (语义化复用)",
-        "ground_tex_y": 1001
-      },
-      "doze": {
-        "frames": [
-          "character_R153/doze_sit.png"
-        ],
-        "frame_ms": [
-          1600
-        ],
-        "loop": true,
-        "anchor": "sit",
-        "desc": "困倦打盹: 坐姿 + 闭眼 (仅换眼部区域)",
-        "source": "R153 局部烘焙",
-        "ground_tex_y": 1001
-      },
-      "sleep_breath": {
-        "frames": [
-          "character_R153/sleep_breath_in.png",
-          "character_R153/sleep_breath_out.png"
-        ],
-        "frame_ms": [
-          1500,
-          1500
-        ],
-        "loop": true,
-        "anchor": "lie",
-        "desc": "躺姿呼吸: 仅胸口软遮罩区域垂直微缩, 头顶与脚底固定",
-        "source": "R153 局部烘焙",
-        "ground_tex_y": 818
-      },
-      "work": {
-        "frames": [
-          "character_R172/work_1.png",
-          "character_R172/work_2.png"
-        ],
-        "frame_ms": [
-          2600,
-          2600
-        ],
-        "loop": true,
-        "anchor": "sit",
-        "desc": "在电脑前办公: work_1 低头看键盘 (手指按下) → work_2 抬头看屏幕 (打字间隙的思考)。双手压在键盘上, 完整坐姿 (双腿 + 靴子踩地) 可见。",
-        "source": "R172 局部烘焙 (换底图 wake_up_01_sit_up + 桌面/键盘/手内嵌 + head_transform)",
-        "ground_tex_y": 1001
-      },
-      "cheer_wave": {
-        "frames": [
-          "character_R158/cheer_wave_0.png",
-          "character_R158/cheer_wave_1.png",
-          "character_R158/cheer_wave_2.png"
-        ],
-        "frame_ms": [
-          170,
-          300,
-          210
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "真挥手: 右臂(角色左手)抬到头侧 → 手腕向右摆 → 手腕向左摆。手臂由 R158 手臂骨架切出真实\"袖+袖口+张开的手\"(R138 切层脚本原本漏切了这只手), 肩/肘/腕三关节圆形咬口旋转, 摘掉袖子后按行重建大褂边缘, 不留鬼影。",
-        "source": "R158 局部烘焙 (arm_rig + head_transform + face_swap)"
-      },
-      "cheer_hands_up": {
-        "frames": [
-          "character_R158/cheer_hands_up_0.png",
-          "character_R158/cheer_hands_up_1.png",
-          "character_R158/cheer_hands_up_2.png"
-        ],
-        "frame_ms": [
-          160,
-          330,
-          200
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "双臂欢呼: 双臂高举成 V → 更高更开(闭眼大笑) → 落回。取代 R156 的 cheer_hands(那只用 R138 idle_01 的\"双臂抬起\"近似, 动作不明显)。",
-        "source": "R158 局部烘焙 (arm_rig + head_transform + face_swap)"
-      },
-      "cheer_clap": {
-        "frames": [
-          "character_R158/cheer_clap_0.png",
-          "character_R158/cheer_clap_1.png",
-          "character_R158/cheer_clap_2.png"
-        ],
-        "frame_ms": [
-          170,
-          260,
-          300
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "鼓掌: 双臂向两侧张开(准备) → 双手在身前合拢(闭眼笑) → 再张开。张/合两种剪影差异明显, 与\"比心\"(始终合拢+爱心特效)可区分。",
-        "source": "R158 局部烘焙 (arm_rig + head_transform + face_swap)"
-      },
-      "cheer_tilt": {
-        "frames": [
-          "character_R158/cheer_tilt_0.png",
-          "character_R158/cheer_tilt_1.png",
-          "character_R158/cheer_tilt_2.png"
-        ],
-        "frame_ms": [
-          210,
-          260,
-          330
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "歪头眨眼卖萌: 歪头 17° 睁眼 → 歪头 17° 眯眼 → 轻歪头 12° 闭眼笑。角度与 R153 head_tilt(11°)/R153 happy(9°)/R156 cheer_wink(14°/7°) 都不重合, 烘焙唯一性自检保证新帧与既有帧无字节重复。",
-        "source": "R158 局部烘焙 (head_transform + face_swap)"
-      },
-      "eat_fruit": {
-        "frames": [
-          "character_R156/eat_fruit_0.png",
-          "character_R156/eat_fruit_1.png",
-          "character_R156/eat_fruit_2.png",
-          "character_R156/eat_fruit_3.png",
-          "character_R156/eat_fruit_4.png"
-        ],
-        "frame_ms": [
-          820,
-          760,
-          900,
-          700,
-          1150
-        ],
-        "loop": true,
-        "anchor": "sit",
-        "desc": "吃水果: 伸手从果盘拿起水果 → 举到嘴边 → 低头张嘴咬一口 → 轻微咀嚼 → 满足地笑 (换开心笑眼)。水果画进角色帧内部, 手与果的接触像素级精确; 小凳 + 小边桌 + 果盘为独立道具 (back 层), 不遮五官。",
-        "source": "R170 局部烘焙 (arm_rig + head_transform + face_swap + 程序化水果)",
-        "ground_tex_y": 1001
-      },
-      "cheer_heart": {
-        "frames": [
-          "character_R158/cheer_heart_0.png",
-          "character_R158/cheer_heart_1.png",
-          "character_R158/cheer_heart_2.png"
-        ],
-        "frame_ms": [
-          190,
-          340,
-          230
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "比心: 双手在胸前合拢(头微低) + 爱心特效(prop_heart) 淡入淡出。**如实说明**: 手指级\"心形\"在桌宠实际显示尺寸下不可读 —— compact 200x240 窗口缩放 0.196, 整只开口只有约 12x16 屏幕 px, 单根手指宽约 2px, 拇指+食指围出的心形在任何缩放下都读不出来 ⇒ 本轮采用\"双手合拢 + 爱心特效\"的可读性方案。",
-        "source": "R158 局部烘焙 (arm_rig + head_transform + face_swap + prop_heart)",
-        "ground_tex_y": 987
-      },
-      "cheer_jump": {
-        "frames": [
-          "character_R158/cheer_jump_0.png",
-          "character_R158/cheer_jump_1.png",
-          "character_R158/cheer_jump_2.png"
-        ],
-        "frame_ms": [
-          150,
-          330,
-          190
-        ],
-        "loop": false,
-        "anchor": "stand",
-        "desc": "开心跳跃: 蓄力下蹲(压扁 20%) → 腾空(**双臂上扬** + 仰头 + 闭眼笑 + 离地) → 落地压缩(16%)。R158 改进点 = 腾空帧加了手臂动作与头部上仰; 离地量仍由运行时 ground_tex_y 实现, 上限受窗口高度硬约束(standard 256x256 头顶只剩 11px 余量, 故离地 ≤7 屏幕 px), 不能靠纹理内挪动硬凑。",
-        "source": "R158 局部烘焙 (arm_rig + body_shift + head_transform + face_swap)",
-        "ground_tex_y": [
-          null,
-          1015,
-          null
-        ]
-      }
-    }
-  },
-  "r153_action_naturalness": {
-    "issues_from_user": [
-      "启动/点击时莫名抬手、手放胸前 → 根因: idle_04 是手放胸前的姿势却被当作眨眼帧使用",
-      "坐下后瞬间变成躺姿 → 根因: sleep_enter 只有 sit→lie→settled 三帧, 无过渡",
-      "行走时身体明显前倾像要摔倒 → 根因: R147 的整体错切 skew_x",
-      "动作太少、行为重复 → 根因: 只有 6 组动作 + 机械的 走→停→睡→醒 循环"
+  "scale_rule": "全局统一缩放: scale = min over 23 frames of fit; 逐帧禁止改大小",
+  "ground_rule": "每帧内容底边贴 canvasH - margin_px (同一地面接触线) | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地 | R156: 有道具的动作改用 ground_tex_y (道具底所在纹理行) 作为地面行; 腾空帧用更高的地面行 (1150) 表示离地",
+  "frame_bboxes": {
+   "idle": [
+    [
+     329,
+     37,
+     704,
+     987
     ],
-    "fixes": [
-      "眨眼序列改为 [5] (纯闭眼, 手臂下垂); idle_04 列入永不播放",
-      "点击反馈改为 R153 烘焙的\"歪头+眯眼笑\" (happy), 不再复用手放胸前帧",
-      "行走 skew_x 归零",
-      "新增 action_library 9 个动作; 引擎改为加权活动池 + 不重复上次 + 自然停顿",
-      "新增动作过渡交叉溶解 (sit→lie / doze→lie 等), 消除姿态瞬切"
+    [
+     320,
+     39,
+     721,
+     987
+    ],
+    [
+     329,
+     37,
+     704,
+     987
+    ],
+    [
+     329,
+     37,
+     704,
+     987
+    ],
+    [
+     320,
+     37,
+     704,
+     987
+    ],
+    [
+     320,
+     37,
+     704,
+     987
     ]
-  },
-  "click_reactions": {
-    "enabled": true,
-    "round": "R158",
-    "note": "R158: 点击反馈仍为**随机池**, 每次点击随机挑一个, 短时间内不重复上一次; 播放期间暂停普通 idle/walk/sleep 推进, 播完回到正常状态机。6 个动作全部由 R158 手臂骨架/头部权重场/跳跃剪影**局部**处理生成, 没有用整体压缩/平移/重命名冒充新动作。",
-    "no_repeat_last": true,
-    "pool": [
-      {
-        "action": "cheer_wave",
-        "weight": 3,
-        "desc": "真挥手 (手臂骨架, 手腕摆动)"
-      },
-      {
-        "action": "cheer_hands_up",
-        "weight": 3,
-        "desc": "双臂高举欢呼"
-      },
-      {
-        "action": "cheer_heart",
-        "weight": 3,
-        "desc": "比心 (双手合拢 + 爱心特效)"
-      },
-      {
-        "action": "cheer_clap",
-        "weight": 2,
-        "desc": "鼓掌 (张开→合拢→张开)"
-      },
-      {
-        "action": "cheer_jump",
-        "weight": 2,
-        "desc": "开心跳跃 (双臂上扬 + 离地)"
-      },
-      {
-        "action": "cheer_tilt",
-        "weight": 3,
-        "desc": "歪头眨眼卖萌"
-      }
+   ],
+   "walk_left": [
+    [
+     320,
+     37,
+     704,
+     987
+    ],
+    [
+     299,
+     37,
+     733,
+     987
+    ],
+    [
+     306,
+     37,
+     718,
+     987
+    ],
+    [
+     301,
+     38,
+     723,
+     987
     ]
-  },
-  "props": {
-    "enabled": true,
-    "round": "R170",
-    "technique": "程序化矢量绘制 (30_R156_props_bake.py + 37_R158_action_bake.py + 82_R170_eat_fruit_props.py, 无外部素材/无 AI 生图)",
-    "coordinate_note": "道具 PNG 与角色帧**同一纹理坐标系** (1024x1024), 渲染时与角色 sprite 共享 position/anchor/scale, 所以\"道具落地\"= 画到该场景的地面纹理行",
-    "z_order_note": "back 层 = 道具在角色身后 (月亮/床/沙发/转椅); front 层 = 道具在角色身前 (被子/桌子+笔记本/屏幕微光)",
-    "library": {
-      "prop_bed": {
-        "file": "character_R156/prop_bed.png",
-        "desc": "小床: 木架 + 床垫 + 枕头 + 床腿 (R165 重做: 床垫分顶面/侧面两层, 床品与被子同色系)"
-      },
-      "prop_quilt": {
-        "file": "character_R156/prop_quilt.png",
-        "desc": "被子 (R165 重做): 上沿沿角色身体实测轮廓起伏, 4 长 3 短羽化弧形褶皱, 17px 翻折亮边, 对角柔和渐变; 左边界 x=416 不遮脸不切手, 下沿搭到床垫前沿"
-      },
-      "prop_moon": {
-        "file": "character_R156/prop_moon.png",
-        "desc": "月亮 + 小星 + 一小片淡月晕 (夜晚氛围辅助, 不做大块背景, 不喧宾夺主)"
-      },
-      "prop_sofa": {
-        "file": "character_R156/prop_sofa.png",
-        "desc": "低矮豆袋小沙发: 无细高腿, 厚坐垫直接落地"
-      },
-      "prop_chair": {
-        "file": "character_R156/prop_chair.png",
-        "desc": "办公转椅: 靠背宽到能在笔记本两侧露出"
-      },
-      "prop_desk": {
-        "file": "character_R156/prop_desk.png",
-        "desc": "办公桌前沿厚边 + 两条桌腿 + 笔记本电脑 (front 层, 角色身前); 笔记本 R167 后移到台面远端 (盖板 y448..596 / 基座 y596..622), 与键盘形成\"屏幕在后、键盘在前\"的透视"
-      },
-      "prop_screen_glow": {
-        "file": "character_R156/prop_screen_glow.png",
-        "desc": "屏幕微光: 三块小柔光落在胸口/下巴/桌面上的双手, 不遮五官"
-      },
-      "prop_heart": {
-        "file": "character_R158/prop_heart.png",
-        "desc": "爱心特效: 程序化矢量绘制, 叠在双手合拢处上方 (front 层)"
-      },
-      "prop_desk_surface": {
-        "file": "character_R156/prop_desk_surface.png",
-        "desc": "办公桌台面 (back 层, 角色坐在桌后): 台面远沿 y=552 / 近沿 y=668, 近沿更宽 = 俯视透视; 含双手落在台面上的接触阴影"
-      },
-      "prop_keyboard": {
-        "file": "character_R156/prop_keyboard.png",
-        "desc": "办公键盘 (back 层, 压在台面上): 远沿窄近沿宽的透视梯形, 4 排键位 + 空格键, 键位分隔线加粗到 4~5 纹理 px (200x240 上仍看得见); 含双手压键的接触阴影"
-      },
-      "prop_stool": {
-        "file": "character_R156/prop_stool.png",
-        "desc": "小圆凳 (back 层, 角色身后): 蓝白科技系坐垫 + 矮腿, 角色坐在上面"
-      },
-      "prop_fruit_table": {
-        "file": "character_R156/prop_fruit_table.png",
-        "desc": "小边桌 + 果盘 (back 层, 角色画面左侧): 圆角浅色桌面 + 细腿, 桌上一个浅色果盘, 盘里 2~3 个水果 (她拿的那颗之外的)"
-      },
-      "prop_office_chair": {
-        "file": "character_R172/prop_office_chair.png",
-        "desc": "办公转椅 (R172): 靠背 + 座面, 放在 back 层, 从角色肩/头两侧露出, 读作\"她坐在办公椅上\"。刻意不画中柱与五星脚 —— 角色坐在椅子上时中柱正好落在两腿之间, 会在脚边露出一坨灰色异物。"
-      },
-      "prop_office_monitor": {
-        "file": "character_R172/prop_office_monitor.png",
-        "desc": "3/4 透视的显示器正面 (R172): 屏内画蓝白科技界面 (标题栏 + 侧栏 + 代码行 + 状态块), 放在 front 层。取代 R167 的\"笔记本背板\" —— 那版观众只能看到一块石墨灰, 用户看不到任何屏幕内容。"
-      }
-    },
-    "scenes": {
-      "sleep_breath": {
-        "floor_tex_y": 818,
-        "back": [
-          "prop_bed",
-          "prop_moon"
-        ],
-        "front": [
-          "prop_quilt"
-        ],
-        "desc": "睡眠主循环: 躺在床上 + 月亮夜晚氛围 + 被子盖身"
-      },
-      "sleep_loop": {
-        "floor_tex_y": 818,
-        "back": [
-          "prop_bed",
-          "prop_moon"
-        ],
-        "front": [
-          "prop_quilt"
-        ],
-        "desc": "睡眠中的姿态微调: 同一套床与夜色氛围"
-      },
-      "sit_rest": {
-        "floor_tex_y": 1001,
-        "back": [
-          "prop_sofa"
-        ],
-        "front": [],
-        "desc": "坐下休息: 坐在低矮小沙发上"
-      },
-      "doze": {
-        "floor_tex_y": 1001,
-        "back": [
-          "prop_sofa"
-        ],
-        "front": [],
-        "desc": "困倦打盹: 坐在同一张小沙发上闭眼"
-      },
-      "work": {
-        "floor_tex_y": 1001,
-        "back": [
-          "prop_office_chair"
-        ],
-        "front": [
-          "prop_office_monitor"
-        ],
-        "desc": "办公 (R172 构图重做): 底图换成 wake_up_01_sit_up —— **双腿下垂、靴子踩地的完整坐姿** (R167 的跪坐底图 + 剪下半身已废弃)。桌面/键盘/双手画进角色帧内部 (PNG 内 z 序: 身体 → 桌面 → 键盘 → 手 → 桌沿桌腿) ⇒ 桌面只遮住大腿, 小腿与靴子在桌下完整可见。电脑不再是笔记本背板, 而是 **3/4 透视的显示器正面** (屏幕朝观众偏左), 屏内画蓝白科技界面/代码。back 层 = 办公转椅, front 层 = 显示器。"
-      },
-      "cheer_heart": {
-        "floor_tex_y": 987,
-        "back": [],
-        "front": [
-          "prop_heart"
-        ],
-        "desc": "比心: 爱心特效叠在双手合拢处上方 (角色身前), 随动作淡入淡出"
-      },
-      "eat_fruit": {
-        "floor_tex_y": 1001,
-        "back": [
-          "prop_stool",
-          "prop_fruit_table"
-        ],
-        "front": [],
-        "desc": "吃水果 (R170): 坐在小圆凳上, 画面左侧有一张矮边桌, 桌上放着果盘; 角色伸手拿水果 → 送到嘴边 → 咬一口 → 咀嚼 → 满足地笑。水果本身画在角色帧里 (保证手与果的接触自然), 道具只负责环境。"
-      }
-    }
-  },
-  "r156_click_props_work": {
-    "goals": [
-      "点击互动动作池 ≥5 个 (实际 6 个), 每个有开始/中间/结束, 随机触发且不重复",
-      "睡觉加床 + 月亮夜晚氛围; 坐下加小沙发",
-      "新增\"在电脑前办公\"的待机场景 (小桌子 + 笔记本 + 屏幕微光)",
-      "全部接入行为系统与运行逻辑 (不是只交静态图)"
+   ],
+   "walk_right": [
+    [
+     320,
+     37,
+     704,
+     987
     ],
-    "honest_limits": [
-      "真正的双手比心手势做不到 —— R138 无手部素材, 用\"右手横在胸前\"近似",
-      "\"双手小庆祝\"用 R138 idle_01 的双臂抬起近似, 不是真正的双手拍掌",
-      "原地转身是 2D 表现手法 (正面→水平压缩 64% 读作侧身→回正), 不是 180° 背面转身",
-      "办公只能做\"看屏幕/思考/停顿\", 做不到\"敲键盘\"手部动作 (R138 无手部素材)",
-      "R138 素材角色轮廓在纹理里占 y=37~987, 头顶只剩 37px 余量 —— 腾空离地由运行时 ground_tex_y 实现, 若在纹理内挪动最多只能离地 7 屏幕 px"
+    [
+     291,
+     37,
+     725,
+     987
     ],
-    "prop_scenes": [
-      "doze",
-      "sit_rest",
-      "sleep_breath",
-      "sleep_loop",
-      "work"
+    [
+     306,
+     37,
+     718,
+     987
     ],
-    "click_pool": [
-      "cheer_heart",
-      "cheer_jump",
-      "cheer_spin",
-      "cheer_wink",
-      "cheer_hands",
-      "cheer_sway"
+    [
+     301,
+     38,
+     723,
+     987
     ]
-  },
-  "r158_click_actions": {
-    "round": "R158",
-    "goals": [
-      "点击互动动作池 ≥5 种视觉上明确、动作含义清晰的互动 (实际 6 种)",
-      "优先实现: 真正的比心 / 开心跳跃 / 挥手庆祝 / 歪头眨眼",
-      "禁止用压缩、平移、重命名冒充新动作 ⇒ R156 的 4 个几何形变动作下架",
-      "先评估素材可行性; 做不到的明确列出新素材需求, 不虚报 PASS"
+   ],
+   "sleep_enter": [
+    [
+     338,
+     38,
+     721,
+     1002
     ],
-    "asset_feasibility": [
-      "R153/R156 的\"R138 无手部素材\"结论**是错的**: idle_00_base.png 里两只手都是张开的、5 指带描边; 真正缺的是\"能把手臂摆到别的位置\"的技术 ⇒ R158 用 arm_rig 补上",
-      "R138 自己的切层脚本 (03_LAYERS/split_a1_layers.py) 漏切了画面左臂, LAYERS.json 只登记了 head/torso/leg_r/arm_r(arm_r = 胸前的拳头)",
-      "全仓库逐目录核查: 只有**正面**素材, 无任何侧身/背面视图"
+    [
+     23,
+     279,
+     993,
+     725
     ],
-    "honest_limits": [
-      "真正的 180° 背面转身**做不到** —— R138 全库只有正面素材; 程序化\"合成背面\"需要重画后脑勺+实验服背面(去前襟/胸牌/纽扣), 属于重画角色且质量不可控 ⇒ 本轮不做, 输出精确的新素材需求清单 (见 new_asset_requests)",
-      "手指级\"比心\"几何在桌宠实际显示尺寸下不可读 (整只开口约 12x16 屏幕 px, 单指宽约 2px) ⇒ 比心用\"双手合拢 + 爱心特效\"实现, 并在动作描述里如实写明",
-      "跳跃离地上限受**窗口高度**硬约束 (standard 256x256 头顶只剩 11px 余量 ⇒ 离地 ≤7 屏幕 px), 已在 standard 模式下把 ground_tex_y 顶到 1015 (R156 同值, 已是上限)",
-      "办公场景仍然只能做\"看屏幕/思考/停顿\", 做不到\"敲键盘\"手部动作 (R138 无键盘手部素材)"
-    ],
-    "new_asset_requests": [
-      {
-        "action": "cheer_turn_180",
-        "need": "真正的原地 180° 转身 (背面视图)",
-        "spec": "需要 4~6 张 1024x1024 正面→侧身(3/4)→背面→侧身→正面的连续帧, 每张保持 A1 母版身份一致(银白短发/冰蓝眼睛/白色实验服/科技研究员风格), 背面须为: 后脑勺发型 + 实验服背面(去掉前襟/胸牌/纽扣, 露出内搭深蓝衬衫)",
-        "acceptance": "背面帧必须能被普通用户一眼认成\"同一个角色转过去\"; 正/背面的身高比例一致; 脚底纹理行一致 (987)",
-        "note": "i2i 三/四视角在 R130 已连续三次失败 (身份漂移/姿态漂移), 且本轮禁止充值"
-      },
-      {
-        "action": "cheer_finger_heart",
-        "need": "真正的手指比心 (拇指+食指围成心形)",
-        "spec": "需要 3 张手部特写或半身帧, 单手做手指心; 另需一张\"双手捧心\"备选",
-        "acceptance": "在 200x240 窗口缩放 0.196 下, 心形轮廓必须仍可读 (即心形尺寸 ≥12 屏幕 px)",
-        "note": "现有开口手在该尺寸下只有约 12x16 屏幕 px, 单指宽约 2px, 无法围出可读心形"
-      }
-    ],
-    "click_pool": [
-      "cheer_wave",
-      "cheer_hands_up",
-      "cheer_heart",
-      "cheer_clap",
-      "cheer_jump",
-      "cheer_tilt"
-    ],
-    "prop_scenes": [
-      "cheer_heart",
-      "doze",
-      "eat_fruit",
-      "sit_rest",
-      "sleep_breath",
-      "sleep_loop",
-      "work"
+    [
+     44,
+     299,
+     997,
+     747
     ]
-  },
-  "r172_office_scene": {
-    "title": "R172 办公场景构图重做 (恢复完整坐姿 + 3/4 透视电脑 + 可见屏幕内容)",
-    "root_cause": "R167 的设计前提是\"台面在 back 层 ⇒ 正面坐姿的躯干/大腿整片挡住台面 ⇒ 只能剪掉下半身\"。这不是素材不够, 是**图层归属错了**。R172 不再剪身体, 改为把桌面/键盘/双手画进角色帧内部 (PNG 内 z 序可控), 并把底图从跪坐的 sleep_enter_01_sit 换成双腿下垂的 wake_up_01_sit_up。",
-    "changes": [
-      "底图: assets/character_R138/wake_up/wake_up_01_sit_up.png (双腿下垂/靴子踩地), 整帧下移 76px 使脚底对齐地面行 1001",
-      "桌面/键盘/双手/桌沿桌腿 全部内嵌进 character_R172/work_1.png 与 work_2.png",
-      "R167 的 cut_lower_body (WORK_CUT_Y=592) 与 30_R156_props_bake.py 的笔记本背板 (LID_QUAD) 不再被 work 场景引用 (文件保留, 不删历史成果)",
-      "电脑改为 3/4 透视显示器正面 (character_R172/prop_office_monitor.png), 屏内画蓝白科技界面 (标题栏 + 侧栏 + 代码行 + 状态块)",
-      "新增办公转椅 (character_R172/prop_office_chair.png) 作为 back 层道具"
+   ],
+   "sleep_loop": [
+    [
+     68,
+     265,
+     966,
+     747
     ],
-    "honest_limits": [
-      "**双手没有真正向内收到键盘中央** —— 坐姿底图的两只手腕间距实测 280 纹理 px, 手臂总长 (肩→腕 227 px) 不够把手腕挪到角色中线附近, 强行平移会让手与袖口脱节。因此键盘按实际手位画成宽键盘 (344~692), 双手落在键区两端, 手指已旋转成\"向前\"方向。",
-      "袖口在桌面远端被桌面遮住 (桌面远沿 y=620, 袖口 614~646) ⇒ 前臂与桌沿的衔接在 200×240 下只剩 2~3 屏幕 px, 肉眼读作\"手臂伸到桌面上\"。",
-      "显示器是**正面 3/4 的屏幕**, 不是物理正确的背面同侧视角 —— 2D 插画里正面坐姿 + 正对观众的显示器只能这样表达\"看得到屏幕内容\"。",
-      "打字动作是\"手部整体上下 4 纹理 px\"的一帧位移 + 头部抬头/低头, 不是逐键动画 (键盘与桌面是场景道具, 运行时按 action 整组挂载, 不支持逐帧换道具)。",
-      "MAC_REAL_GUI_ACCEPTANCE = PENDING (本轮只有脚本合成与真实 Electron 采集, 未经用户真机肉眼确认)。"
+    [
+     63,
+     344,
+     980,
+     744
     ],
-    "verification": "91_R172_manifest_update.py (幂等) / 92_R172_scene_verify.py (客观判据)"
+    [
+     49,
+     330,
+     977,
+     691
+    ]
+   ],
+   "wake_up": [
+    [
+     36,
+     271,
+     994,
+     693
+    ],
+    [
+     312,
+     39,
+     718,
+     925
+    ],
+    [
+     320,
+     37,
+     704,
+     987
+    ]
+   ],
+   "look_around": [
+    [
+     338,
+     37,
+     709,
+     987
+    ],
+    [
+     324,
+     37,
+     694,
+     987
+    ]
+   ],
+   "tilt_head": [
+    [
+     338,
+     36,
+     711,
+     987
+    ],
+    [
+     322,
+     37,
+     692,
+     987
+    ]
+   ],
+   "head_nod": [
+    [
+     334,
+     35,
+     699,
+     987
+    ],
+    [
+     326,
+     42,
+     702,
+     987
+    ]
+   ],
+   "happy": [
+    [
+     338,
+     36,
+     710,
+     987
+    ]
+   ],
+   "blink_soft": [
+    [
+     329,
+     37,
+     704,
+     987
+    ],
+    [
+     329,
+     37,
+     704,
+     987
+    ]
+   ],
+   "stretch": [
+    [
+     320,
+     39,
+     721,
+     987
+    ]
+   ],
+   "sit_rest": [
+    [
+     338,
+     38,
+     721,
+     1002
+    ]
+   ],
+   "doze": [
+    [
+     338,
+     38,
+     721,
+     1002
+    ]
+   ],
+   "sleep_breath": [
+    [
+     49,
+     330,
+     977,
+     691
+    ],
+    [
+     49,
+     330,
+     977,
+     691
+    ]
+   ],
+   "work": [
+    [
+     145,
+     46,
+     806,
+     1002
+    ],
+    [
+     145,
+     34,
+     806,
+     1002
+    ]
+   ],
+   "cheer_heart": [
+    [
+     324,
+     36,
+     698,
+     987
+    ],
+    [
+     323,
+     39,
+     696,
+     987
+    ],
+    [
+     325,
+     36,
+     700,
+     987
+    ]
+   ],
+   "cheer_jump": [
+    [
+     304,
+     227,
+     726,
+     987
+    ],
+    [
+     241,
+     39,
+     791,
+     987
+    ],
+    [
+     254,
+     186,
+     774,
+     987
+    ]
+   ],
+   "cheer_spin": [
+    [
+     338,
+     35,
+     710,
+     987
+    ],
+    [
+     401,
+     39,
+     645,
+     987
+    ],
+    [
+     367,
+     36,
+     675,
+     987
+    ]
+   ],
+   "cheer_wink": [
+    [
+     338,
+     37,
+     712,
+     987
+    ],
+    [
+     338,
+     37,
+     712,
+     987
+    ],
+    [
+     337,
+     35,
+     710,
+     987
+    ]
+   ],
+   "cheer_hands": [
+    [
+     320,
+     37,
+     721,
+     987
+    ],
+    [
+     320,
+     39,
+     721,
+     987
+    ],
+    [
+     320,
+     76,
+     721,
+     987
+    ]
+   ],
+   "cheer_sway": [
+    [
+     291,
+     29,
+     665,
+     987
+    ],
+    [
+     368,
+     30,
+     742,
+     987
+    ],
+    [
+     331,
+     36,
+     706,
+     987
+    ]
+   ],
+   "cheer_wave": [
+    [
+     333,
+     35,
+     769,
+     987
+    ],
+    [
+     335,
+     37,
+     758,
+     987
+    ],
+    [
+     332,
+     36,
+     818,
+     987
+    ]
+   ],
+   "cheer_hands_up": [
+    [
+     216,
+     37,
+     810,
+     987
+    ],
+    [
+     286,
+     39,
+     763,
+     987
+    ],
+    [
+     197,
+     36,
+     827,
+     987
+    ]
+   ],
+   "cheer_clap": [
+    [
+     309,
+     36,
+     722,
+     987
+    ],
+    [
+     334,
+     37,
+     708,
+     987
+    ],
+    [
+     315,
+     36,
+     716,
+     987
+    ]
+   ],
+   "cheer_tilt": [
+    [
+     338,
+     39,
+     712,
+     987
+    ],
+    [
+     338,
+     39,
+     712,
+     987
+    ],
+    [
+     338,
+     36,
+     711,
+     987
+    ]
+   ],
+   "eat_fruit": [
+    [
+     254,
+     38,
+     721,
+     1002
+    ],
+    [
+     321,
+     38,
+     721,
+     1002
+    ],
+    [
+     338,
+     29,
+     721,
+     1002
+    ],
+    [
+     338,
+     35,
+     721,
+     1002
+    ],
+    [
+     338,
+     38,
+     721,
+     1002
+    ]
+   ]
   }
+ },
+ "r148_walk_direction_fix": {
+  "issue": "R148 用户真机截图: walk_right 窗口向右移动, 但人物迈步像在向左 (倒退走)",
+  "root_cause": "R138 的 walk_left / walk_right 都是正面 3/4 立绘, 脚尖方向本身不携带行进信息; 实测两组步态的抬脚腿序列几乎相同, 且 walk_right 与 walk_left 的落脚脚/鞋尖朝向指向同一侧 (均���左脚落地且鞋尖朝左) → 向右移动时观感为倒退",
+  "fix": "整体水平镜像**已确认方向正确**的 walk_left 4 帧, 派生 walk_right 4 帧; 并把胸口烧瓶徽章按原样 (不镜像) 归位回角色自己的左胸 (观者右侧)",
+  "not_leg_only_mirror": "逐像素校验: 派生帧在徽章区外与源帧的水平镜像差异 = 0 像素",
+  "source_of_truth": "character_R138_derived/walk_right_mirror/ (由 17_R148_mirror_derive.py 生成)",
+  "original_walk_right_frames": {
+   "paths": [
+    "character_R138/walk_right/walk_right_00_stand.png",
+    "character_R138/walk_right/walk_right_01_right_step.png",
+    "character_R138/walk_right/walk_right_02_pass.png",
+    "character_R138/walk_right/walk_right_03_left_step.png"
+   ],
+   "status": "保留在 character_R138/walk_right/, 字节未改动; R148 起不再被 manifest 引用",
+   "reason": "其步向与 walk_left 同向, 直接播放会造成\"向右移动却向左迈步\"的倒退观感"
+  }
+ },
+ "action_library": {
+  "enabled": true,
+  "round": "R158",
+  "note": "R153 新增动作库: 每个动作都有独立帧资源与独立语义 (禁止重命名/重复播放/整体旋转虚增)。所有新帧由 22_R153_pose_bake.py 基于现有素材做**局部**处理生成: 眼部区域合成 / 头部连续权重场弯曲 / 胸口软遮罩微缩 | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R156: 新增 7 个动作 —— 点击互动池 6 个 (cheer_heart/cheer_jump/cheer_spin/cheer_wink/cheer_hands/cheer_sway, 每个 3 帧 开始/中间/结束) + 办公待机 1 个 (work)。全部由 29_R156_pose_bake.py 基于 R138/R153 既有帧做**局部**处理生成 (眼部区域合成 / 头部连续权重场弯曲 / 整体垂直平移 / 整体水平压缩 / 整体水平平移 / 上半身前倾) | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的\"袖+袖口+张开的手\", 肩/肘/腕圆形咬口三关节链 + 衣身边缘重建, 从而能真正把手臂摆到头上/胸前。R156 的 cheer_spin(水平压缩冒充转身)/cheer_sway(整体平移)/cheer_heart(复用 idle_04 \"右手横在胸前\")/cheer_wink/cheer_hands 已按 R158 规则下架。",
+  "actions": {
+   "look_around": {
+    "frames": [
+     "character_R153/glance_left.png",
+     "character_R153/glance_right.png"
+    ],
+    "frame_ms": [
+     800,
+     800
+    ],
+    "loop": true,
+    "anchor": "stand",
+    "desc": "左右张望: 头部局部横移 + 微缩 + 微旋 (连续权重场变形, 非整体旋转)",
+    "source": "R153 局部烘焙"
+   },
+   "tilt_head": {
+    "frames": [
+     "character_R153/head_tilt.png",
+     "character_R153/head_tilt_other.png"
+    ],
+    "frame_ms": [
+     950,
+     950
+    ],
+    "loop": true,
+    "anchor": "stand",
+    "desc": "歪头观察: 头部绕颈部支点 ±11° 局部弯曲",
+    "source": "R153 局部烘焙"
+   },
+   "head_nod": {
+    "frames": [
+     "character_R153/head_nod.png",
+     "character_R153/head_nod_back.png"
+    ],
+    "frame_ms": [
+     260,
+     380
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "点头回应: 头部下移+压扁 → 抬起回位 (两帧, 非定格)",
+    "source": "R153 局部烘焙",
+    "frame_blend_ms": 180
+   },
+   "happy": {
+    "frames": [
+     "character_R153/happy.png"
+    ],
+    "frame_ms": [
+     700
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "开心反馈: 歪头 + 眯眼笑 (点击时使用)",
+    "source": "R153 局部烘焙"
+   },
+   "blink_soft": {
+    "frames": [
+     "character_R153/blink_half.png",
+     "character_R153/blink_closed.png"
+    ],
+    "frame_ms": [
+     130,
+     170
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "柔和眨眼: 仅换眼部区域, 手臂始终自然下垂",
+    "source": "R153 局部烘焙"
+   },
+   "stretch": {
+    "frames": [
+     "character_R138/idle/idle_01_inhale_peak.png"
+    ],
+    "frame_ms": [
+     1000
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "伸懒腰: 复用 R138 idle_01 (双臂抬起), 仅在\"醒来后伸展\"这一明确语义下播放",
+    "source": "R138 既有帧 (语义化复用)"
+   },
+   "sit_rest": {
+    "frames": [
+     "character_R138/sleep_enter/sleep_enter_01_sit.png"
+    ],
+    "frame_ms": [
+     1500
+    ],
+    "loop": true,
+    "anchor": "sit",
+    "desc": "坐下休息: 复用 R138 坐姿, 作为独立活动持续一段时间",
+    "source": "R138 既有帧 (语义化复用)",
+    "ground_tex_y": 1001
+   },
+   "doze": {
+    "frames": [
+     "character_R153/doze_sit.png"
+    ],
+    "frame_ms": [
+     1600
+    ],
+    "loop": true,
+    "anchor": "sit",
+    "desc": "困倦打盹: 坐姿 + 闭眼 (仅换眼部区域)",
+    "source": "R153 局部烘焙",
+    "ground_tex_y": 1001
+   },
+   "sleep_breath": {
+    "frames": [
+     "character_R153/sleep_breath_in.png",
+     "character_R153/sleep_breath_out.png"
+    ],
+    "frame_ms": [
+     1500,
+     1500
+    ],
+    "loop": true,
+    "anchor": "lie",
+    "desc": "躺姿呼吸: 仅胸口软遮罩区域垂直微缩, 头顶与脚底固定",
+    "source": "R153 局部烘焙",
+    "ground_tex_y": 818
+   },
+   "work": {
+    "frames": [
+     "character_R173/work_1.png",
+     "character_R173/work_2.png"
+    ],
+    "frame_ms": [
+     2600,
+     2600
+    ],
+    "loop": true,
+    "anchor": "sit",
+    "desc": "在电脑前办公: work_1 低头看键盘 (手指按下) → work_2 抬头看屏幕 (打字间隙的思考)。角色是 3/4 侧向坐姿, **面对**左侧斜置的显示器; 双手压在键盘上, 手掌不被键盘遮住; 桌下小腿与靴子完整可见。",
+    "source": "R173 局部烘焙 (换 3/4 底图 sleep_enter_01_sit + 斜向透视桌面/键盘/斜置显示器内嵌 + 手部图层压在键盘之上)",
+    "ground_tex_y": 1001
+   },
+   "cheer_wave": {
+    "frames": [
+     "character_R158/cheer_wave_0.png",
+     "character_R158/cheer_wave_1.png",
+     "character_R158/cheer_wave_2.png"
+    ],
+    "frame_ms": [
+     170,
+     300,
+     210
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "真挥手: 右臂(角色左手)抬到头侧 → 手腕向右摆 → 手腕向左摆。手臂由 R158 手臂骨架切出真实\"袖+袖口+张开的手\"(R138 切层脚本原本漏切了这只手), 肩/肘/腕三关节圆形咬口旋转, 摘掉袖子后按行重建大褂边缘, 不留鬼影。",
+    "source": "R158 局部烘焙 (arm_rig + head_transform + face_swap)"
+   },
+   "cheer_hands_up": {
+    "frames": [
+     "character_R158/cheer_hands_up_0.png",
+     "character_R158/cheer_hands_up_1.png",
+     "character_R158/cheer_hands_up_2.png"
+    ],
+    "frame_ms": [
+     160,
+     330,
+     200
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "双臂欢呼: 双臂高举成 V → 更高更开(闭眼大笑) → 落回。取代 R156 的 cheer_hands(那只用 R138 idle_01 的\"双臂抬起\"近似, 动作不明显)。",
+    "source": "R158 局部烘焙 (arm_rig + head_transform + face_swap)"
+   },
+   "cheer_clap": {
+    "frames": [
+     "character_R158/cheer_clap_0.png",
+     "character_R158/cheer_clap_1.png",
+     "character_R158/cheer_clap_2.png"
+    ],
+    "frame_ms": [
+     170,
+     260,
+     300
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "鼓掌: 双臂向两侧张开(准备) → 双手在身前合拢(闭眼笑) → 再张开。张/合两种剪影差异明显, 与\"比心\"(始终合拢+爱心特效)可区分。",
+    "source": "R158 局部烘焙 (arm_rig + head_transform + face_swap)"
+   },
+   "cheer_tilt": {
+    "frames": [
+     "character_R158/cheer_tilt_0.png",
+     "character_R158/cheer_tilt_1.png",
+     "character_R158/cheer_tilt_2.png"
+    ],
+    "frame_ms": [
+     210,
+     260,
+     330
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "歪头眨眼卖萌: 歪头 17° 睁眼 → 歪头 17° 眯眼 → 轻歪头 12° 闭眼笑。角度与 R153 head_tilt(11°)/R153 happy(9°)/R156 cheer_wink(14°/7°) 都不重合, 烘焙唯一性自检保证新帧与既有帧无字节重复。",
+    "source": "R158 局部烘焙 (head_transform + face_swap)"
+   },
+   "eat_fruit": {
+    "frames": [
+     "character_R156/eat_fruit_0.png",
+     "character_R156/eat_fruit_1.png",
+     "character_R156/eat_fruit_2.png",
+     "character_R156/eat_fruit_3.png",
+     "character_R156/eat_fruit_4.png"
+    ],
+    "frame_ms": [
+     820,
+     760,
+     900,
+     700,
+     1150
+    ],
+    "loop": true,
+    "anchor": "sit",
+    "desc": "吃水果: 伸手从果盘拿起水果 → 举到嘴边 → 低头张嘴咬一口 → 轻微咀嚼 → 满足地笑 (换开心笑眼)。水果画进角色帧内部, 手与果的接触像素级精确; 小凳 + 小边桌 + 果盘为独立道具 (back 层), 不遮五官。",
+    "source": "R170 局部烘焙 (arm_rig + head_transform + face_swap + 程序化水果)",
+    "ground_tex_y": 1001
+   },
+   "cheer_heart": {
+    "frames": [
+     "character_R158/cheer_heart_0.png",
+     "character_R158/cheer_heart_1.png",
+     "character_R158/cheer_heart_2.png"
+    ],
+    "frame_ms": [
+     190,
+     340,
+     230
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "比心: 双手在胸前合拢(头微低) + 爱心特效(prop_heart) 淡入淡出。**如实说明**: 手指级\"心形\"在桌宠实际显示尺寸下不可读 —— compact 200x240 窗口缩放 0.196, 整只开口只有约 12x16 屏幕 px, 单根手指宽约 2px, 拇指+食指围出的心形在任何缩放下都读不出来 ⇒ 本轮采用\"双手合拢 + 爱心特效\"的可读性方案。",
+    "source": "R158 局部烘焙 (arm_rig + head_transform + face_swap + prop_heart)",
+    "ground_tex_y": 987
+   },
+   "cheer_jump": {
+    "frames": [
+     "character_R158/cheer_jump_0.png",
+     "character_R158/cheer_jump_1.png",
+     "character_R158/cheer_jump_2.png"
+    ],
+    "frame_ms": [
+     150,
+     330,
+     190
+    ],
+    "loop": false,
+    "anchor": "stand",
+    "desc": "开心跳跃: 蓄力下蹲(压扁 20%) → 腾空(**双臂上扬** + 仰头 + 闭眼笑 + 离地) → 落地压缩(16%)。R158 改进点 = 腾空帧加了手臂动作与头部上仰; 离地量仍由运行时 ground_tex_y 实现, 上限受窗口高度硬约束(standard 256x256 头顶只剩 11px 余量, 故离地 ≤7 屏幕 px), 不能靠纹理内挪动硬凑。",
+    "source": "R158 局部烘焙 (arm_rig + body_shift + head_transform + face_swap)",
+    "ground_tex_y": [
+     null,
+     1015,
+     null
+    ]
+   }
+  }
+ },
+ "r153_action_naturalness": {
+  "issues_from_user": [
+   "启动/点击时莫名抬手、手放胸前 → 根因: idle_04 是手放胸前的姿势却被当作眨眼帧使用",
+   "坐下后瞬间变成躺姿 → 根因: sleep_enter 只有 sit→lie→settled 三帧, 无过渡",
+   "行走时身体明显前倾像要摔倒 → 根因: R147 的整体错切 skew_x",
+   "动作太少、行为重复 → 根因: 只有 6 组动作 + 机械的 走→停→睡→醒 循环"
+  ],
+  "fixes": [
+   "眨眼序列改为 [5] (纯闭眼, 手臂下垂); idle_04 列入永不播放",
+   "点击反馈改为 R153 烘焙的\"歪头+眯眼笑\" (happy), 不再复用手放胸前帧",
+   "行走 skew_x 归零",
+   "新增 action_library 9 个动作; 引擎改为加权活动池 + 不重复上次 + 自然停顿",
+   "新增动作过渡交叉溶解 (sit→lie / doze→lie 等), 消除姿态瞬切"
+  ]
+ },
+ "click_reactions": {
+  "enabled": true,
+  "round": "R158",
+  "note": "R158: 点击反馈仍为**随机池**, 每次点击随机挑一个, 短时间内不重复上一次; 播放期间暂停普通 idle/walk/sleep 推进, 播完回到正常状态机。6 个动作全部由 R158 手臂骨架/头部权重场/跳跃剪影**局部**处理生成, 没有用整体压缩/平移/重命名冒充新动作。",
+  "no_repeat_last": true,
+  "pool": [
+   {
+    "action": "cheer_wave",
+    "weight": 3,
+    "desc": "真挥手 (手臂骨架, 手腕摆动)"
+   },
+   {
+    "action": "cheer_hands_up",
+    "weight": 3,
+    "desc": "双臂高举欢呼"
+   },
+   {
+    "action": "cheer_heart",
+    "weight": 3,
+    "desc": "比心 (双手合拢 + 爱心特效)"
+   },
+   {
+    "action": "cheer_clap",
+    "weight": 2,
+    "desc": "鼓掌 (张开→合拢→张开)"
+   },
+   {
+    "action": "cheer_jump",
+    "weight": 2,
+    "desc": "开心跳跃 (双臂上扬 + 离地)"
+   },
+   {
+    "action": "cheer_tilt",
+    "weight": 3,
+    "desc": "歪头眨眼卖萌"
+   }
+  ]
+ },
+ "props": {
+  "enabled": true,
+  "round": "R170",
+  "technique": "程序化矢量绘制 (30_R156_props_bake.py + 37_R158_action_bake.py + 82_R170_eat_fruit_props.py, 无外部素材/无 AI 生图)",
+  "coordinate_note": "道具 PNG 与角色帧**同一纹理坐标系** (1024x1024), 渲染时与角色 sprite 共享 position/anchor/scale, 所以\"道具落地\"= 画到该场景的地面纹理行",
+  "z_order_note": "back 层 = 道具在角色身后 (月亮/床/沙发/转椅); front 层 = 道具在角色身前 (被子/桌子+笔记本/屏幕微光)",
+  "library": {
+   "prop_bed": {
+    "file": "character_R156/prop_bed.png",
+    "desc": "小床: 木架 + 床垫 + 枕头 + 床腿 (R165 重做: 床垫分顶面/侧面两层, 床品与被子同色系)"
+   },
+   "prop_quilt": {
+    "file": "character_R156/prop_quilt.png",
+    "desc": "被子 (R165 重做): 上沿沿角色身体实测轮廓起伏, 4 长 3 短羽化弧形褶皱, 17px 翻折亮边, 对角柔和渐变; 左边界 x=416 不遮脸不切手, 下沿搭到床垫前沿"
+   },
+   "prop_moon": {
+    "file": "character_R156/prop_moon.png",
+    "desc": "月亮 + 小星 + 一小片淡月晕 (夜晚氛围辅助, 不做大块背景, 不喧宾夺主)"
+   },
+   "prop_sofa": {
+    "file": "character_R156/prop_sofa.png",
+    "desc": "低矮豆袋小沙发: 无细高腿, 厚坐垫直接落地"
+   },
+   "prop_chair": {
+    "file": "character_R156/prop_chair.png",
+    "desc": "办公转椅: 靠背宽到能在笔记本两侧露出"
+   },
+   "prop_desk": {
+    "file": "character_R156/prop_desk.png",
+    "desc": "办公桌前沿厚边 + 两条桌腿 + 笔记本电脑 (front 层, 角色身前); 笔记本 R167 后移到台面远端 (盖板 y448..596 / 基座 y596..622), 与键盘形成\"屏幕在后、键盘在前\"的透视"
+   },
+   "prop_screen_glow": {
+    "file": "character_R156/prop_screen_glow.png",
+    "desc": "屏幕微光: 三块小柔光落在胸口/下巴/桌面上的双手, 不遮五官"
+   },
+   "prop_heart": {
+    "file": "character_R158/prop_heart.png",
+    "desc": "爱心特效: 程序化矢量绘制, 叠在双手合拢处上方 (front 层)"
+   },
+   "prop_desk_surface": {
+    "file": "character_R156/prop_desk_surface.png",
+    "desc": "办公桌台面 (back 层, 角色坐在桌后): 台面远沿 y=552 / 近沿 y=668, 近沿更宽 = 俯视透视; 含双手落在台面上的接触阴影"
+   },
+   "prop_keyboard": {
+    "file": "character_R156/prop_keyboard.png",
+    "desc": "办公键盘 (back 层, 压在台面上): 远沿窄近沿宽的透视梯形, 4 排键位 + 空格键, 键位分隔线加粗到 4~5 纹理 px (200x240 上仍看得见); 含双手压键的接触阴影"
+   },
+   "prop_stool": {
+    "file": "character_R156/prop_stool.png",
+    "desc": "小圆凳 (back 层, 角色身后): 蓝白科技系坐垫 + 矮腿, 角色坐在上面"
+   },
+   "prop_fruit_table": {
+    "file": "character_R156/prop_fruit_table.png",
+    "desc": "小边桌 + 果盘 (back 层, 角色画面左侧): 圆角浅色桌面 + 细腿, 桌上一个浅色果盘, 盘里 2~3 个水果 (她拿的那颗之外的)"
+   },
+   "prop_office_chair": {
+    "file": "character_R172/prop_office_chair.png",
+    "desc": "办公转椅 (R172): 靠背 + 座面, 放在 back 层, 从角色肩/头两侧露出, 读作\"她坐在办公椅上\"。刻意不画中柱与五星脚 —— 角色坐在椅子上时中柱正好落在两腿之间, 会在脚边露出一坨灰色异物。"
+   },
+   "prop_office_monitor": {
+    "file": "character_R172/prop_office_monitor.png",
+    "desc": "3/4 透视的显示器正面 (R172): 屏内画蓝白科技界面 (标题栏 + 侧栏 + 代码行 + 状态块), 放在 front 层。取代 R167 的\"笔记本背板\" —— 那版观众只能看到一块石墨灰, 用户看不到任何屏幕内容。"
+   }
+  },
+  "scenes": {
+   "sleep_breath": {
+    "floor_tex_y": 818,
+    "back": [
+     "prop_bed",
+     "prop_moon"
+    ],
+    "front": [
+     "prop_quilt"
+    ],
+    "desc": "睡眠主循环: 躺在床上 + 月亮夜晚氛围 + 被子盖身"
+   },
+   "sleep_loop": {
+    "floor_tex_y": 818,
+    "back": [
+     "prop_bed",
+     "prop_moon"
+    ],
+    "front": [
+     "prop_quilt"
+    ],
+    "desc": "睡眠中的姿态微调: 同一套床与夜色氛围"
+   },
+   "sit_rest": {
+    "floor_tex_y": 1001,
+    "back": [
+     "prop_sofa"
+    ],
+    "front": [],
+    "desc": "坐下休息: 坐在低矮小沙发上"
+   },
+   "doze": {
+    "floor_tex_y": 1001,
+    "back": [
+     "prop_sofa"
+    ],
+    "front": [],
+    "desc": "困倦打盹: 坐在同一张小沙发上闭眼"
+   },
+   "work": {
+    "floor_tex_y": 1001,
+    "back": [],
+    "front": [],
+    "desc": "办公 (R173 透视整改): 底图换成**真 3/4 坐姿** sleep_enter_01_sit (膝盖/脸都朝画面左) ⇒ 角色**面对显示器**。显示器移到画面左侧更深处, 屏面正面朝右(面向角色)、观众从侧面看到被透视压缩的屏幕内容 ⇒ 不再出现\"人物坐在显示器背面\"。桌面改成**斜向透视台面**(左端更远更高), 角色坐在桌子右端, 桌面遮住膝盖(局部遮挡不是删除), 小腿与靴子在桌下完整可见。手的图层关系: 原手留在身体帧 → 桌面盖住原位 → 手的像素**复制一份压在键盘之上** ⇒ 手掌不被键盘整体遮住, 指尖落在键区, 手臂→袖口→手腕→手指衔接全部来自原画。椅子/桌面/键盘/显示器/双手全部内嵌进角色帧, 故 back/front 道具列表为空。"
+   },
+   "cheer_heart": {
+    "floor_tex_y": 987,
+    "back": [],
+    "front": [
+     "prop_heart"
+    ],
+    "desc": "比心: 爱心特效叠在双手合拢处上方 (角色身前), 随动作淡入淡出"
+   },
+   "eat_fruit": {
+    "floor_tex_y": 1001,
+    "back": [
+     "prop_stool",
+     "prop_fruit_table"
+    ],
+    "front": [],
+    "desc": "吃水果 (R170): 坐在小圆凳上, 画面左侧有一张矮边桌, 桌上放着果盘; 角色伸手拿水果 → 送到嘴边 → 咬一口 → 咀嚼 → 满足地笑。水果本身画在角色帧里 (保证手与果的接触自然), 道具只负责环境。"
+   }
+  }
+ },
+ "r156_click_props_work": {
+  "goals": [
+   "点击互动动作池 ≥5 个 (实际 6 个), 每个有开始/中间/结束, 随机触发且不重复",
+   "睡觉加床 + 月亮夜晚氛围; 坐下加小沙发",
+   "新增\"在电脑前办公\"的待机场景 (小桌子 + 笔记本 + 屏幕微光)",
+   "全部接入行为系统与运行逻辑 (不是只交静态图)"
+  ],
+  "honest_limits": [
+   "真正的双手比心手势做不到 —— R138 无手部素材, 用\"右手横在胸前\"近似",
+   "\"双手小庆祝\"用 R138 idle_01 的双臂抬起近似, 不是真正的双手拍掌",
+   "原地转身是 2D 表现手法 (正面→水平压缩 64% 读作侧身→回正), 不是 180° 背面转身",
+   "办公只能做\"看屏幕/思考/停顿\", 做不到\"敲键盘\"手部动作 (R138 无手部素材)",
+   "R138 素材角色轮廓在纹理里占 y=37~987, 头顶只剩 37px 余量 —— 腾空离地由运行时 ground_tex_y 实现, 若在纹理内挪动最多只能离地 7 屏幕 px"
+  ],
+  "prop_scenes": [
+   "doze",
+   "sit_rest",
+   "sleep_breath",
+   "sleep_loop",
+   "work"
+  ],
+  "click_pool": [
+   "cheer_heart",
+   "cheer_jump",
+   "cheer_spin",
+   "cheer_wink",
+   "cheer_hands",
+   "cheer_sway"
+  ]
+ },
+ "r158_click_actions": {
+  "round": "R158",
+  "goals": [
+   "点击互动动作池 ≥5 种视觉上明确、动作含义清晰的互动 (实际 6 种)",
+   "优先实现: 真正的比心 / 开心跳跃 / 挥手庆祝 / 歪头眨眼",
+   "禁止用压缩、平移、重命名冒充新动作 ⇒ R156 的 4 个几何形变动作下架",
+   "先评估素材可行性; 做不到的明确列出新素材需求, 不虚报 PASS"
+  ],
+  "asset_feasibility": [
+   "R153/R156 的\"R138 无手部素材\"结论**是错的**: idle_00_base.png 里两只手都是张开的、5 指带描边; 真正缺的是\"能把手臂摆到别的位置\"的技术 ⇒ R158 用 arm_rig 补上",
+   "R138 自己的切层脚本 (03_LAYERS/split_a1_layers.py) 漏切了画面左臂, LAYERS.json 只登记了 head/torso/leg_r/arm_r(arm_r = 胸前的拳头)",
+   "全仓库逐目录核查: 只有**正面**素材, 无任何侧身/背面视图"
+  ],
+  "honest_limits": [
+   "真正的 180° 背面转身**做不到** —— R138 全库只有正面素材; 程序化\"合成背面\"需要重画后脑勺+实验服背面(去前襟/胸牌/纽扣), 属于重画角色且质量不可控 ⇒ 本轮不做, 输出精确的新素材需求清单 (见 new_asset_requests)",
+   "手指级\"比心\"几何在桌宠实际显示尺寸下不可读 (整只开口约 12x16 屏幕 px, 单指宽约 2px) ⇒ 比心用\"双手合拢 + 爱心特效\"实现, 并在动作描述里如实写明",
+   "跳跃离地上限受**窗口高度**硬约束 (standard 256x256 头顶只剩 11px 余量 ⇒ 离地 ≤7 屏幕 px), 已在 standard 模式下把 ground_tex_y 顶到 1015 (R156 同值, 已是上限)",
+   "办公场景仍然只能做\"看屏幕/思考/停顿\", 做不到\"敲键盘\"手部动作 (R138 无键盘手部素材)"
+  ],
+  "new_asset_requests": [
+   {
+    "action": "cheer_turn_180",
+    "need": "真正的原地 180° 转身 (背面视图)",
+    "spec": "需要 4~6 张 1024x1024 正面→侧身(3/4)→背面→侧身→正面的连续帧, 每张保持 A1 母版身份一致(银白短发/冰蓝眼睛/白色实验服/科技研究员风格), 背面须为: 后脑勺发型 + 实验服背面(去掉前襟/胸牌/纽扣, 露出内搭深蓝衬衫)",
+    "acceptance": "背面帧必须能被普通用户一眼认成\"同一个角色转过去\"; 正/背面的身高比例一致; 脚底纹理行一致 (987)",
+    "note": "i2i 三/四视角在 R130 已连续三次失败 (身份漂移/姿态漂移), 且本轮禁止充值"
+   },
+   {
+    "action": "cheer_finger_heart",
+    "need": "真正的手指比心 (拇指+食指围成心形)",
+    "spec": "需要 3 张手部特写或半身帧, 单手做手指心; 另需一张\"双手捧心\"备选",
+    "acceptance": "在 200x240 窗口缩放 0.196 下, 心形轮廓必须仍可读 (即心形尺寸 ≥12 屏幕 px)",
+    "note": "现有开口手在该尺寸下只有约 12x16 屏幕 px, 单指宽约 2px, 无法围出可读心形"
+   }
+  ],
+  "click_pool": [
+   "cheer_wave",
+   "cheer_hands_up",
+   "cheer_heart",
+   "cheer_clap",
+   "cheer_jump",
+   "cheer_tilt"
+  ],
+  "prop_scenes": [
+   "cheer_heart",
+   "doze",
+   "eat_fruit",
+   "sit_rest",
+   "sleep_breath",
+   "sleep_loop",
+   "work"
+  ]
+ },
+ "r172_office_scene": {
+  "title": "R172 办公场景构图重做 (恢复完整坐姿 + 3/4 透视电脑 + 可见屏幕内容)",
+  "root_cause": "R167 的设计前提是\"台面在 back 层 ⇒ 正面坐姿的躯干/大腿整片挡住台面 ⇒ 只能剪掉下半身\"。这不是素材不够, 是**图层归属错了**。R172 不再剪身体, 改为把桌面/键盘/双手画进角色帧内部 (PNG 内 z 序可控), 并把底图从跪坐的 sleep_enter_01_sit 换成双腿下垂的 wake_up_01_sit_up。",
+  "changes": [
+   "底图: assets/character_R138/wake_up/wake_up_01_sit_up.png (双腿下垂/靴子踩地), 整帧下移 76px 使脚底对齐地面行 1001",
+   "桌面/键盘/双手/桌沿桌腿 全部内嵌进 character_R172/work_1.png 与 work_2.png",
+   "R167 的 cut_lower_body (WORK_CUT_Y=592) 与 30_R156_props_bake.py 的笔记本背板 (LID_QUAD) 不再被 work 场景引用 (文件保留, 不删历史成果)",
+   "电脑改为 3/4 透视显示器正面 (character_R172/prop_office_monitor.png), 屏内画蓝白科技界面 (标题栏 + 侧栏 + 代码行 + 状态块)",
+   "新增办公转椅 (character_R172/prop_office_chair.png) 作为 back 层道具"
+  ],
+  "honest_limits": [
+   "**双手没有真正向内收到键盘中央** —— 坐姿底图的两只手腕间距实测 280 纹理 px, 手臂总长 (肩→腕 227 px) 不够把手腕挪到角色中线附近, 强行平移会让手与袖口脱节。因此键盘按实际手位画成宽键盘 (344~692), 双手落在键区两端, 手指已旋转成\"向前\"方向。",
+   "袖口在桌面远端被桌面遮住 (桌面远沿 y=620, 袖口 614~646) ⇒ 前臂与桌沿的衔接在 200×240 下只剩 2~3 屏幕 px, 肉眼读作\"手臂伸到桌面上\"。",
+   "显示器是**正面 3/4 的屏幕**, 不是物理正确的背面同侧视角 —— 2D 插画里正面坐姿 + 正对观众的显示器只能这样表达\"看得到屏幕内容\"。",
+   "打字动作是\"手部整体上下 4 纹理 px\"的一帧位移 + 头部抬头/低头, 不是逐键动画 (键盘与桌面是场景道具, 运行时按 action 整组挂载, 不支持逐帧换道具)。",
+   "MAC_REAL_GUI_ACCEPTANCE = PENDING (本轮只有脚本合成与真实 Electron 采集, 未经用户真机肉眼确认)。"
+  ],
+  "verification": "91_R172_manifest_update.py (幂等) / 92_R172_scene_verify.py (客观判据)"
+ },
+ "r173_office_scene": {
+  "title": "R173 办公场景透视与手部遮挡最终整改 (真 3/4 侧前方构图)",
+  "round_from": 172,
+  "root_cause": "R172 的两个硬伤是**同一个构图前提错误**的两个后果: (1) 底图是**正面坐姿**, 而显示器被画成\"正面朝观众\", ⇒ 几何上人物坐在显示器背面; (2) 桌面放在 back 层, 正面躯干/大腿整片挡死台面 ⇒ 只能把手/下半身删掉或遮死。R172 把\"正面坐姿 + 正对观众的显示器只能这样表达看得到屏幕内容\"写进了 honest_limits, 却仍当 PASS 交付 —— 本轮从**底图与透视**上换掉, 而不是继续平移手/桌子/显示器。",
+  "changes": [
+   "底图: assets/character_R138/sleep_enter/sleep_enter_01_sit.png (3/4 坐姿, 膝盖与视线都朝画面左); 脚底 1002 ≈ 地面行 1001, 无需平移",
+   "显示器: 移到画面左侧更深处, 屏面正面朝右(面向角色), 远侧边明显更矮 ⇒ 上下边向右侧发散、收敛点在左 = \"从侧面斜看\"; 屏内蓝白科技界面 (标题条 + 侧栏 + 5 条粗代码行 + 状态块), 粗线条以保证 200×240 下仍读得出\"有内容\"",
+   "桌面: 斜向透视台面 (远沿 x215→690 / 近沿 x165→640), 左端更远更高; 桌沿厚度 + 两条桌腿画在角色之后 (真正在身前)",
+   "键盘: 四边形透视贴图 (键帽网格), 位于手正下方, 右端收在右掌之下",
+   "手: 原手保留在身体帧 (袖口朝向不变) → 桌面盖住原位 → 手的像素复制一份压在键盘之上 ⇒ 手掌不被键盘整体遮住; work_1/work_2 手部位移 ±3/±5 纹理 px 形成可见打字微动作",
+   "椅子: 只在角色右肩/背后露一条 (画全椅子会变成右边一个灰柜子抢主角)",
+   "props.scenes.work 的 back/front 清空 —— 全部内嵌进角色帧 (运行时道具按 action 整组挂载, 无法逐帧换道具, 内嵌才控得住图层)"
+  ],
+  "honest_limits": [
+   "**屏幕内容在 200×240 下只有约 34×48 px**, 只能读出\"有蓝白界面内容\", 读不出具体文字; 这是\"从侧面斜看\"的必然结果 (透视压缩), 要看清内容就得让屏幕正对观众 —— 而那正是 R172 被否掉的构图。",
+   "**显示器仍是\"屏面朝向右侧角色\"的 2D 近似**: 屏幕的四边形按\"远侧边更矮\"的透视画, 但没法真的算出单应, 因为角色帧本身是 2D 贴图、无 3D 相机。",
+   "**桌是偏高的**: 桌面远沿压在腕点下方 (手必须落在桌面上, 而原坐姿的手腕高度就在那儿), 所以读起来像**高脚桌/吧台桌 + 高凳**, 不是常规办公桌; 角色坐在办公转椅上, 桌面高度偏高的原因未在画面里解释。",
+   "**打字动作是手的整体位移 (±3/±5 纹理 px = 200×240 下约 0.6~1 px)**, 不是逐键动画; 可见度有限。",
+   "**膝/大腿被桌面遮住**, 小腿与靴子完整可见 —— 沿用 R172 的\"局部遮挡腿, 不是删除\"口径, 但比正面构图遮得更多。",
+   "MAC_REAL_GUI_ACCEPTANCE = PENDING (未经用户真机肉眼确认)。"
+  ],
+  "verification": "96_R173_manifest_update.py (幂等) / 97_R173_scene_verify.py (客观判据)"
+ }
 }

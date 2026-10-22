@@ -1,0 +1,234 @@
+{
+ "round": 173,
+ "script": "97_R173_scene_verify.py",
+ "summary": {
+  "pass": 26,
+  "total": 26,
+  "all_pass": true
+ },
+ "checks": [
+  {
+   "id": "E1",
+   "name": "200×240 全局缩放逐位不变",
+   "pass": true,
+   "value": "0.19631901840490798",
+   "threshold": "0.19631901840490798",
+   "detail": ""
+  },
+  {
+   "id": "E2",
+   "name": "256×256 全局缩放逐位不变",
+   "pass": true,
+   "value": "0.25357873210633947",
+   "threshold": "0.25357873210633947",
+   "detail": ""
+  },
+  {
+   "id": "A1",
+   "name": "屏幕远/近边高比 (斜置程度)",
+   "pass": true,
+   "value": 1.804,
+   "threshold": "≥1.35",
+   "detail": "远边176px 近边318px; 正面屏应≈1.0"
+  },
+  {
+   "id": "A2",
+   "name": "上下边在近侧发散 (上边升/下边降)",
+   "pass": true,
+   "value": "top-80 bot60",
+   "threshold": "top<0 且 bot>0",
+   "detail": "收敛点在远侧(左) ⇒ 屏面朝右(角色)"
+  },
+  {
+   "id": "A3",
+   "name": "屏幕中心在角色面部左侧",
+   "pass": true,
+   "value": "screen_x=278 face_x=521",
+   "threshold": "screen_x < face_x-40",
+   "detail": ""
+  },
+  {
+   "id": "A4",
+   "name": "头部非正面 (虹膜左右面积比)",
+   "pass": true,
+   "value": "R173=1.197 (左1609/右1344)",
+   "threshold": "≥1.10",
+   "detail": "正面底图 wake_up_01_sit_up 同口径=0.840"
+  },
+  {
+   "id": "A5",
+   "name": "屏内蓝白界面内容像素",
+   "pass": true,
+   "value": 27654,
+   "threshold": "≥500",
+   "detail": ""
+  },
+  {
+   "id": "B1",
+   "name": "手的皮肤像素落在键盘四边形内",
+   "pass": true,
+   "value": 2038,
+   "threshold": "≥400",
+   "detail": "L=(1360, 946) R=(1406, 1092) (总数,在键区)"
+  },
+  {
+   "id": "B2",
+   "name": "两只手都在键盘四边形内且各≥180px",
+   "pass": true,
+   "value": {
+    "L": 946,
+    "R": 1092
+   },
+   "threshold": "各≥180",
+   "detail": ""
+  },
+  {
+   "id": "B3",
+   "name": "键盘区内最终帧像素是肤色 (手未被键盘遮住)",
+   "pass": true,
+   "value": 2038,
+   "threshold": "≥400",
+   "detail": "键盘四边形共12317px, 其中肤色2038px"
+  },
+  {
+   "id": "B4",
+   "name": "桌沿/桌腿未遮挡正在打字的双手",
+   "pass": true,
+   "value": 0,
+   "threshold": "=0",
+   "detail": ""
+  },
+  {
+   "id": "B5",
+   "name": "手腕处袖口与皮肤相邻 (无断裂)",
+   "pass": true,
+   "value": "L:gap=0;R:gap=0",
+   "threshold": "每只手 gap≤26px",
+   "detail": ""
+  },
+  {
+   "id": "C1.200×240",
+   "name": "人物可见 (肤色像素)",
+   "pass": true,
+   "value": 283,
+   "threshold": "≥250",
+   "detail": ""
+  },
+  {
+   "id": "C2.200×240",
+   "name": "下半身(腿/靴)可见",
+   "pass": true,
+   "value": 21600,
+   "threshold": "≥900",
+   "detail": ""
+  },
+  {
+   "id": "C3.200×240",
+   "name": "双手在键盘上 (键区内肤色)",
+   "pass": true,
+   "value": 68,
+   "threshold": "≥12",
+   "detail": ""
+  },
+  {
+   "id": "C4.200×240",
+   "name": "观众看得到屏内容 (屏内蓝像素)",
+   "pass": true,
+   "value": 1061,
+   "threshold": "≥40",
+   "detail": "屏幕在画布上约1466px"
+  },
+  {
+   "id": "C1.256×256",
+   "name": "人物可见 (肤色像素)",
+   "pass": true,
+   "value": 470,
+   "threshold": "≥250",
+   "detail": ""
+  },
+  {
+   "id": "C2.256×256",
+   "name": "下半身(腿/靴)可见",
+   "pass": true,
+   "value": 29696,
+   "threshold": "≥900",
+   "detail": ""
+  },
+  {
+   "id": "C3.256×256",
+   "name": "双手在键盘上 (键区内肤色)",
+   "pass": true,
+   "value": 110,
+   "threshold": "≥12",
+   "detail": ""
+  },
+  {
+   "id": "C4.256×256",
+   "name": "观众看得到屏内容 (屏内蓝像素)",
+   "pass": true,
+   "value": 1750,
+   "threshold": "≥40",
+   "detail": "屏幕在画布上约2374px"
+  },
+  {
+   "id": "D1",
+   "name": "两帧手部位移 (打字动作)",
+   "pass": true,
+   "value": 9.09,
+   "threshold": "≥3 纹理px",
+   "detail": ""
+  },
+  {
+   "id": "D2",
+   "name": "两帧头部(视线)位移",
+   "pass": true,
+   "value": 6.56,
+   "threshold": "≥5 纹理px",
+   "detail": ""
+  },
+  {
+   "id": "F1",
+   "name": "既有成果文件仍在磁盘",
+   "pass": true,
+   "value": "全部存在",
+   "threshold": "无缺失",
+   "detail": ""
+  },
+  {
+   "id": "F2",
+   "name": "R172 道具仍在 manifest library (历史成果不删)",
+   "pass": true,
+   "value": [
+    "prop_office_chair",
+    "prop_office_monitor"
+   ],
+   "threshold": "含两个 R172 道具",
+   "detail": ""
+  },
+  {
+   "id": "F3",
+   "name": "吃水果行为未被改动",
+   "pass": true,
+   "value": [
+    "character_R156/eat_fruit_0.png",
+    "character_R156/eat_fruit_1.png",
+    "character_R156/eat_fruit_2.png",
+    "character_R156/eat_fruit_3.png",
+    "character_R156/eat_fruit_4.png"
+   ],
+   "threshold": "frames 指向 character_R156/eat_fruit_*",
+   "detail": ""
+  },
+  {
+   "id": "F4",
+   "name": "睡眠行为未被改动",
+   "pass": true,
+   "value": [
+    "character_R153/sleep_breath_in.png",
+    "character_R153/sleep_breath_out.png"
+   ],
+   "threshold": "frames 指向 character_R153/*",
+   "detail": ""
+  }
+ ]
+}

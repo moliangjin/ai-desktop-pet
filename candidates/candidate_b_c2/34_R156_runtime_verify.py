@@ -255,6 +255,9 @@ def main():
         check('3. 睡觉场景里道具真实可见', False, '无采集帧')
 
     # 4. 沙发 / 办公
+    # R173: 办公场景的家具 (椅子/桌面/键盘/显示器/双手) 全部**内嵌进角色帧**
+    #   ⇒ work 场景的 back/front 为空, "道具专属区域"恒为 0, 判据必须改成
+    #   在**角色帧自己的像素**上量: 显示器屏幕区域必须是真实可见的蓝白界面。
     for scene_name, action, label, thr in (('scene_sofa', 'sit_rest', '坐下场景的沙发', 400),
                                            ('scene_work', 'work', '办公场景的桌子/笔记本/微光', 400)):
         files = scene_frames(meta, scene_name)
@@ -262,8 +265,31 @@ def main():
             check(f'4. {label}真实可见', False, '无采集帧')
             continue
         sc = scenes[action]
-        pm, cm = prop_scene_mask(action, action, 0, sc['back'] + sc['front'])
+        prop_names = sc['back'] + sc['front']
         cap = load_captured(files[len(files) // 2])
+        if not prop_names:
+            # ---- R173: 内嵌家具 ⇒ 在角色帧像素上判定 ----
+            spec = (m['actions'].get(action)
+                    or (m.get('action_library', {}).get('actions') or {}).get(action))
+            arr = load_rgba(spec['frames'][0])
+            r0, g0, b0 = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+            blue = (arr[:, :, 3] > 24) & (b0 > 140) & (b0 > r0 + 25)
+            ys, xs = np.nonzero(blue)
+            fy = layout['frame_y'].get((action, 0))
+            if len(xs) == 0 or fy is None:
+                check(f'4. {label}真实可见', False, '角色帧里找不到蓝白界面像素')
+                continue
+            sx = np.round(layout['x'] + layout['scale'] * (xs - 512)).astype(int)
+            sy = np.round(fy + layout['scale'] * (ys - ANCHOR_TEX_Y)).astype(int)
+            ok = (sx >= 0) & (sx < CANVAS_W) & (sy >= 0) & (sy < CANVAS_H)
+            vis = cap[:, :, 3] > 24
+            cb, cg, cbb = cap[:, :, 0], cap[:, :, 1], cap[:, :, 2]
+            blue_vis = vis & (cbb > 120) & (cbb > cb + 15)
+            n = int((blue_vis[sy[ok], sx[ok]]).sum())
+            check(f'4. {label}真实可见 (R173: 家具内嵌进角色帧, 判定改为屏内容像素)',
+                  n > 120, f'采集帧里可见的蓝白界面像素 = {n} (阈值 120)')
+            continue
+        pm, cm = prop_scene_mask(action, action, 0, prop_names)
         n = count_prop_pixels(cap, pm, cm)
         check(f'4. {label}真实可见', n > thr, f'道具专属区域可见像素 = {n} (阈值 {thr})')
 

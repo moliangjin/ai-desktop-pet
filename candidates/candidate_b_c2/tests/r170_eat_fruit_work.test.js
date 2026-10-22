@@ -332,22 +332,26 @@ test('F1 六种点击互动动作与 R148 行走方向原样保留', () => {
     }
 });
 
-test('F2 R172 办公场景按任务书重做, 但 R167 旧素材与吃水果/睡眠场景原样保留', () => {
-    // R172 任务书明确要求: "优先调整整体构图" + "不要继续通过裁掉人物身体解决图层遮挡"
-    // ⇒ work 场景换了底图与图层归属, 这条断言随之改为:
-    //   (a) work 场景已指向 R172 新构图 (转椅 + 3/4 显示器 + 新帧)
-    //   (b) R167 的旧办公道具**文件仍在磁盘上** (历史成果不删)
-    //   (c) 吃水果场景与睡眠场景一字未改
+test('F2 R173 办公场景按任务书重做 (3/4 透视), 但 R167/R172 旧素材与吃水果/睡眠场景原样保留', () => {
+    // R173 任务书明确要求: "显示器正面朝向桌宠" + "观众从侧面能看到部分屏幕内容"
+    // + "禁止继续在错误的正面构图上反复平移手、桌子和显示器"
+    // ⇒ work 场景换成 3/4 底图 + 全部内嵌进角色帧, 这条断言随之改为:
+    //   (a) work 帧已指向 R173 新构图
+    //   (b) work 场景的道具列表为空且说明写清"全部内嵌进角色帧"
+    //   (c) R167/R172 的旧办公道具**文件仍在磁盘上** (历史成果不删)
+    //   (d) 吃水果场景与睡眠场景一字未改
     const w = MANIFEST.props.scenes.work;
-    const all = (w.back || []).concat(w.front || []);
-    assert.ok(all.includes('prop_office_chair'), 'R172 办公场景必须有办公转椅');
-    assert.ok(all.includes('prop_office_monitor'), 'R172 办公场景必须有显示器');
+    assert.deepStrictEqual(w.back || [], [], 'R173 办公场景 back 层应为空 (全部内嵌进角色帧)');
+    assert.deepStrictEqual(w.front || [], [], 'R173 办公场景 front 层应为空 (全部内嵌进角色帧)');
+    assert.ok(/内嵌|画进角色帧/.test(w.desc || ''),
+        'R173 办公场景说明必须写清"全部内嵌进角色帧"');
     const lib = MANIFEST.action_library.actions.work;
     assert.deepStrictEqual(lib.frames,
-        ['character_R172/work_1.png', 'character_R172/work_2.png'], 'work 帧未指向 R172 新构图');
-    for (const n of ['prop_chair', 'prop_desk_surface', 'prop_keyboard', 'prop_desk', 'prop_screen_glow']) {
+        ['character_R173/work_1.png', 'character_R173/work_2.png'], 'work 帧未指向 R173 新构图');
+    for (const n of ['prop_chair', 'prop_desk_surface', 'prop_keyboard', 'prop_desk',
+        'prop_screen_glow', 'prop_office_chair', 'prop_office_monitor']) {
         assert.ok(fs.existsSync(path.join(ASSETS, MANIFEST.props.library[n].file)),
-            `R167 的旧办公道具文件 ${n} 被删了 (历史成果必须保留)`);
+            `旧办公道具文件 ${n} 被删了 (历史成果必须保留)`);
     }
     // 吃水果场景必须原样
     assert.deepStrictEqual(MANIFEST.props.scenes.eat_fruit.back,

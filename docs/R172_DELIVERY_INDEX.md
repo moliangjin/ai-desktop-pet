@@ -34,9 +34,9 @@
 | 候选实现 | `candidates/candidate_b_c2/` |
 | QA 报告 | `docs/R172_QA_REPORT.md` |
 | 交付索引 | `docs/R172_DELIVERY_INDEX.md`（本文件） |
-| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R172_review.zip`（__ZIP_FILES__ 文件 / __ZIP_BYTES__ 字节） |
-| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R172_review.zip.sha256`（`__ZIP_SHA256__`） |
-| 备份 | `backup/V0.0_backup_20261022_221053_r172.zip`（__BAK_FILES__ 文件 / __BAK_BYTES__ 字节）+ 同名 `.sha256`（`__BAK_SHA256__`） |
+| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R172_review.zip`（163 文件 / 20,361,727 字节） |
+| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R172_review.zip.sha256`（`ef7c670584b4cceb1bedc5489de421559a6ed56a629692683d845cb5f1eba299`） |
+| 备份 | `backup/V0.0_backup_20261022_221445_r172.zip`（263 文件 / 51,113,067 字节）+ 同名 `.sha256`（`226e6cf8a9da055cc9764a0a7c8790f4516cc0e5dc700a16e962637baf85271d`） |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`（**60 PASS / 0 FAIL / 0 NOT_VERIFIED**） |
 | **R172 客观判据** | `candidates/candidate_b_c2/evidence_r172_scene_verify.json`（**13/13 PASS**） |
 | 真实采集帧 | `candidates/candidate_b_c2/evidence_r172_preview/`（709 帧 + `preview_meta.json` + `run.log`；**原始 PNG 不入库**） |

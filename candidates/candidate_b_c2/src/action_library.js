@@ -49,6 +49,9 @@ const ACTION_CATALOG = Object.freeze({
     // —— R156 新增 ——
     work: Object.freeze({ kind: 'rest', group: 'library', loop: true, desc: '在电脑前办公 (新 idle 类状态)' }),
 
+    // —— R170 新增 ——
+    eat_fruit: Object.freeze({ kind: 'rest', group: 'library', loop: true, desc: '吃水果 (伸手拿果 → 送到嘴边 → 咬一口 → 咀嚼 → 满足微笑)' }),
+
     // —— R158 新增 (6 个**真实**点击互动; R156 的几何形变动作已按"禁止压缩/平移/重命名冒充"下架) ——
     cheer_wave: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '真挥手 (手臂骨架抬手 + 手腕摆动)' }),
     cheer_hands_up: Object.freeze({ kind: 'gesture', group: 'library', loop: false, desc: '双臂高举欢呼' }),

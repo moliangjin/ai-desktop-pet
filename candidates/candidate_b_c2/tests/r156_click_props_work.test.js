@@ -131,16 +131,29 @@ test('A3 点击动作不与其它动作共用同一套帧 (不靠重命名虚增
     }
 });
 
-test('A4 20 张 R156 新帧两两不同, 且与 R138/R153 既有帧无字节重复 (唯一性)', () => {
+test('A4 25 张 R156 新帧两两不同, 且与 R138/R153 既有帧无字节重复 (唯一性)', () => {
     const dir = path.join(ASSETS, 'character_R156');
     const allFiles = fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort();
     const propFiles = new Set(Object.values(PROPS_LIB).map(s => s.file.split('/').pop()));
     const files = allFiles.filter(f => !propFiles.has(f));   // 角色动作帧 (道具另算)
-    assert.strictEqual(files.length, 20,
-        `应有 20 张 R156 角色动作帧 (6 点击动作 ×3 + 办公 2), 实际 ${files.length}: ${files.join(',')}`);
+    // R170: 新增吃水果 5 帧 ⇒ 角色动作帧 20 → 25
+    assert.strictEqual(files.length, 25,
+        `应有 25 张 R156 角色动作帧 (6 点击动作 ×3 + 办公 2 + 吃水果 5), 实际 ${files.length}: ${files.join(',')}`);
     // R165: 办公桌拆成 back(台面) / front(前沿+桌腿) 两个道具 ⇒ 道具 7 → 8, PNG 27 → 28
-    // R167: 新增 prop_keyboard (办公键盘, back 层) ⇒ 道具 8 → 9, PNG 28 → 29
-    assert.strictEqual(allFiles.length, 29, `R156 目录应有 29 张 PNG (20 动作帧 + 9 道具), 实际 ${allFiles.length}`);
+    // R167: 新增 prop_keyboard (办公键盘, back 层) ⇒ R156 目录道具 8 → 9, PNG 28 → 29
+    // R170: 新增 prop_stool / prop_fruit_table (吃水果场景) ⇒ R156 目录道具 9 → 11, PNG 29 → 36
+    //   (36 = 25 角色动作帧 + 11 道具; R170 新增 5 张 eat_fruit 帧 + 2 个道具)
+    // 注意: PROPS_LIB 里 prop_heart 放在 character_R153 目录, 不在 R156 目录,
+    //   所以"落在 R156 目录的道具"要按磁盘实况数, 不能直接用 PROPS_LIB 的条数。
+    const propOnDisk = [...propFiles].filter(f => fs.existsSync(path.join(dir, f)));
+    assert.strictEqual(propOnDisk.length, 11,
+        `R156 目录应放 11 个道具 PNG (含 R170 新增 prop_stool / prop_fruit_table), 实际 ${propOnDisk.length}: ${propOnDisk.join(',')}`);
+    // 目录里不允许出现既不是角色帧也不是道具的野文件
+    const known = new Set([...files, ...propOnDisk]);
+    const stray = allFiles.filter(f => !known.has(f));
+    assert.strictEqual(stray.length, 0, `R156 目录有未登记的 PNG: ${stray.join(',')}`);
+    assert.strictEqual(allFiles.length, files.length + propOnDisk.length,
+        `R156 目录 PNG 总数应 = 角色动作帧 ${files.length} + 道具 ${propOnDisk.length} = ${files.length + propOnDisk.length}, 实际 ${allFiles.length}`);
     const mine = new Map();
     for (const f of files) {
         const h = sha256(path.join(dir, f));
@@ -197,16 +210,18 @@ test('B3 权重生效: 高权重动作出现频率更高 (不是等概率)', () 
 });
 
 // ====== C. 场景道具 ======
-test('C1 10 个道具文件齐全 (R156 的 8 个 + R158 爱心 + R167 键盘), 场景登记的 back/front 道具都在库里', () => {
+test('C1 12 个道具文件齐全 (R156 的 8 个 + R158 爱心 + R167 键盘 + R170 吃水果 2 个), 场景登记的 back/front 道具都在库里', () => {
     assert.ok(PROPS.enabled, 'manifest 的 props 段必须启用');
     // R158: 在 R156 的 7 个道具基础上新增 prop_heart (比心爱心特效)
     // R165: 新增 prop_desk_surface (办公桌台面, back 层) ⇒ 道具 8 → 9
     // R167: 新增 prop_keyboard (办公键盘, back 层) ⇒ 道具 9 → 10
-    assert.strictEqual(Object.keys(PROPS_LIB).length, 10,
-        `应有 10 个道具, 实际 ${Object.keys(PROPS_LIB).length}: ${Object.keys(PROPS_LIB).join(',')}`);
+    // R170: 新增 prop_stool / prop_fruit_table (吃水果场景) ⇒ 道具 10 → 12
+    assert.strictEqual(Object.keys(PROPS_LIB).length, 12,
+        `应有 12 个道具, 实际 ${Object.keys(PROPS_LIB).length}: ${Object.keys(PROPS_LIB).join(',')}`);
     for (const need of ['prop_bed', 'prop_quilt', 'prop_moon', 'prop_sofa',
                         'prop_chair', 'prop_desk', 'prop_desk_surface',
-                        'prop_keyboard', 'prop_screen_glow', 'prop_heart']) {
+                        'prop_keyboard', 'prop_screen_glow', 'prop_heart',
+                        'prop_stool', 'prop_fruit_table']) {
         assert.ok(PROPS_LIB[need], `道具库缺少 ${need}`);
     }
     for (const [name, spec] of Object.entries(PROPS_LIB)) {
@@ -371,9 +386,25 @@ test('D1 行为引擎有 WORK 状态, 且映射到 work 动作', () => {
     assert.strictEqual(spec.kind, 'rest', 'work 应是 rest 类 (待机类)');
 });
 
-test('D2 办公待机权重低, 且不与其它活动连着做', () => {
-    assert.ok(DEFAULT_CONFIG.work_probability <= 0.15,
-        `办公待机权重 ${DEFAULT_CONFIG.work_probability} 偏高 (应 ≤0.15, 避免一直只办公)`);
+test('D2 办公待机的权重/时长/冷却按真机实测重标定, 且不与其它活动连着做', () => {
+    // R170 改判据的依据 (不是"为了让测试变绿"而是**改的是产品行为**):
+    //   R170 真机实测: 真实 Electron 连跑 180s, 空闲决策只有 9 次, WORK 触发 **0 次**
+    //   ⇒ 用户真机看到的就是"电脑办公场景消失不见了"。
+    //   根因: work_probability=0.10 在总权重 2.00 里只占 5% 命中率, 而长活动把
+    //   空闲决策压到 ~20s 一次 ⇒ 期望 ~6.7 分钟才出现一次, 每次只有 9~19s。
+    //   R170 重标定: 权重抬到 0.55 (命中率 ~22%), 时长 16~28s, 冷却 60s。
+    //   下界保证"一定会出现"(≥0.3), 上界保证"不会一直只办公"(≤0.75),
+    //   "不连着做"改由**冷却期**保证 (不只是"上一项是同类就归零")。
+    assert.ok(DEFAULT_CONFIG.work_probability >= 0.30,
+        `办公待机权重 ${DEFAULT_CONFIG.work_probability} 太低 (需 ≥0.30, 否则真机 180s 触发 0 次)`);
+    assert.ok(DEFAULT_CONFIG.work_probability <= 0.75,
+        `办公待机权重 ${DEFAULT_CONFIG.work_probability} 偏高 (需 ≤0.75, 避免一直只办公)`);
+    assert.ok(DEFAULT_CONFIG.work_min_ms >= 12000,
+        `办公单次持续 ${DEFAULT_CONFIG.work_min_ms}ms 太短 (需 ≥12s, 否则"刚出现就消失")`);
+    assert.ok(DEFAULT_CONFIG.work_max_ms > DEFAULT_CONFIG.work_min_ms,
+        '办公时长区间不合法');
+    assert.ok(DEFAULT_CONFIG.work_cooldown_ms >= 30000,
+        `办公冷却 ${DEFAULT_CONFIG.work_cooldown_ms}ms 太短 (需 ≥30s, 避免"一直只办公")`);
     assert.ok(ACTIVITY_KINDS.includes('work'), '活动池里必须有 work');
     // 连续两次都选到 work 的概率应为 0 (上一项是 work 时权重直接归零)
     let consecutive = 0;
@@ -388,7 +419,40 @@ test('D2 办公待机权重低, 且不与其它活动连着做', () => {
         if (kind === 'work') consecutive++;
     }
     assert.strictEqual(consecutive, 0, `上一项是 work 时仍选到 work ${consecutive} 次 (应恒为 0)`);
+    // R170 新增: 冷却期内不得再选到 work (真机观感: 刚放下电脑又坐下 ⇒ 场景像坏了)
+    let inCooldown = 0;
+    for (let i = 0; i < trials; i++) {
+        const engine = new BehaviorEngine({
+            config: { ...DEFAULT_CONFIG },
+            random: () => 0.999,
+            now: () => 1000,      // 距上次办公 1s < 冷却 60s
+        });
+        engine._lastActivity = 'gesture';
+        engine._lastWorkAt = 1000;
+        if (engine._pickActivity() === 'work') inCooldown++;
+    }
+    assert.strictEqual(inCooldown, 0, `冷却期内仍选到 work ${inCooldown} 次 (应恒为 0)`);
 });
+
+// R170: 活动池的随机阈值**从引擎自己的权重反推** (不写死数字)
+//   —— R170 给活动池加了 eat_fruit 一类并重标定了 work 权重, 写死的随机值会落到别的段上
+//   (D3 曾经因此进了 EAT_FRUIT 而不是 WORK)。反推后新增活动不会再打坏旧用例。
+const ACTIVITY_W_KEY = {
+    gesture: 'gesture_probability', walk: 'walk_probability', sit: 'sit_probability',
+    doze: 'doze_probability', work: 'work_probability', eat_fruit: 'eat_fruit_probability',
+    sleep: 'sleep_probability',
+};
+function randomForKind(kind, cfg) {
+    const c = cfg || DEFAULT_CONFIG;
+    const total = ACTIVITY_KINDS.reduce((s, k) => s + (c[ACTIVITY_W_KEY[k]] || 0), 0);
+    let acc = 0;
+    for (const k of ACTIVITY_KINDS) {
+        const w = c[ACTIVITY_W_KEY[k]] || 0;
+        if (k === kind) return (acc + w / 2) / total;
+        acc += w;
+    }
+    throw new Error(`未知活动类别 ${kind}`);
+}
 
 test('D3 引擎能进入 WORK 状态, 下发 work 动作, 结束后回到 idle', () => {
     const actions = [];
@@ -396,7 +460,7 @@ test('D3 引擎能进入 WORK 状态, 下发 work 动作, 结束后回到 idle',
     let timerFn = null;
     const engine = new BehaviorEngine({
         config: { ...DEFAULT_CONFIG, idle_min_ms: 10, idle_max_ms: 10, work_min_ms: 50, work_max_ms: 50 },
-        random: () => 0.90,   // 落在 work 段
+        random: () => randomForKind('work'),   // 落在 work 段 (阈值从配置反推)
         now: () => 0,
         setTimeout: (fn) => { timerFn = fn; return 1; },
         clearTimeout: () => { timerFn = null; },

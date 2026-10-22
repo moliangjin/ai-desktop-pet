@@ -1,0 +1,1160 @@
+{
+  "round": "R170",
+  "action": "eat_fruit",
+  "scheme": "双手捧果在胸前 + 低头张嘴咬一口 (第 4 轮方案)",
+  "boxes": {
+    "face": [
+      410,
+      160,
+      645,
+      320
+    ],
+    "mouth": [
+      470,
+      240,
+      570,
+      300
+    ],
+    "eye_band": [
+      432,
+      190,
+      580,
+      246
+    ]
+  },
+  "frames": [
+    {
+      "file": "eat_fruit_0.png",
+      "index": 0,
+      "angles": {
+        "a_s": -47.67,
+        "a_e": 72.22,
+        "a_w": -62.33
+      },
+      "apple_center": [
+        340.0,
+        544.5
+      ],
+      "apple_target": [
+        340,
+        545
+      ],
+      "apple_deviation_px": 0.5,
+      "fdir": [
+        -0.45,
+        0.89
+      ],
+      "head": {
+        "rotate": 0,
+        "dy": 0,
+        "scale": 1.0
+      },
+      "face": null,
+      "mouth": "closed",
+      "hole_filled_px": 5563,
+      "note": "伸手去果盘拿水果 (手臂下探外探, 苹果刚离开果盘)",
+      "upper_px": 1758,
+      "fore_px": 4257,
+      "hand_px": 10900,
+      "seam_upper_fore": 222,
+      "seam_fore_hand": 0,
+      "arm_components": 2,
+      "arm_largest_frac": 0.6487,
+      "fruit_px": 1080,
+      "fruit_bbox": [
+        318,
+        524,
+        362,
+        560
+      ],
+      "fruit_center": [
+        340.0,
+        542.0
+      ],
+      "apple_to_hand_dist": 1.0,
+      "apple_to_hand_dist_euclid": 1.0,
+      "apple_to_mouth_dist": 225.0,
+      "apple_to_mouth_dist_euclid": 256.2537804599183,
+      "apple_to_face_dist": 207.0,
+      "apple_mouth_overlap_px": 0,
+      "apple_face_overlap_px": 0,
+      "apple_eye_overlap_px": 0,
+      "hand_apple_cover_mouth_px": 0,
+      "apple_occluded_by_finger_px": 20,
+      "apple_hand_overlap_px": 0,
+      "solid_block_count": 1,
+      "solid_blocks": [
+        [
+          252489,
+          [
+            257,
+            38,
+            720,
+            1001
+          ]
+        ]
+      ],
+      "apple_in_main_block_ratio": 1.0,
+      "raised_hand_px": 1538,
+      "hand_bbox": [
+        260,
+        468,
+        428,
+        604
+      ],
+      "mouth_cavity_bbox": [
+        496,
+        275,
+        569,
+        299
+      ],
+      "mouth_cavity_px": 107,
+      "skin_blobs": [
+        [
+          12619,
+          [
+            427,
+            176,
+            628,
+            311
+          ]
+        ],
+        [
+          3465,
+          [
+            442,
+            571,
+            536,
+            642
+          ]
+        ],
+        [
+          2567,
+          [
+            547,
+            600,
+            596,
+            702
+          ]
+        ],
+        [
+          809,
+          [
+            280,
+            517,
+            340,
+            556
+          ]
+        ],
+        [
+          351,
+          [
+            449,
+            140,
+            469,
+            176
+          ]
+        ],
+        [
+          346,
+          [
+            529,
+            141,
+            554,
+            175
+          ]
+        ],
+        [
+          307,
+          [
+            426,
+            181,
+            443,
+            215
+          ]
+        ],
+        [
+          248,
+          [
+            297,
+            540,
+            327,
+            561
+          ]
+        ]
+      ],
+      "skin_blobs_arm_band": 6,
+      "thigh_hole_px": 5,
+      "total_lost_px": 7062
+    },
+    {
+      "file": "eat_fruit_1.png",
+      "index": 1,
+      "angles": {
+        "a_s": -23.23,
+        "a_e": 101.31,
+        "a_w": 76.52
+      },
+      "apple_center": [
+        448.0,
+        438.5
+      ],
+      "apple_target": [
+        448,
+        438
+      ],
+      "apple_deviation_px": 0.5,
+      "fdir": [
+        0.25,
+        -0.97
+      ],
+      "head": {
+        "rotate": 0,
+        "dy": 0,
+        "scale": 1.0
+      },
+      "face": null,
+      "mouth": "closed",
+      "hole_filled_px": 5563,
+      "note": "把水果捧到胸前 (苹果在脸下方, 完全不遮脸)",
+      "upper_px": 1759,
+      "fore_px": 4251,
+      "hand_px": 10902,
+      "seam_upper_fore": 589,
+      "seam_fore_hand": 1390,
+      "arm_components": 1,
+      "arm_largest_frac": 1.0,
+      "fruit_px": 1168,
+      "fruit_bbox": [
+        425,
+        427,
+        470,
+        461
+      ],
+      "fruit_center": [
+        447.5,
+        444.0
+      ],
+      "apple_to_hand_dist": 1.0,
+      "apple_to_hand_dist_euclid": 1.0,
+      "apple_to_mouth_dist": 128.0,
+      "apple_to_mouth_dist_euclid": 133.55523202031435,
+      "apple_to_face_dist": 110.0,
+      "apple_mouth_overlap_px": 0,
+      "apple_face_overlap_px": 0,
+      "apple_eye_overlap_px": 0,
+      "hand_apple_cover_mouth_px": 0,
+      "apple_occluded_by_finger_px": 18,
+      "apple_hand_overlap_px": 0,
+      "solid_block_count": 1,
+      "solid_blocks": [
+        [
+          243455,
+          [
+            325,
+            38,
+            720,
+            1001
+          ]
+        ]
+      ],
+      "apple_in_main_block_ratio": 1.0,
+      "raised_hand_px": 1479,
+      "hand_bbox": [
+        366,
+        379,
+        526,
+        522
+      ],
+      "mouth_cavity_bbox": [
+        496,
+        275,
+        569,
+        299
+      ],
+      "mouth_cavity_px": 107,
+      "skin_blobs": [
+        [
+          12619,
+          [
+            427,
+            176,
+            628,
+            311
+          ]
+        ],
+        [
+          3465,
+          [
+            442,
+            571,
+            536,
+            642
+          ]
+        ],
+        [
+          2567,
+          [
+            547,
+            600,
+            596,
+            702
+          ]
+        ],
+        [
+          920,
+          [
+            422,
+            416,
+            508,
+            469
+          ]
+        ],
+        [
+          351,
+          [
+            449,
+            140,
+            469,
+            176
+          ]
+        ],
+        [
+          346,
+          [
+            529,
+            141,
+            554,
+            175
+          ]
+        ],
+        [
+          307,
+          [
+            426,
+            181,
+            443,
+            215
+          ]
+        ],
+        [
+          243,
+          [
+            461,
+            415,
+            488,
+            438
+          ]
+        ]
+      ],
+      "skin_blobs_arm_band": 5,
+      "thigh_hole_px": 5,
+      "total_lost_px": 5300
+    },
+    {
+      "file": "eat_fruit_2.png",
+      "index": 2,
+      "angles": {
+        "a_s": 119.61,
+        "a_e": 136.31,
+        "a_w": 171.6
+      },
+      "apple_center": [
+        505.0,
+        348.5
+      ],
+      "apple_target": [
+        505,
+        348
+      ],
+      "apple_deviation_px": 0.5,
+      "fdir": [
+        0.98,
+        0.2
+      ],
+      "head": {
+        "rotate": -3.0,
+        "dy": 10,
+        "scale": 0.99
+      },
+      "face": null,
+      "mouth": "open",
+      "hole_filled_px": 5563,
+      "note": "低头张嘴咬一口 (苹果顶到下唇下方, 嘴全程可见)",
+      "upper_px": 1756,
+      "fore_px": 4256,
+      "hand_px": 10899,
+      "seam_upper_fore": 67,
+      "seam_fore_hand": 3429,
+      "arm_components": 1,
+      "arm_largest_frac": 1.0,
+      "fruit_px": 1083,
+      "fruit_bbox": [
+        482,
+        328,
+        514,
+        371
+      ],
+      "fruit_center": [
+        498.0,
+        349.5
+      ],
+      "apple_to_hand_dist": 1.0,
+      "apple_to_hand_dist_euclid": 1.0,
+      "apple_to_mouth_dist": 29.0,
+      "apple_to_mouth_dist_euclid": 29.0,
+      "apple_to_face_dist": 11.0,
+      "apple_mouth_overlap_px": 0,
+      "apple_face_overlap_px": 0,
+      "apple_eye_overlap_px": 0,
+      "hand_apple_cover_mouth_px": 0,
+      "apple_occluded_by_finger_px": 19,
+      "apple_hand_overlap_px": 0,
+      "solid_block_count": 1,
+      "solid_blocks": [
+        [
+          236506,
+          [
+            338,
+            29,
+            720,
+            1001
+          ]
+        ]
+      ],
+      "apple_in_main_block_ratio": 1.0,
+      "raised_hand_px": 1763,
+      "hand_bbox": [
+        420,
+        269,
+        564,
+        424
+      ],
+      "mouth_cavity_bbox": [
+        496,
+        251,
+        569,
+        299
+      ],
+      "mouth_cavity_px": 496,
+      "skin_blobs": [
+        [
+          11384,
+          [
+            425,
+            165,
+            623,
+            303
+          ]
+        ],
+        [
+          3465,
+          [
+            442,
+            571,
+            536,
+            642
+          ]
+        ],
+        [
+          2567,
+          [
+            547,
+            600,
+            596,
+            702
+          ]
+        ],
+        [
+          989,
+          [
+            476,
+            322,
+            530,
+            407
+          ]
+        ],
+        [
+          334,
+          [
+            444,
+            135,
+            464,
+            169
+          ]
+        ],
+        [
+          322,
+          [
+            523,
+            133,
+            548,
+            165
+          ]
+        ],
+        [
+          296,
+          [
+            423,
+            177,
+            440,
+            210
+          ]
+        ],
+        [
+          247,
+          [
+            506,
+            361,
+            531,
+            387
+          ]
+        ]
+      ],
+      "skin_blobs_arm_band": 4,
+      "thigh_hole_px": 5,
+      "total_lost_px": 11861
+    },
+    {
+      "file": "eat_fruit_3.png",
+      "index": 3,
+      "angles": {
+        "a_s": 114.44,
+        "a_e": 155.85,
+        "a_w": 150.68
+      },
+      "apple_center": [
+        500.0,
+        378.5
+      ],
+      "apple_target": [
+        500,
+        378
+      ],
+      "apple_deviation_px": 0.5,
+      "fdir": [
+        0.95,
+        0.31
+      ],
+      "head": {
+        "rotate": 0,
+        "dy": 4,
+        "scale": 0.995
+      },
+      "face": null,
+      "mouth": "closed",
+      "hole_filled_px": 5563,
+      "note": "咀嚼 (苹果退开一点, 腮微鼓)",
+      "upper_px": 1753,
+      "fore_px": 4266,
+      "hand_px": 10900,
+      "seam_upper_fore": 0,
+      "seam_fore_hand": 4432,
+      "arm_components": 1,
+      "arm_largest_frac": 1.0,
+      "fruit_px": 1072,
+      "fruit_bbox": [
+        477,
+        358,
+        511,
+        401
+      ],
+      "fruit_center": [
+        494.0,
+        379.5
+      ],
+      "apple_to_hand_dist": 1.0,
+      "apple_to_hand_dist_euclid": 1.0,
+      "apple_to_mouth_dist": 59.0,
+      "apple_to_mouth_dist_euclid": 59.0,
+      "apple_to_face_dist": 44.0,
+      "apple_mouth_overlap_px": 0,
+      "apple_face_overlap_px": 0,
+      "apple_eye_overlap_px": 0,
+      "hand_apple_cover_mouth_px": 0,
+      "apple_occluded_by_finger_px": 14,
+      "apple_hand_overlap_px": 0,
+      "solid_block_count": 1,
+      "solid_blocks": [
+        [
+          235595,
+          [
+            338,
+            35,
+            720,
+            1001
+          ]
+        ]
+      ],
+      "apple_in_main_block_ratio": 1.0,
+      "raised_hand_px": 1563,
+      "hand_bbox": [
+        418,
+        294,
+        560,
+        456
+      ],
+      "mouth_cavity_bbox": [
+        496,
+        271,
+        569,
+        299
+      ],
+      "mouth_cavity_px": 171,
+      "skin_blobs": [
+        [
+          12444,
+          [
+            428,
+            172,
+            627,
+            308
+          ]
+        ],
+        [
+          3465,
+          [
+            442,
+            571,
+            536,
+            642
+          ]
+        ],
+        [
+          2567,
+          [
+            547,
+            600,
+            596,
+            702
+          ]
+        ],
+        [
+          991,
+          [
+            471,
+            351,
+            519,
+            438
+          ]
+        ],
+        [
+          330,
+          [
+            449,
+            137,
+            469,
+            172
+          ]
+        ],
+        [
+          329,
+          [
+            529,
+            138,
+            554,
+            171
+          ]
+        ],
+        [
+          295,
+          [
+            426,
+            178,
+            444,
+            211
+          ]
+        ],
+        [
+          248,
+          [
+            498,
+            391,
+            522,
+            419
+          ]
+        ]
+      ],
+      "skin_blobs_arm_band": 5,
+      "thigh_hole_px": 5,
+      "total_lost_px": 10531
+    },
+    {
+      "file": "eat_fruit_4.png",
+      "index": 4,
+      "angles": {
+        "a_s": -8.68,
+        "a_e": 103.59,
+        "a_w": 53.71
+      },
+      "apple_center": [
+        478.0,
+        431.5
+      ],
+      "apple_target": [
+        478,
+        432
+      ],
+      "apple_deviation_px": 0.5,
+      "fdir": [
+        0.35,
+        -0.94
+      ],
+      "head": {
+        "rotate": 0,
+        "dy": 0,
+        "scale": 1.0
+      },
+      "face": "happy",
+      "mouth": "closed",
+      "hole_filled_px": 5563,
+      "note": "满足地笑 (苹果放回胸前, 笑眼)",
+      "upper_px": 1751,
+      "fore_px": 4259,
+      "hand_px": 10892,
+      "seam_upper_fore": 588,
+      "seam_fore_hand": 1246,
+      "arm_components": 1,
+      "arm_largest_frac": 1.0,
+      "fruit_px": 1126,
+      "fruit_bbox": [
+        455,
+        419,
+        500,
+        454
+      ],
+      "fruit_center": [
+        477.5,
+        436.5
+      ],
+      "apple_to_hand_dist": 1.0,
+      "apple_to_hand_dist_euclid": 1.0,
+      "apple_to_mouth_dist": 120.0,
+      "apple_to_mouth_dist_euclid": 120.41594578792295,
+      "apple_to_face_dist": 102.0,
+      "apple_mouth_overlap_px": 0,
+      "apple_face_overlap_px": 0,
+      "apple_eye_overlap_px": 0,
+      "hand_apple_cover_mouth_px": 0,
+      "apple_occluded_by_finger_px": 14,
+      "apple_hand_overlap_px": 0,
+      "solid_block_count": 1,
+      "solid_blocks": [
+        [
+          240855,
+          [
+            338,
+            38,
+            720,
+            1001
+          ]
+        ]
+      ],
+      "apple_in_main_block_ratio": 1.0,
+      "raised_hand_px": 1526,
+      "hand_bbox": [
+        393,
+        372,
+        557,
+        513
+      ],
+      "mouth_cavity_bbox": [
+        496,
+        275,
+        569,
+        299
+      ],
+      "mouth_cavity_px": 119,
+      "skin_blobs": [
+        [
+          15386,
+          [
+            426,
+            176,
+            628,
+            311
+          ]
+        ],
+        [
+          3465,
+          [
+            442,
+            571,
+            536,
+            642
+          ]
+        ],
+        [
+          2567,
+          [
+            547,
+            600,
+            596,
+            702
+          ]
+        ],
+        [
+          962,
+          [
+            451,
+            416,
+            539,
+            462
+          ]
+        ],
+        [
+          351,
+          [
+            449,
+            140,
+            469,
+            176
+          ]
+        ],
+        [
+          346,
+          [
+            529,
+            141,
+            554,
+            175
+          ]
+        ],
+        [
+          246,
+          [
+            491,
+            413,
+            520,
+            435
+          ]
+        ],
+        [
+          231,
+          [
+            460,
+            405,
+            486,
+            424
+          ]
+        ]
+      ],
+      "skin_blobs_arm_band": 5,
+      "thigh_hole_px": 5,
+      "total_lost_px": 6282
+    }
+  ],
+  "manifest_suggestion": {
+    "action": "eat_fruit",
+    "action_library.actions.eat_fruit.frames": [
+      "character_R156/eat_fruit_0.png",
+      "character_R156/eat_fruit_1.png",
+      "character_R156/eat_fruit_2.png",
+      "character_R156/eat_fruit_3.png",
+      "character_R156/eat_fruit_4.png"
+    ],
+    "action_library.actions.eat_fruit.anchor": "sit",
+    "action_library.actions.eat_fruit.ground_tex_y": 1001,
+    "props.scenes.eat_fruit.floor_tex_y": 1001,
+    "props.scenes.eat_fruit.back": [
+      "prop_stool",
+      "prop_fruit_table"
+    ],
+    "props.scenes.eat_fruit.front": [],
+    "props.library.prop_stool.file": "character_R156/prop_stool.png",
+    "props.library.prop_fruit_table.file": "character_R156/prop_fruit_table.png",
+    "note": "manifest 已由父 agent 侧写入, 这里给出建议值供比对"
+  },
+  "final_version": {
+    "version": "R170 第 4 轮方案 \"双手捧果在胸前 + 低头张嘴咬一口\" 的最终版 (2026-10-22 18:13-18:14 烘焙, 已冻结)",
+    "frozen": true,
+    "note": "素材已冻结: assets/character_R156/eat_fruit_0..4.png 与 81_R170_eat_fruit_bake.py 的当前状态互相一致 (重跑脚本会复现同一批帧), 不再迭代。",
+    "verifier": "83_R170_scene_verify.py → 13/13 PASS (E1/E2/E3/E4/E5/E6/E7/E8/E9/E10 + W1/W2/W3)",
+    "dist_to_mouth_box_px_sequence": [
+      225.0,
+      128.0,
+      29.0,
+      59.0,
+      120.0
+    ],
+    "gripped": {
+      "apple_in_main_block_ratio": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "apple_to_hand_px": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "apple_pixels_covered_by_fingertips": [
+        20,
+        18,
+        19,
+        14,
+        14
+      ],
+      "explanation": "苹果画在掌心层之上、指尖层之下 ⇒ 果体与手必然同块 (100% 落在角色主连通块内), 指尖压住果体远端一条边 (14~19 px)。"
+    },
+    "known_limitations": [
+      "F0 抬臂时肘部切边是\"相邻\"而不是\"叠合\": 上臂/前臂 3px 膨胀重叠 222 px、前臂/指尖 0 px ⇒ 肘弯处会看到一条折痕线 (角色整体仍为 1 个连通块, E5=1)。原因是同一手部落点对应有限组解, 其中满足\"苹果落点 + 手指方向\"的这一组肘部叠合量最大; 要再叠合就得让手到不了果盘位置。",
+      "袖子切割边是 1px 量化的阶梯边 (切边线按整像素取整), 3 倍放大可见, 200×240 实际显示尺寸下不可见。",
+      "袖口切边描边已从\"纯墨色 (10,14,34)\"软化为 (24,30,56) + 一行 120/255 半透明过渡, 但白袖压在白大褂上仍靠这条描边区分边界, 3 倍放大下仍是一条明确的线。",
+      "苹果没有被指尖完全包住: 指尖只压住果体远端 14~19 px (果体掩膜口径), 果体其余部分完全可见 —— 这是为了\"看得见在吃水果\"; 若要求指尖环抱, 需把手部素材换成握拳图。",
+      "F2 苹果顶边到下唇约 29 px (父 agent 理想值 ~10 px): 头部权重场再往下压就会拉伸下半张脸或拉断脖子, 现在的 dy=10 是安全上限。",
+      "苹果是程序化绘制 (4x 超采样 + 1.6px 柔和深棕内描边), 不是原画素材; 叶子/果柄细节较简。"
+    ],
+    "frames_summary": [
+      {
+        "file": "eat_fruit_0.png",
+        "action": "伸手去果盘拿水果 (手臂下探外探, 苹果刚离开果盘)",
+        "angles": {
+          "a_s": -47.67,
+          "a_e": 72.22,
+          "a_w": -62.33
+        },
+        "apple_center": [
+          340.0,
+          544.5
+        ],
+        "apple_bbox": [
+          318,
+          524,
+          362,
+          560
+        ],
+        "apple_px": 1080,
+        "apple_to_mouth_px": 225.0,
+        "apple_to_hand_px": 1.0,
+        "apple_mouth_overlap_px": 0,
+        "apple_face_overlap_px": 0,
+        "apple_eye_overlap_px": 0,
+        "apple_occluded_by_finger_px": 20,
+        "apple_in_main_block_ratio": 1.0,
+        "hand_bbox": [
+          260,
+          468,
+          428,
+          604
+        ],
+        "mouth_cavity_bbox": [
+          496,
+          275,
+          569,
+          299
+        ],
+        "raised_hand_px": 1538,
+        "solid_block_count": 1,
+        "thigh_hole_px": 5,
+        "head": {
+          "rotate": 0,
+          "dy": 0,
+          "scale": 1.0
+        },
+        "mouth": "closed",
+        "face": null
+      },
+      {
+        "file": "eat_fruit_1.png",
+        "action": "把水果捧到胸前 (苹果在脸下方, 完全不遮脸)",
+        "angles": {
+          "a_s": -23.23,
+          "a_e": 101.31,
+          "a_w": 76.52
+        },
+        "apple_center": [
+          448.0,
+          438.5
+        ],
+        "apple_bbox": [
+          425,
+          427,
+          470,
+          461
+        ],
+        "apple_px": 1168,
+        "apple_to_mouth_px": 128.0,
+        "apple_to_hand_px": 1.0,
+        "apple_mouth_overlap_px": 0,
+        "apple_face_overlap_px": 0,
+        "apple_eye_overlap_px": 0,
+        "apple_occluded_by_finger_px": 18,
+        "apple_in_main_block_ratio": 1.0,
+        "hand_bbox": [
+          366,
+          379,
+          526,
+          522
+        ],
+        "mouth_cavity_bbox": [
+          496,
+          275,
+          569,
+          299
+        ],
+        "raised_hand_px": 1479,
+        "solid_block_count": 1,
+        "thigh_hole_px": 5,
+        "head": {
+          "rotate": 0,
+          "dy": 0,
+          "scale": 1.0
+        },
+        "mouth": "closed",
+        "face": null
+      },
+      {
+        "file": "eat_fruit_2.png",
+        "action": "低头张嘴咬一口 (苹果顶到下唇下方, 嘴全程可见)",
+        "angles": {
+          "a_s": 119.61,
+          "a_e": 136.31,
+          "a_w": 171.6
+        },
+        "apple_center": [
+          505.0,
+          348.5
+        ],
+        "apple_bbox": [
+          482,
+          328,
+          514,
+          371
+        ],
+        "apple_px": 1083,
+        "apple_to_mouth_px": 29.0,
+        "apple_to_hand_px": 1.0,
+        "apple_mouth_overlap_px": 0,
+        "apple_face_overlap_px": 0,
+        "apple_eye_overlap_px": 0,
+        "apple_occluded_by_finger_px": 19,
+        "apple_in_main_block_ratio": 1.0,
+        "hand_bbox": [
+          420,
+          269,
+          564,
+          424
+        ],
+        "mouth_cavity_bbox": [
+          496,
+          251,
+          569,
+          299
+        ],
+        "raised_hand_px": 1763,
+        "solid_block_count": 1,
+        "thigh_hole_px": 5,
+        "head": {
+          "rotate": -3.0,
+          "dy": 10,
+          "scale": 0.99
+        },
+        "mouth": "open",
+        "face": null
+      },
+      {
+        "file": "eat_fruit_3.png",
+        "action": "咀嚼 (苹果退开一点, 腮微鼓)",
+        "angles": {
+          "a_s": 114.44,
+          "a_e": 155.85,
+          "a_w": 150.68
+        },
+        "apple_center": [
+          500.0,
+          378.5
+        ],
+        "apple_bbox": [
+          477,
+          358,
+          511,
+          401
+        ],
+        "apple_px": 1072,
+        "apple_to_mouth_px": 59.0,
+        "apple_to_hand_px": 1.0,
+        "apple_mouth_overlap_px": 0,
+        "apple_face_overlap_px": 0,
+        "apple_eye_overlap_px": 0,
+        "apple_occluded_by_finger_px": 14,
+        "apple_in_main_block_ratio": 1.0,
+        "hand_bbox": [
+          418,
+          294,
+          560,
+          456
+        ],
+        "mouth_cavity_bbox": [
+          496,
+          271,
+          569,
+          299
+        ],
+        "raised_hand_px": 1563,
+        "solid_block_count": 1,
+        "thigh_hole_px": 5,
+        "head": {
+          "rotate": 0,
+          "dy": 4,
+          "scale": 0.995
+        },
+        "mouth": "closed",
+        "face": null
+      },
+      {
+        "file": "eat_fruit_4.png",
+        "action": "满足地笑 (苹果放回胸前, 笑眼)",
+        "angles": {
+          "a_s": -8.68,
+          "a_e": 103.59,
+          "a_w": 53.71
+        },
+        "apple_center": [
+          478.0,
+          431.5
+        ],
+        "apple_bbox": [
+          455,
+          419,
+          500,
+          454
+        ],
+        "apple_px": 1126,
+        "apple_to_mouth_px": 120.0,
+        "apple_to_hand_px": 1.0,
+        "apple_mouth_overlap_px": 0,
+        "apple_face_overlap_px": 0,
+        "apple_eye_overlap_px": 0,
+        "apple_occluded_by_finger_px": 14,
+        "apple_in_main_block_ratio": 1.0,
+        "hand_bbox": [
+          393,
+          372,
+          557,
+          513
+        ],
+        "mouth_cavity_bbox": [
+          496,
+          275,
+          569,
+          299
+        ],
+        "raised_hand_px": 1526,
+        "solid_block_count": 1,
+        "thigh_hole_px": 5,
+        "head": {
+          "rotate": 0,
+          "dy": 0,
+          "scale": 1.0
+        },
+        "mouth": "closed",
+        "face": "happy"
+      }
+    ]
+  }
+}

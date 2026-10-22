@@ -146,6 +146,82 @@ PROP_DESC_UPDATE = {
     'prop_screen_glow': '屏幕微光: 三块小柔光落在胸口/下巴/桌面上的双手, 不遮五官',
 }
 
+# ---------------------------------------------------------------------------
+# R170: 吃水果 (EAT_FRUIT) —— 新的生活行为
+#
+#   5 帧连拍: 伸手拿果 → 举到嘴边 → 低头张嘴咬一口 → 轻微咀嚼 → 满足地笑
+#   水果**画进角色帧内部** ⇒ 手掌与水果的接触是像素级精确的,
+#   不会出现"把水果贴在脸上冒充吃东西"。
+# ---------------------------------------------------------------------------
+LIBRARY_R170 = {
+    'eat_fruit': {
+        'frames': [f'{R156}/eat_fruit_{i}.png' for i in range(5)],
+        'frame_ms': [820, 760, 900, 700, 1150],
+        'loop': True,
+        'anchor': 'sit',
+        'ground_tex_y': 1001,
+        'desc': ('吃水果: 伸手从果盘拿起水果 → 举到嘴边 → 低头张嘴咬一口 → 轻微咀嚼 → '
+                 '满足地笑 (换开心笑眼)。水果画进角色帧内部, 手与果的接触像素级精确; '
+                 '小凳 + 小边桌 + 果盘为独立道具 (back 层), 不遮五官。'),
+        'source': 'R170 局部烘焙 (arm_rig + head_transform + face_swap + 程序化水果)',
+    },
+}
+
+PROP_STOOL = {
+    'file': f'{R156}/prop_stool.png',
+    'desc': '小圆凳 (back 层, 角色身后): 蓝白科技系坐垫 + 矮腿, 角色坐在上面',
+}
+PROP_FRUIT_TABLE = {
+    'file': f'{R156}/prop_fruit_table.png',
+    'desc': '小边桌 + 果盘 (back 层, 角色画面左侧): 圆角浅色桌面 + 细腿, 桌上一个浅色果盘, '
+            '盘里 2~3 个水果 (她拿的那颗之外的)',
+}
+
+# R170: manifest 里的 behavior.config 是 **R141 时代的陈旧快照**, 一直静默覆盖引擎默认值:
+#   sleep_probability 0.3 (引擎 R153 已降到 0.10) / walk_probability 0.7 (引擎是 0.62),
+#   而且**根本没有** work / eat_fruit 的权重 —— 办公场景因此只有 5% 命中率,
+#   真机 180s 连跑触发 0 次 (用户报"办公场景消失")。
+#   R170 把它与引擎默认值对齐, 并写入 R170 重标定后的办公/吃水果参数。
+BEHAVIOR_CONFIG_R170 = {
+    'idle_min_ms': 3000,
+    'idle_max_ms': 8000,
+    'walk_speed_px_per_sec': 30,
+    'walk_min_distance_px': 80,
+    'walk_max_distance_px': 250,
+    'walk_move_tick_ms': 33,
+    'sleep_min_ms': 20000,
+    'sleep_max_ms': 45000,
+    'sleep_probability': 0.10,      # R153 的设计意图 (manifest 之前被陈旧值 0.3 覆盖)
+    'walk_probability': 0.62,      # 同上 (之前是 0.7)
+    'drag_resume_delay_ms': 800,
+    'edge_margin_px': 4,
+    # R153 生活化活动
+    'gesture_probability': 0.46,
+    'sit_probability': 0.22,
+    'doze_probability': 0.22,
+    'gesture_min_ms': 1600,
+    'gesture_max_ms': 3400,
+    'sit_min_ms': 6000,
+    'sit_max_ms': 13000,
+    'doze_min_ms': 7000,
+    'doze_max_ms': 15000,
+    'sleep_shift_min_ms': 7000,
+    'sleep_shift_max_ms': 15000,
+    'sleep_shift_duration_ms': 4200,
+    'stretch_after_wake': True,
+    'activity_repeat_penalty': 0.25,
+    'no_sleep_after_wake_ms': 45000,
+    # R170 办公/吃水果 (与引擎 DEFAULT_CONFIG 一致)
+    'work_probability': 0.55,
+    'work_min_ms': 16000,
+    'work_max_ms': 28000,
+    'work_cooldown_ms': 60000,
+    'eat_fruit_probability': 0.36,
+    'eat_fruit_min_ms': 14000,
+    'eat_fruit_max_ms': 22000,
+    'eat_fruit_cooldown_ms': 50000,
+}
+
 
 def bbox_of(rel):
     p = os.path.join(ASSETS, rel)
@@ -186,9 +262,30 @@ def main():
         lib_actions[name] = entry
         lib_bboxes[name] = [bbox_of(f) for f in spec['frames']]
 
+    # ---------- 2b. R170: 登记吃水果动作 ----------
+    for name, spec in LIBRARY_R170.items():
+        entry = {
+            'frames': spec['frames'],
+            'frame_ms': spec['frame_ms'],
+            'loop': spec['loop'],
+            'anchor': spec['anchor'],
+            'desc': spec['desc'],
+            'source': spec['source'],
+        }
+        if 'ground_tex_y' in spec:
+            entry['ground_tex_y'] = spec['ground_tex_y']
+        lib_actions[name] = entry
+        lib_bboxes[name] = [bbox_of(f) for f in spec['frames']]
+
     lib['enabled'] = True
     lib['round'] = 'R158'
-    lib['note'] = (lib.get('note', '') +
+    # R170: 剥掉历史上追加过的 R158 段, 再重新追加 —— 否则每次重跑 note 都会变长,
+    # manifest 无法复算 (本轮发现并修掉的一个 R158 时代遗留的幂等性 bug)。
+    _note = lib.get('note', '')
+    _cut = _note.find(' | R158: 点击互动池换成')
+    if _cut >= 0:
+        _note = _note[:_cut]
+    lib['note'] = (_note +
                    ' | R158: 点击互动池换成 6 个**真实**动作 (cheer_wave/cheer_hands_up/cheer_heart/'
                    'cheer_clap/cheer_jump/cheer_tilt, 每个 3 帧 开始/中间/结束)。'
                    '新增技术 arm_rig (36_R158_arm_rig.py): 描边阻隔洪水填充切出 R138 漏切的'
@@ -237,18 +334,46 @@ def main():
                  '双手真正压在台面的键盘上; 笔记本后移到台面远端 (背板朝观众、屏幕朝角色), '
                  '与键盘形成"屏幕在后、键盘在前"的正确透视; 屏幕微光落在脸与手上'),
     }
+    # ---------- 4b2. R170: 吃水果场景 (小凳 + 小边桌/果盘) ----------
+    libp['prop_stool'] = PROP_STOOL
+    libp['prop_fruit_table'] = PROP_FRUIT_TABLE
+    scenes['eat_fruit'] = {
+        'floor_tex_y': 1001,
+        'back': ['prop_stool', 'prop_fruit_table'],
+        'front': [],
+        'desc': ('吃水果 (R170): 坐在小圆凳上, 画面左侧有一张矮边桌, 桌上放着果盘; '
+                 '角色伸手拿水果 → 送到嘴边 → 咬一口 → 咀嚼 → 满足地笑。'
+                 '水果本身画在角色帧里 (保证手与果的接触自然), 道具只负责环境。'),
+    }
     props['enabled'] = True
-    props['round'] = 'R165'
+    props['round'] = 'R170'
     props['library'] = libp
     props['scenes'] = scenes
-    props['technique'] = ('程序化矢量绘制 (30_R156_props_bake.py + 37_R158_action_bake.py, '
-                          '无外部素材/无 AI 生图)')
+    props['technique'] = ('程序化矢量绘制 (30_R156_props_bake.py + 37_R158_action_bake.py + '
+                          '82_R170_eat_fruit_props.py, 无外部素材/无 AI 生图)')
     m['props'] = props
+
+    # ---------- 4c. R170: 行为配置与引擎默认值对齐 (修掉"办公场景消失"的配置侧根因) ----------
+    behavior = m.get('behavior') or {}
+    behavior['config'] = dict(BEHAVIOR_CONFIG_R170)
+    behavior['r170_note'] = (
+        'R170: manifest 里的 behavior.config 之前是 **R141 时代的陈旧快照**, 静默覆盖了引擎'
+        '(src/behavior_engine.js) 的 R153/R156 默认值 —— sleep_probability 被改回 0.3 '
+        '(引擎 R153 已降到 0.10)、walk_probability 0.7 (引擎 0.62), 并且**没有** work / '
+        'eat_fruit 权重。加上 work_probability 本身只有 0.10, 单次空闲决策命中率仅 5%, '
+        '而长活动把空闲决策压到 ~20s 一次 ⇒ 真机 180s 连跑 **触发 0 次**, 用户看到的就是'
+        '"办公场景消失不见了"。本轮把配置与引擎对齐, 并按真机实测重标定办公/吃水果的'
+        '权重(0.55/0.36)、时长(16~28s / 14~22s)与冷却(60s / 50s)。'
+    )
+    m['behavior'] = behavior
 
     # ---------- 5. bbox 与说明 ----------
     m['layout']['frame_bboxes'].update(lib_bboxes)
+    # 先清掉本脚本历史上 append 过的条目, 保证**重跑幂等** (否则 notes 会一遍遍累积)
     m['notes'] = [n for n in m.get('notes', [])
-                   if not n.startswith('R156: 新增点击互动池')]
+                   if not n.startswith('R156: 新增点击互动池')
+                   and not n.startswith('R158:')
+                   and not n.startswith('R170:')]
     m['notes'].append(
         'R158: 点击互动池换成 6 个真实动作 (cheer_wave/cheer_hands_up/cheer_heart/cheer_clap/'
         'cheer_jump/cheer_tilt) —— 18 张新烘焙帧在 character_R158/; '
@@ -259,6 +384,13 @@ def main():
     m['notes'].append(
         'R158: R156 已完成的场景 (床+月亮+被子 / 小沙发 / 办公转椅+小桌+笔记本+屏幕微光) 与 work '
         '待机动作原样保留, 本轮未重做')
+    m['notes'].append(
+        'R170: 新增吃水果行为 EAT_FRUIT (5 帧: 拿果→送到嘴边→咬一口→咀嚼→满足微笑, '
+        '动作与道具在 character_R156/eat_fruit_*.png 与 prop_stool/prop_fruit_table)')
+    m['notes'].append(
+        'R170: 修掉"办公场景在真机消失"—— manifest 的 behavior.config 是 R141 陈旧快照, '
+        '静默覆盖引擎默认值 (sleep 0.3 / walk 0.7), 且没有 work 权重; 已与引擎对齐并按'
+        '真机实测重标定办公/吃水果的权重·时长·冷却')
 
     m['r158_click_actions'] = {
         'round': 'R158',

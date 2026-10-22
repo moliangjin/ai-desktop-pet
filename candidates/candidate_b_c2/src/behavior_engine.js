@@ -38,9 +38,28 @@ const DEFAULT_CONFIG = Object.freeze({
     edge_margin_px: 4,
     // R153: 生活化活动参数
     // R156: 办公待机 (新 idle 类状态) —— 权重刻意压低, 且不与其它活动连着做
-    work_probability: 0.10,
-    work_min_ms: 9000,
-    work_max_ms: 19000,
+    //
+    // R170 真机实测重标定 (权重 / 持续时长 / 冷却三项一起改):
+    //   实测方式: 真实 Electron 连跑 180s, 统计 `[main] R141 STATE` 转移日志。
+    //   实测结果: 180 秒里**空闲决策只有 9 次**, WORK 触发 **0 次** ⇒
+    //     用户真机看到的就是"办公场景消失不见了"。
+    //   根因 (三个数叠加):
+    //     ① work_probability=0.10 与"总权重 2.00"(含 manifest 里被改回 0.3/0.7 的
+    //        sleep/walk)竞争 ⇒ **单次决策命中率只有 5%**;
+    //     ② 长活动吃掉了时间轴 (睡 20~45s / 打盹 7~15s / 坐 6~13s)
+    //        ⇒ 空闲决策 ~20s 才发生一次;
+    //     ③ 命中率 5% × 20s/次 ⇒ 期望 **~6.7 分钟才出现一次办公**, 每次还只有
+    //        9~19s ⇒ 真机观感 = "闪一下就没了 / 根本没出现"。
+    //   重标定后: 单次决策命中率 ~22%, 单次持续 16~28s, 冷却 60s。
+    work_probability: 0.55,
+    work_min_ms: 16000,
+    work_max_ms: 28000,
+    work_cooldown_ms: 60000,      // R170: 办公冷却 —— 防止"一直只办公"
+    // R170: 吃水果 (新的生活行为, 与办公互斥)
+    eat_fruit_probability: 0.36,
+    eat_fruit_min_ms: 14000,
+    eat_fruit_max_ms: 22000,
+    eat_fruit_cooldown_ms: 50000, // R170: 吃水果冷却
     gesture_probability: 0.46,      // 站立小动作 (张望/歪头/点头/伸展/开心)
     sit_probability: 0.22,          // 坐下休息
     doze_probability: 0.22,         // 困倦打盹 (短暂, 不躺下)
@@ -71,6 +90,7 @@ const STATES = Object.freeze({
     SIT: 'SIT',           // 坐下休息
     DOZE: 'DOZE',         // 困倦打盹 (坐着)
     WORK: 'WORK',         // R156: 在电脑前办公 (新的 idle 类状态)
+    EAT_FRUIT: 'EAT_FRUIT', // R170: 吃水果 (新的 idle 类状态, 与办公互斥)
 });
 
 // 状态优先级: 数值越大优先级越高. DRAGGING 最高 (用户操作永远优先).
@@ -83,6 +103,7 @@ const STATE_PRIORITY = Object.freeze({
     SIT: 2,
     DOZE: 2,
     WORK: 2,
+    EAT_FRUIT: 2,
     WALK_LEFT: 3,
     WALK_RIGHT: 3,
     DRAGGING: 10,
@@ -97,8 +118,10 @@ const LOOP_ACTIONS = Object.freeze(['idle', 'walk_left', 'walk_right', 'sleep_lo
  * 权重来自 config, 但顺序固定 → 随机阈值可复现, 自动化测试能反推"想触发某类活动
  * 该喂哪个随机数", 不必把阈值写死在测试里。
  * R156 新增 work (办公待机), 放在 sleep 之前, 让"睡觉"仍落在随机区间的末端。
+ * R170 新增 eat_fruit (吃水果), 放在 work 之后 —— 两者都是"坐着"的生活行为,
+ * 顺序固定 ⇒ 测试阈值可反推。
  */
-const ACTIVITY_KINDS = Object.freeze(['gesture', 'walk', 'sit', 'doze', 'work', 'sleep']);
+const ACTIVITY_KINDS = Object.freeze(['gesture', 'walk', 'sit', 'doze', 'work', 'eat_fruit', 'sleep']);
 
 // 状态 -> 动画名
 const STATE_ACTION = Object.freeze({
@@ -114,6 +137,7 @@ const STATE_ACTION = Object.freeze({
     SIT: 'sit_rest',
     DOZE: 'doze',
     WORK: 'work',        // R156: 办公待机 (小桌子 + 笔记本 + 屏幕微光)
+    EAT_FRUIT: 'eat_fruit', // R170: 吃水果 (小凳 + 小桌 + 果盘)
 });
 
 class BehaviorEngine {
@@ -156,10 +180,16 @@ class BehaviorEngine {
         this._walkTarget = 0;
         this._lastMoveAt = 0;
         // R153: 生活化状态记忆 (避免连续重复同一种活动)
-        this._lastActivity = null;      // 上一次的活动类别 (gesture/walk/sit/doze/sleep)
+        this._lastActivity = null;      // 上一次的活动类别 (gesture/walk/sit/doze/work/eat_fruit/sleep)
         this._lastGesture = null;       // 上一次的站立小动作
         this._wokeAt = -Infinity;       // 最近一次醒来的时间戳 (-Infinity = 从未醒来)
         this._sleepShiftTimer = null;   // 睡眠中"偶尔姿态微调"的计时器
+        // R170: 办公/吃水果各自的冷却计时基准
+        this._lastWorkAt = -Infinity;       // 最近一次开始办公的时间戳
+        this._lastEatFruitAt = -Infinity;   // 最近一次开始吃水果的时间戳
+        // R170: "有时长"状态的计时器种类与到期时刻 (点击反馈打断后按剩余时间恢复)
+        this._stateTimerKind = null;
+        this._stateDeadline = 0;
         this.transitionLog = [];
     }
 
@@ -184,6 +214,9 @@ class BehaviorEngine {
         if (this._pendingResume !== null) { this._clearTimeout(this._pendingResume); this._pendingResume = null; }
         if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
         if (this._sleepShiftTimer !== null) { this._clearTimeout(this._sleepShiftTimer); this._sleepShiftTimer = null; }
+        // R170: 状态计时器的"种类/到期时刻"也要清, 否则恢复逻辑会误判
+        this._stateTimerKind = null;
+        this._stateDeadline = 0;
     }
 
     // ---------- 内部工具 ----------
@@ -238,6 +271,7 @@ class BehaviorEngine {
             case 'sit': this._startSit(); break;
             case 'doze': this._startDoze(); break;
             case 'work': this._startWork(); break;
+            case 'eat_fruit': this._startEatFruit(); break;
             case 'sleep': this._enterSleep(); break;
             default: this._scheduleIdle();
         }
@@ -252,20 +286,27 @@ class BehaviorEngine {
      */
     _pickActivity() {
         const cfg = this.config;
+        const now = this._now();
         const items = [
             { kind: 'gesture', w: cfg.gesture_probability },
             { kind: 'walk', w: cfg.walk_probability },
             { kind: 'sit', w: cfg.sit_probability },
             { kind: 'doze', w: cfg.doze_probability },
             { kind: 'work', w: cfg.work_probability },
+            { kind: 'eat_fruit', w: cfg.eat_fruit_probability },
             { kind: 'sleep', w: cfg.sleep_probability },
         ].map((it) => {
             let w = it.w;
             if (it.kind === this._lastActivity) w *= cfg.activity_repeat_penalty;
-            if (it.kind === 'sleep' && (this._now() - this._wokeAt) < cfg.no_sleep_after_wake_ms) w = 0;
+            if (it.kind === 'sleep' && (now - this._wokeAt) < cfg.no_sleep_after_wake_ms) w = 0;
             // R156: 办公待机**不与其它活动连着做** —— 上一项是办公时权重直接归零,
             //       保证它与普通待机/打盹/行走/睡眠错开, 不会一直只办公
             if (it.kind === 'work' && this._lastActivity === 'work') w = 0;
+            // R170: 办公/吃水果各自的**冷却期** —— 冷却期内权重归零。
+            //   单靠"上一项是同类就归零"只能挡住"连着做", 挡不住"隔一项又做";
+            //   真机观感是"刚吃完又吃 / 刚放下电脑又坐下", 所以要真正的冷却。
+            if (it.kind === 'work' && (now - this._lastWorkAt) < cfg.work_cooldown_ms) w = 0;
+            if (it.kind === 'eat_fruit' && (now - this._lastEatFruitAt) < cfg.eat_fruit_cooldown_ms) w = 0;
             return { kind: it.kind, w };
         });
         const total = items.reduce((s, it) => s + it.w, 0);
@@ -305,46 +346,112 @@ class BehaviorEngine {
         return action;
     }
 
+    /**
+     * R170: 给"有时长"的状态装计时器, 并**记住到期时刻**。
+     *
+     * 为什么要记到期时刻 —— R170 修掉的一个真 bug:
+     *   点击反馈 (holdBriefly) 会清掉状态计时器, 旧实现清掉后**没人重新排程**
+     *   ⇒ 状态被永久卡住: 办公中点一下角色, 引擎永远停在 WORK
+     *   (场景"不消失", 但也永远走不了 —— 与 R170 用户报的"办公场景消失"同源的一类问题)。
+     *   记住剩余时间, 点击反馈结束后按**剩余时间原样恢复**, 场景既不被打断也不卡死。
+     *
+     * @param {string} kind 状态类别 (work/eat_fruit/sit/doze)
+     * @param {number} ms   时长
+     * @param {function} done 到期回调
+     */
+    _armStateTimer(kind, ms, done) {
+        this._stateTimerKind = kind;
+        this._stateDeadline = this._now() + ms;
+        this._timer = this._setTimeout(() => {
+            this._timer = null;
+            this._stateTimerKind = null;
+            this._stateDeadline = 0;
+            done();
+        }, ms);
+    }
+
+    /**
+     * R170: 恢复被点击反馈打断的"有时长"状态 (按剩余时间)。
+     * @returns {boolean} 是否成功恢复
+     */
+    _resumeStateTimer(kind, remaining) {
+        const done = {
+            work: () => this._completeWork(),
+            eat_fruit: () => this._completeEatFruit(),
+            sit: () => this._completeSit(),
+            doze: () => this._completeDoze(),
+        }[kind];
+        if (!done) return false;
+        this._armStateTimer(kind, remaining, done);
+        return true;
+    }
+
     /** R153: 坐下休息 (可衔接打盹) */
     _startSit() {
         this._lastActivity = 'sit';
         this._transition(STATES.SIT, 'idle-decision');
         this._setAction('sit_rest');
         const ms = this._randInt(this.config.sit_min_ms, this.config.sit_max_ms);
-        this._timer = this._setTimeout(() => {
-            this._timer = null;
-            if (!this._running || this._dragging) return;
-            if (this.state !== STATES.SIT) return;
-            // 坐久了有时会迷糊过去 (打盹), 否则起身回到站立
-            if (this._random() < 0.45) {
-                this._startDoze();
-            } else {
-                this._transition(STATES.IDLE, 'sit-complete');
-                this._setAction('idle');
-                this._scheduleIdle();
-            }
-        }, ms);
+        this._armStateTimer('sit', ms, () => this._completeSit());
+    }
+
+    _completeSit() {
+        if (!this._running || this._dragging) return;
+        if (this.state !== STATES.SIT) return;
+        // 坐久了有时会迷糊过去 (打盹), 否则起身回到站立
+        if (this._random() < 0.45) {
+            this._startDoze();
+        } else {
+            this._transition(STATES.IDLE, 'sit-complete');
+            this._setAction('idle');
+            this._scheduleIdle();
+        }
     }
 
     /**
      * R156: 在电脑前办公 (新的 idle 类状态)。
      *   · 表现: 坐在转椅上, 上半身前倾看屏幕 / 抬头思考 (work 动作自带 2 帧循环)
-     *   · 频率: 权重低 (work_probability=0.10) 且不与其它活动连着做
+     *   · 频率: R170 真机实测重标定 (见 DEFAULT_CONFIG 注释) —— 命中 5% ⇒ 真机 180s
+     *     触发 0 次, 用户看到的就是"场景消失了"; 现为 ~22% + 16~28s + 60s 冷却
      *   · 道具: 引擎只下发动作名, 具体的小桌子/笔记本/屏幕微光由渲染器按动作挂载
      */
     _startWork() {
         this._lastActivity = 'work';
+        this._lastWorkAt = this._now();
         this._transition(STATES.WORK, 'idle-decision');
         this._setAction('work');
         const ms = this._randInt(this.config.work_min_ms, this.config.work_max_ms);
-        this._timer = this._setTimeout(() => {
-            this._timer = null;
-            if (!this._running || this._dragging) return;
-            if (this.state !== STATES.WORK) return;
-            this._transition(STATES.IDLE, 'work-complete');
-            this._setAction('idle');
-            this._scheduleIdle();
-        }, ms);
+        this._armStateTimer('work', ms, () => this._completeWork());
+    }
+
+    _completeWork() {
+        if (!this._running || this._dragging) return;
+        if (this.state !== STATES.WORK) return;
+        this._transition(STATES.IDLE, 'work-complete');
+        this._setAction('idle');
+        this._scheduleIdle();
+    }
+
+    /**
+     * R170: 吃水果 (新的 idle 类状态, 与办公互斥 —— 状态机同一时刻只有一个状态,
+     *   两者天然不会同时运行; 这里额外保证"吃水果"与"办公"不会连着做)。
+     *   道具: 小凳 + 小桌 + 果盘, 由渲染器按动作名挂载。
+     */
+    _startEatFruit() {
+        this._lastActivity = 'eat_fruit';
+        this._lastEatFruitAt = this._now();
+        this._transition(STATES.EAT_FRUIT, 'idle-decision');
+        this._setAction('eat_fruit');
+        const ms = this._randInt(this.config.eat_fruit_min_ms, this.config.eat_fruit_max_ms);
+        this._armStateTimer('eat_fruit', ms, () => this._completeEatFruit());
+    }
+
+    _completeEatFruit() {
+        if (!this._running || this._dragging) return;
+        if (this.state !== STATES.EAT_FRUIT) return;
+        this._transition(STATES.IDLE, 'eat_fruit-complete');
+        this._setAction('idle');
+        this._scheduleIdle();
     }
 
     /** R153: 困倦打盹 (坐着闭眼, 短暂) —— 与"躺下长睡"区分 */
@@ -353,14 +460,15 @@ class BehaviorEngine {
         this._transition(STATES.DOZE, 'idle-decision');
         this._setAction('doze');
         const ms = this._randInt(this.config.doze_min_ms, this.config.doze_max_ms);
-        this._timer = this._setTimeout(() => {
-            this._timer = null;
-            if (!this._running || this._dragging) return;
-            if (this.state !== STATES.DOZE) return;
-            this._transition(STATES.IDLE, 'doze-complete');
-            this._setAction('idle');
-            this._scheduleIdle();
-        }, ms);
+        this._armStateTimer('doze', ms, () => this._completeDoze());
+    }
+
+    _completeDoze() {
+        if (!this._running || this._dragging) return;
+        if (this.state !== STATES.DOZE) return;
+        this._transition(STATES.IDLE, 'doze-complete');
+        this._setAction('idle');
+        this._scheduleIdle();
     }
 
     /**
@@ -641,7 +749,17 @@ class BehaviorEngine {
     holdBriefly(ms) {
         if (!this._running) return false;
         const delay = (typeof ms === 'number' && ms > 0) ? ms : 700;
+        // R170: 记住被打断的"有时长"状态 (办公/吃水果/坐/打盹) 及其**剩余时间**。
+        //   旧实现只是把计时器清掉, 之后没人重新排程 ⇒ 状态被永久卡死
+        //   (例如办公中点一下角色, 引擎永远停在 WORK, 场景再也走不了)。
+        const heldKind = this._stateTimerKind;
+        const heldState = this.state;
+        const heldRemaining = heldKind
+            ? Math.max(500, (this._stateDeadline || 0) - this._now())
+            : null;
         if (this._timer !== null) { this._clearTimeout(this._timer); this._timer = null; }
+        this._stateTimerKind = null;
+        this._stateDeadline = 0;
         if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
         // 行走中 → 暂停位移计时器, 保留剩余距离, 反馈结束后继续走完
         if (this.state === STATES.WALK_LEFT || this.state === STATES.WALK_RIGHT) {
@@ -657,6 +775,12 @@ class BehaviorEngine {
                     this._lastMoveAt = this._now();
                     this._startMoveTimer();
                 }
+                return;
+            }
+            // R170: 按剩余时间**恢复**被打断的状态 (办公/吃水果不会被点击打断掉)
+            if (heldKind && heldRemaining !== null
+                && this.state === heldState && this._stateTimerKind === null) {
+                this._resumeStateTimer(heldKind, heldRemaining);
                 return;
             }
             if (this.state === STATES.IDLE) this._scheduleIdle();
@@ -682,6 +806,8 @@ class BehaviorEngine {
         if (this._holdTimer !== null) { this._clearTimeout(this._holdTimer); this._holdTimer = null; }
         this._clearSleepShift();
         if (this._pendingResume !== null) { this._clearTimeout(this._pendingResume); this._pendingResume = null; }
+        this._stateTimerKind = null;   // R170
+        this._stateDeadline = 0;       // R170
     }
 
     getState() { return this.state; }
@@ -703,6 +829,11 @@ class BehaviorEngine {
             movePaused: this._movePaused,
             lastActivity: this._lastActivity,
             lastGesture: this._lastGesture,
+            // R170: 冷却基准与状态计时器 (供运行时证据/诊断)
+            lastWorkAt: this._lastWorkAt,
+            lastEatFruitAt: this._lastEatFruitAt,
+            stateTimerKind: this._stateTimerKind,
+            stateDeadline: this._stateDeadline,
             hasSleepShiftTimer: this._sleepShiftTimer !== null,
             pendingTimerCount: [this._timer, this._moveTimer, this._holdTimer, this._pendingResume]
                 .filter((t) => t !== null).length,

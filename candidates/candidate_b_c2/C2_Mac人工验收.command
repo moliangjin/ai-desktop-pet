@@ -27,6 +27,10 @@
 #   双击运行            → 正式模式 (自然速度, 正式状态机参数)
 #   ./C2_Mac人工验收.command fast  → 验收加速模式 (缩短等待时长, 状态机逻辑不变)
 #   ./C2_Mac人工验收.command standard → 256x256 标准窗口
+#   ./C2_Mac人工验收.command work      → ★ R170 验收入口: 锁定"电脑办公"场景
+#   ./C2_Mac人工验收.command eat_fruit → ★ R170 验收入口: 锁定"吃水果"场景
+#     (上面两个是**验收专用入口**: 自主行为被暂停, 场景一直停在原地供你细看;
+#      与"正式自主行为模式"完全分离, 不会随机跑掉)
 #
 # 退出: Cmd+Q
 # 日志: /tmp/r141_c2_mac_acceptance_<ts>.log
@@ -39,12 +43,15 @@ LOG="/tmp/r141_c2_mac_acceptance_${TS}.log"
 
 MODE="compact"
 ACCEPT="off"
+DEMO_SCENE=""
 for arg in "$@"; do
     case "$arg" in
         compact|standard) MODE="$arg" ;;
         fast|acceptance)  ACCEPT="on" ;;
         off|normal)       ACCEPT="off" ;;
-        *) echo "用法: $0 [compact|standard] [fast|off]"; exit 2 ;;
+        work)             DEMO_SCENE="work" ;;
+        eat_fruit|eat)    DEMO_SCENE="eat_fruit" ;;
+        *) echo "用法: $0 [compact|standard] [fast|off] [work|eat_fruit]"; exit 2 ;;
     esac
 done
 
@@ -88,8 +95,9 @@ echo " R156 点击池 / 场景道具 / 办公待机 — Mac 真机人工验收"
 echo "=========================================================="
 echo " 窗口模式:   $MODE (200x240 紧凑 / 256x256 标准)"
 echo " 加速模式:   $ACCEPT   (fast 只缩短等待时长, 不改状态机逻辑)"
-echo " 角色资源:   R138 23 帧 RGBA PNG + R153/R156 局部烘焙帧"
-echo " 场景道具:   床 / 月亮 / 被子 / 小沙发 / 转椅 / 小桌+笔记本 / 屏幕微光"
+echo " 场景锁定:   ${DEMO_SCENE:-<无, 走正式自主行为>}"
+echo " 角色资源:   R138 23 帧 RGBA PNG + R153/R156/R170 局部烘焙帧"
+echo " 场景道具:   床 / 月亮 / 被子 / 小沙发 / 转椅 / 小桌+笔记本 / 屏幕微光 / 小凳+果盘"
 echo " Manifest:   $MANIFEST"
 echo " 日志文件:   $LOG"
 echo ""
@@ -149,6 +157,10 @@ EXTRA=""
 if [ "$ACCEPT" = "on" ]; then
     EXTRA="--acceptance"
 fi
+# R170: 验收专用入口 —— 锁定场景 + 暂停自主决策 (与正式自主行为完全分离)
+if [ -n "$DEMO_SCENE" ]; then
+    EXTRA="$EXTRA --demo-scene $DEMO_SCENE"
+fi
 
 "$ELECTRON" "$(pwd)/src/main.js" \
     --manifest "$MANIFEST" \
@@ -200,6 +212,12 @@ echo " R158 观测汇总 (本轮新功能):" | tee -a "$LOG"
 echo "   点击动作种类: $(grep -oE 'R156 CLICK_REACTION start action=[a-z_]+' "$LOG" 2>/dev/null | grep -oE 'action=[a-z_]+' | sort -u | tr '\n' ' ')" | tee -a "$LOG"
 echo "   爱心特效挂载: $(grep -c 'R156 PROPS action=cheer_heart scene=yes mounted=prop_heart' "$LOG" 2>/dev/null) 次" | tee -a "$LOG"
 echo "   点击帧总数:   $(grep -c 'R156 PROPS action=cheer_heart' "$LOG" 2>/dev/null)" | tee -a "$LOG"
+echo "" | tee -a "$LOG"
+echo " R170 观测汇总 (本轮: 恢复办公 + 新增吃水果):" | tee -a "$LOG"
+echo "   办公场景次数: $(grep -cE -e 'R141 STATE [A-Z_]+ -> WORK' "$LOG" 2>/dev/null)" | tee -a "$LOG"
+echo "   吃水果次数:   $(grep -cE -e 'R141 STATE [A-Z_]+ -> EAT_FRUIT' "$LOG" 2>/dev/null)" | tee -a "$LOG"
+echo "   吃水果挂载:   $(grep -c 'R156 PROPS action=eat_fruit scene=yes' "$LOG" 2>/dev/null) 次" | tee -a "$LOG"
+echo "   场景锁定:     $(grep -c 'R170 DEMO_SCENE' "$LOG" 2>/dev/null) (0 = 走正式自主行为)" | tee -a "$LOG"
 echo "" | tee -a "$LOG"
 echo " R156 观测汇总 (上一轮, 顺带确认没被改坏):" | tee -a "$LOG"
 echo "   办公待机次数: $(grep -cE -e 'R141 STATE [A-Z_]+ -> WORK' "$LOG" 2>/dev/null)" | tee -a "$LOG"

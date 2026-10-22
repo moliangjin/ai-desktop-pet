@@ -457,9 +457,10 @@ fi
 # R165 修正期望值 (只更新过时的数字, 判据意图不变: 全部加载成功且零失败):
 #   R158 加 prop_heart 时道具数 7→8; R165 把办公桌拆成"台面(back层) + 前沿/桌腿/笔记本(front层)"
 #   ⇒ 新增 prop_desk_surface, 道具数 8→9。真实运行日志实测 loaded=9 failed=0。
+# R170 修正期望值: 新增吃水果场景的小凳 + 小边桌(果盘) 两个道具 ⇒ 道具数 10→12。
 PROP_REPORT=$(grep "R156 props-asset-report" "$LOG_PREVIEW" | tail -1)
-if echo "$PROP_REPORT" | grep -q "loaded=10" && echo "$PROP_REPORT" | grep -q "failed=0"; then
-    record PASS TI4 "10 个场景道具在真实运行时全部加载成功 (零失败)" "$PROP_REPORT"
+if echo "$PROP_REPORT" | grep -q "loaded=12" && echo "$PROP_REPORT" | grep -q "failed=0"; then
+    record PASS TI4 "12 个场景道具在真实运行时全部加载成功 (零失败)" "$PROP_REPORT"
 else
     record FAIL TI4 "道具资源加载" "$PROP_REPORT"
 fi
@@ -470,11 +471,13 @@ MOUNT_SIT=$(grep -c "R156 PROPS action=sit_rest scene=yes mounted=prop_sofa" "$L
 # R165 修正期望值: 办公场景的桌子拆成 back 层台面(prop_desk_surface) 与
 #   front 层前沿/桌腿/笔记本(prop_desk) ⇒ 挂载列表多一项, 判据意图不变。
 MOUNT_WORK=$(grep -c "R156 PROPS action=work scene=yes mounted=prop_chair,prop_desk_surface,prop_keyboard,prop_desk,prop_screen_glow" "$LOG_PREVIEW")
+# R170: 吃水果场景必须挂载小凳 + 小边桌(果盘), 且不得残留其它场景的道具
+MOUNT_EAT=$(grep -c "R156 PROPS action=eat_fruit scene=yes mounted=prop_stool,prop_fruit_table" "$LOG_PREVIEW")
 MOUNT_NONE=$(grep -c "R156 PROPS .* mounted=none" "$LOG_PREVIEW")
-if [ "${MOUNT_SLEEP:-0}" -ge 1 ] && [ "${MOUNT_SIT:-0}" -ge 1 ] && [ "${MOUNT_WORK:-0}" -ge 1 ] && [ "${MOUNT_NONE:-0}" -ge 1 ]; then
-    record PASS TI5 "道具按场景挂载 (床+月亮+被子 / 沙发 / 转椅+桌+笔记本+微光), 无道具动作时 mounted=none" "sleep=$MOUNT_SLEEP sit=$MOUNT_SIT work=$MOUNT_WORK none=$MOUNT_NONE"
+if [ "${MOUNT_SLEEP:-0}" -ge 1 ] && [ "${MOUNT_SIT:-0}" -ge 1 ] && [ "${MOUNT_WORK:-0}" -ge 1 ] && [ "${MOUNT_EAT:-0}" -ge 1 ] && [ "${MOUNT_NONE:-0}" -ge 1 ]; then
+    record PASS TI5 "道具按场景挂载 (床+月亮+被子 / 沙发 / 转椅+桌+笔记本+微光 / 小凳+果盘), 无道具动作时 mounted=none" "sleep=$MOUNT_SLEEP sit=$MOUNT_SIT work=$MOUNT_WORK eat=$MOUNT_EAT none=$MOUNT_NONE"
 else
-    record FAIL TI5 "道具挂载/卸载" "sleep=$MOUNT_SLEEP sit=$MOUNT_SIT work=$MOUNT_WORK none=$MOUNT_NONE"
+    record FAIL TI5 "道具挂载/卸载" "sleep=$MOUNT_SLEEP sit=$MOUNT_SIT work=$MOUNT_WORK eat=$MOUNT_EAT none=$MOUNT_NONE"
 fi
 
 # 点击反馈: 真实运行时从池里随机触发, 且每次都是 3 帧

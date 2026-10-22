@@ -24,12 +24,16 @@ const { BehaviorEngine, STATES } = require('./behavior_engine');
 const { evaluateAssetReadiness, REQUIRED_ACTIONS } = require('./asset_gate');
 
 const args = process.argv.slice(1);
+// R170: 行为状态日志的相对时间基准 (ms) —— 让"持续了多久/间隔多久"能从日志直接算
+const R170_T0_ = Date.now();
 let manifestPath = null, winSize = 256, winX = 200, winY = 200;
 let initialMode = 'standard';
 let quitAfter = null, perfOut = null;
 let acceptanceMode = false;    // R141 §九: 验收加速模式 (不改变正式状态机逻辑)
 let sleepProbabilityOverride = null;   // R144: 行为概率覆盖 (0=只走, 1=只睡), 供确定性验收脚本使用
 let previewDir_ = null;        // R147: 运行时预览采集目录 (仅验收/预览用, 正式运行为 null)
+let demoScene_ = null;         // R170: 验收专用入口 —— 直接进入某个场景 (work / eat_fruit / ...)
+                              //   与"正式自主行为"**完全分离**: 自主决策被暂停, 不会随机跑掉
 for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--manifest' && args[i+1]) manifestPath = args[++i];
@@ -43,6 +47,8 @@ for (let i = 0; i < args.length; i++) {
     else if (a === '--perf-out' && args[i+1]) perfOut = args[++i];
     // R147: 运行时预览采集 (输出 PNG 帧序列, 供生成可观看 GIF)
     else if (a === '--preview' && args[i+1]) previewDir_ = args[++i];
+    // R170: 验收专用入口 —— 直接锁定在某个生活场景 (办公 / 吃水果), 自主行为暂停
+    else if (a === '--demo-scene' && args[i+1]) demoScene_ = args[++i];
     // R141 §九: 验收加速模式 (只缩短时长参数, 不改变状态机逻辑)
     else if (a === '--acceptance') acceptanceMode = true;
     else if (a === '--acceptance-mode' && args[i+1]) acceptanceMode = (args[++i] !== 'off');
@@ -155,7 +161,9 @@ function createBehaviorEngine(config) {
         },
         onMove: (dx, state) => moveWindowBy(dx, 0),
         onState: (from, to, reason) => {
-            console.log(`[main] R141 STATE ${from} -> ${to} (${reason})`);
+            // R170: 带相对时间戳 —— 这样"办公场景持续了多久""两次间隔多久"可以从日志
+            //   直接算出来 (之前只有顺序, 算不出时长, 也就无法证明"没有刚出现就消失")。
+            console.log(`[main] R141 STATE ${from} -> ${to} (${reason}) t=${Date.now() - R170_T0_}ms`);
         },
     });
     return engine;
@@ -372,6 +380,9 @@ function startBehaviorEngine() {
     behaviorEngine = createBehaviorEngine(cfg);
     // R147: 预览模式下暂停自主决策, 由预览脚本显式驱动场景 (正式运行不受影响)
     if (previewDir_) behaviorEngine.setAutonomousPaused(true);
+    // R170: 验收专用入口 —— 锁定在指定场景, 自主决策暂停。
+    //   与"正式自主行为"完全分离: 不会随机走开/睡着, 场景会一直停在原地供验收观看。
+    if (demoScene_) behaviorEngine.setAutonomousPaused(true);
     behaviorEngine.start();
     console.log(`[main] R144 behavior engine started state=${behaviorEngine.getState()}`);
     return true;
@@ -393,6 +404,15 @@ ipcMain.on('assets-ready', (_evt, report) => {
     }
     console.log(`[main] R144 ASSETS_READY loaded=${verdict.loaded}/${verdict.total} actions=${REQUIRED_ACTIONS.join(',')}`);
     startBehaviorEngine();
+    // R170: 验收专用入口 —— 直接把角色切到指定场景并**停在那儿**。
+    //   渲染器的 set-action 会顺带 applyPropsFor(action) ⇒ 该场景的道具(桌子/键盘/
+    //   小凳/果盘)自动挂载, 与正式自主行为走的是同一条渲染路径。
+    if (demoScene_) {
+        console.log(`[main] R170 DEMO_SCENE action=${demoScene_} (自主决策已暂停, 场景锁定供验收)`);
+        setTimeout(() => {
+            if (mainWindow) mainWindow.webContents.send('set-action', demoScene_);
+        }, 250);
+    }
     // R147: 运行时预览采集 (仅 --preview <dir> 时启用; 不影响正式运行)
     if (previewDir_) {
         setTimeout(() => { runPreviewSequence().catch((e) => console.error('[main] R147 PREVIEW_ERROR', e && e.message)); }, 900);
@@ -533,6 +553,8 @@ async function runPreviewSequence() {
         ['sleep_breath', 14, 160, 250],
         // R156: 办公待机 (2 帧循环, 每帧 2.8s → 多采一会儿才能看到两帧都出现)
         ['work', 26, 280, 250],
+        // R170: 吃水果 (5 帧循环, 帧间隔 0.7~1.15s → 采够一个完整"拿果→吃→满足"周期)
+        ['eat_fruit', 30, 160, 300],
     ];
     for (const [action, count, interval, preDelay] of LIB_SCENES) {
         await quiet();
@@ -597,6 +619,12 @@ async function runPreviewSequence() {
     await previewCommand({ cmd: 'action', action: 'work' });
     await sleep_(600);
     summary.scene_work = await captureFrames('scene_work', 26, 280);
+
+    // ====== 场景 14b (R170): 吃水果场景 (小凳 + 小边桌 + 果盘) =====
+    await quiet();
+    await previewCommand({ cmd: 'action', action: 'eat_fruit' });
+    await sleep_(600);
+    summary.scene_eat_fruit = await captureFrames('scene_eat_fruit', 30, 160);
 
     // ====== 场景 15 (R156): 道具退出验证 — 从睡觉切回站立, 床与月亮必须一起退出 =====
     await quiet();

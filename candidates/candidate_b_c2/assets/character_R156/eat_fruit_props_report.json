@@ -1,0 +1,26 @@
+{
+  "round": "R170",
+  "action": "eat_fruit",
+  "items": [
+    {
+      "file": "prop_stool.png",
+      "bbox": [
+        371,
+        625,
+        629,
+        993
+      ],
+      "px": 51325
+    },
+    {
+      "file": "prop_fruit_table.png",
+      "bbox": [
+        189,
+        530,
+        363,
+        1003
+      ],
+      "px": 29550
+    }
+  ]
+}

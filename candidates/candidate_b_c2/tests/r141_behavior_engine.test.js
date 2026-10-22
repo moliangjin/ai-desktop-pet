@@ -140,7 +140,8 @@ const TEST_CONFIG = {
 //    睡眠相关测试全挂。改成反推后, 新增活动不会再打坏旧测试。)
 const ACTIVITY_W_KEY = {
     gesture: 'gesture_probability', walk: 'walk_probability', sit: 'sit_probability',
-    doze: 'doze_probability', work: 'work_probability', sleep: 'sleep_probability',
+    doze: 'doze_probability', work: 'work_probability', eat_fruit: 'eat_fruit_probability',
+    sleep: 'sleep_probability',
 };
 const MERGED_CONFIG = Object.assign({}, DEFAULT_CONFIG, TEST_CONFIG);
 function randomForKind(kind) {
@@ -158,6 +159,7 @@ const R_WALK = randomForKind('walk');
 const R_SIT = randomForKind('sit');
 const R_DOZE = randomForKind('doze');
 const R_WORK = randomForKind('work');
+const R_EAT_FRUIT = randomForKind('eat_fruit');
 const R_SLEEP = randomForKind('sleep');
 
 function makeEngine(randomSeq, config) {
@@ -180,12 +182,14 @@ function makeEngine(randomSeq, config) {
     return { engine, clock, actions, moves, states };
 }
 
-// 从派发的动作名反推"活动类别" (R153 活动池的 5 类)
+// 从派发的动作名反推"活动类别" (R153 活动池的 5 类 + R156/R170 新增的 2 类)
 function activityKindOf(actionName) {
     if (actionName === 'walk_left' || actionName === 'walk_right') return 'walk';
     if (actionName === 'sit_rest') return 'sit';
     if (actionName === 'doze') return 'doze';
     if (actionName === 'sleep_enter') return 'sleep';
+    if (actionName === 'work') return 'work';
+    if (actionName === 'eat_fruit') return 'eat_fruit';
     if (['look_around', 'tilt_head', 'head_nod', 'stretch', 'happy', 'blink_soft'].includes(actionName)) return 'gesture';
     return null;
 }
@@ -398,9 +402,9 @@ test('T12 DRAGGING 优先级最高, 状态优先级表完整', () => {
 // ====== R153 新增: 自主行为多样化 ======
 
 // ====== 测试 13: 活动池加权, 五类活动都可达 ======
-test('T13 活动池覆盖 5 类生活活动 (gesture/walk/sit/doze/sleep 均可达)', () => {
+test('T13 活动池覆盖 7 类生活活动 (gesture/walk/sit/doze/work/eat_fruit/sleep 均可达)', () => {
     const kinds = new Set();
-    for (const r of [R_GESTURE, R_WALK, R_SIT, R_DOZE, R_SLEEP]) {
+    for (const r of [R_GESTURE, R_WALK, R_SIT, R_DOZE, R_WORK, R_EAT_FRUIT, R_SLEEP]) {
         const { engine, clock, actions } = makeEngine([0.5, r]);
         engine.start();
         clock.advance(9000);
@@ -409,7 +413,7 @@ test('T13 活动池覆盖 5 类生活活动 (gesture/walk/sit/doze/sleep 均可�
         kinds.add(k);
         engine.stop();
     }
-    assert.strictEqual(kinds.size, 5, `5 类活动只可达 ${kinds.size} 类: ${[...kinds].join(',')}`);
+    assert.strictEqual(kinds.size, 7, `7 类活动只可达 ${kinds.size} 类: ${[...kinds].join(',')}`);
 });
 
 // ====== 测试 14: 重复折扣生效 (不会连着做同一件事) ======
@@ -442,6 +446,8 @@ test('T15 "短暂打盹"(DOZE) 与 "躺下长睡"(SLEEP_ENTER) 分层, 打盹不
     const cfg = Object.assign({}, TEST_CONFIG, {
         gesture_probability: 0, walk_probability: 0, sit_probability: 0,
         doze_probability: 1, sleep_probability: 0,
+        // R170: 本用例的意图是"只打盹" ⇒ 其它活动类别(含 R156 work / R170 eat_fruit)权重归零
+        work_probability: 0, eat_fruit_probability: 0,
     });
     const { engine, clock, states, actions } = makeEngine([0.5, R_DOZE], cfg);
     engine.start();
@@ -461,6 +467,8 @@ test('T16 醒来后冷却期 (45s) 内不再触发睡眠, 冷却期后可再次�
     const cfg = Object.assign({}, TEST_CONFIG, {
         gesture_probability: 0, walk_probability: 0, sit_probability: 0,
         doze_probability: 0, sleep_probability: 1,
+        // R170: 本用例的意图是"只睡觉" ⇒ 其它活动类别权重归零
+        work_probability: 0, eat_fruit_probability: 0,
     });
     const { engine, clock, states } = makeEngine(makeConstRandom(R_SLEEP), cfg);
     engine.start();

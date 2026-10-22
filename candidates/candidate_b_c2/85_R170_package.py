@@ -85,6 +85,7 @@ REVIEW_FILES = [
     ("85_R170_package.py", "candidate_b_c2/85_R170_package.py"),
     ("86_R170_trigger_verify.py", "candidate_b_c2/86_R170_trigger_verify.py"),
     ("87_R170_gif.py", "candidate_b_c2/87_R170_gif.py"),
+    ("88_R170_fill_reports.py", "candidate_b_c2/88_R170_fill_reports.py"),
     # ---- 前序轮次脚本 (便于复算) ----
     ("36_R158_arm_rig.py", "candidate_b_c2/36_R158_arm_rig.py"),
     ("37_R158_action_bake.py", "candidate_b_c2/37_R158_action_bake.py"),

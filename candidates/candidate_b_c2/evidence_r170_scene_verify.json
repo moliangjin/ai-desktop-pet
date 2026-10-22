@@ -1,0 +1,141 @@
+{
+ "round": "R170",
+ "criteria_note": "以 200×240 / 256×256 真实显示效果为口径的绝对值判据, 全部给实测数字 (不是\"相比基线没变差\")",
+ "eat_fruit": {
+  "E1_apple_in_every_frame": {
+   "pass": true,
+   "threshold": "每帧红色果体像素 ≥ 300 (已排除面部框内的腮红/唇色, 只取最大连通块)",
+   "apple_px_per_frame": [
+    1080,
+    1168,
+    1083,
+    1072,
+    1126
+   ]
+  },
+  "E2_apple_touches_hand": {
+   "pass": true,
+   "threshold": "果体到手部肤色的最短距离 ≤ 8 纹理 px",
+   "dist_hand_px": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  "E3_apple_travels_to_mouth": {
+   "pass": true,
+   "threshold": "帧0 到帧2, 果体到嘴框的最短距离至少缩短 100 纹理 px (必须真的从远处送到嘴边, 不能全程停在同一个位置)",
+   "frame0_dist_to_mouth_px": 225,
+   "frame2_dist_to_mouth_px": 29,
+   "dist_to_mouth_px_per_frame": [
+    225,
+    128,
+    29,
+    59,
+    120
+   ]
+  },
+  "E4_bite_frame_reaches_mouth": {
+   "pass": true,
+   "threshold": "咬那一帧(帧2) 果体到嘴框 ≤ 30 纹理 px (真的到嘴边, 不是悬在半空)",
+   "dist_to_mouth_px": 29
+  },
+  "E5_role_single_piece": {
+   "pass": true,
+   "threshold": "每帧角色非透明像素的连通块数 == 1 (手臂断裂 → 2 块; 多出漂浮肢体 → 2 块; 像素级)",
+   "solid_block_count_per_frame": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  "E9_raised_hand_present": {
+   "pass": true,
+   "threshold": "每帧相对基图新增的手部肤色像素 ≥ 150 (确实抬起了手, 不是静坐)",
+   "raised_hand_px_per_frame": [
+    1538,
+    1479,
+    1729,
+    1563,
+    1526
+   ]
+  },
+  "E10_apple_gripped_not_floating": {
+   "pass": true,
+   "threshold": "每帧苹果必须落在角色主连通块里 (被手握住, 不是漂浮在角色旁边的独立块)",
+   "apple_in_main_block_per_frame": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "E6_props_visible_face_intact": {
+   "pass": true,
+   "threshold": "200×240 里道具实际可见 ≥ 120 屏幕 px; 道具压脸 = 0 px; 面部皮肤保留率 ≥ 98%",
+   "props_visible_screen_px": 830,
+   "prop_cover_face_px": 0,
+   "face_box_screen": [
+    79,
+    55,
+    125,
+    86
+   ],
+   "face_skin_px_char_only": 490,
+   "face_skin_px_final": 490,
+   "face_keep_ratio": 1.0
+  },
+  "E7_apple_readable_at_real_size": {
+   "pass": true,
+   "threshold": "200×240 与 256×256 合成图里果体像素各 ≥ 8 (显示层用宽松暖色阈值, 因缩放抗锯齿会稀释红色)",
+   "apple_px": {
+    "200x240": 467,
+    "256x256": 746
+   }
+  },
+  "E8_satisfied_expression": {
+   "pass": true,
+   "threshold": "末帧虹膜像素 ≤ 首帧的 75% (= 闭眼/笑眼)",
+   "iris_px_frame0": 2355,
+   "iris_px_frame4": 541
+  }
+ },
+ "work": {
+  "W1_keyboard_visible_at_200x240": {
+   "pass": true,
+   "threshold": "200×240 里键盘可见 ≥ 260 屏幕 px",
+   "keyboard_opaque_tex_px": 28082,
+   "keyboard_visible_screen_px": 1071
+  },
+  "W2_work_scene_registered": {
+   "pass": true,
+   "threshold": "props.scenes 必须有 work",
+   "scene_back": [
+    "prop_chair",
+    "prop_desk_surface",
+    "prop_keyboard"
+   ],
+   "scene_front": [
+    "prop_desk",
+    "prop_screen_glow"
+   ]
+  },
+  "W3_work_frames_unchanged": {
+   "pass": true,
+   "threshold": "R167 的 work 帧路径不得改动",
+   "frames": [
+    "character_R156/work_1.png",
+    "character_R156/work_2.png"
+   ]
+  }
+ },
+ "summary": {
+  "passed": 13,
+  "total": 13
+ }
+}

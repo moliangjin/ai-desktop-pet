@@ -1,0 +1,62 @@
+{
+ "round": "R170",
+ "observation_seconds": 180,
+ "exit_code": 0,
+ "log": "/tmp/r167_baseline_run.log",
+ "timing_available": false,
+ "idle_decisions": 14,
+ "work_sessions": [],
+ "eat_fruit_sessions": [],
+ "work_gaps_ms": [],
+ "eat_fruit_gaps_ms": [],
+ "avg_work_gap_ms": null,
+ "transition_count": 27,
+ "checks": {
+  "T1_work_triggered_at_least_once": {
+   "pass": false,
+   "threshold": "≥1 次",
+   "value": 0
+  },
+  "T2_work_average_gap": {
+   "pass": null,
+   "threshold": "≤150s (R167 交付版实测 ≈400s+)",
+   "value_ms": null,
+   "gaps_ms": [],
+   "not_applicable": "该版本日志无相对时间戳, 时长类判据不可用"
+  },
+  "T3_work_session_not_too_short": {
+   "pass": null,
+   "threshold": "每次 ≥12s (配置下限 16s)",
+   "durations_ms": [],
+   "not_applicable": "该版本日志无相对时间戳, 时长类判据不可用"
+  },
+  "T4_eat_fruit_triggered_at_least_once": {
+   "pass": false,
+   "threshold": "≥1 次",
+   "value": 0
+  },
+  "T5_eat_fruit_session_not_too_short": {
+   "pass": null,
+   "threshold": "每次 ≥10s (配置下限 14s)",
+   "durations_ms": [],
+   "not_applicable": "该版本日志无相对时间戳, 时长类判据不可用"
+  },
+  "T6_no_session_aborted_immediately": {
+   "pass": true,
+   "threshold": "没有\"刚进入就被别的活动顶掉\"的会话",
+   "work_aborted": [],
+   "eat_aborted": []
+  },
+  "T7_work_and_eat_fruit_never_overlap": {
+   "pass": true,
+   "threshold": "两者活动区间不相交",
+   "overlaps": 0
+  }
+ },
+ "summary": {
+  "passed": 2,
+  "failed": 2,
+  "not_applicable": 3,
+  "total": 7
+ }
+}

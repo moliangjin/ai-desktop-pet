@@ -4,7 +4,7 @@
 > **对应任务书**：R170（承接 R167，基线 commit `3893c28`）
 > **作者**：MiniMax（Mavis）
 > **上一交付**：R167 `3893c28`（实现 `8f693e6` / 索引 `fbfdca3` / 归档 `3893c28`）
-> **本轮实现提交**：`见归档提交`
+> **本轮实现提交**：`d1b700e`
 > **状态**：`ENGINEERING_GATE = PASS` / `VISUAL_GATE = PASS` / **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** / `V0_0_RELEASE_STATUS = NOT_FROZEN`
 > **范围声明**：本轮**只做任务书点名的两项**（恢复办公场景 + 新增吃水果生活行为），未扩展功能；**未进入 V0.1**；**未改动人物身份与服装**（R138 原始 23 帧 SHA256 逐字节未变）；**未改动任何点击动作素材**（`assets/character_R158/` 18 张帧与 `3893c28` 逐字节一致）；**未重新开发整个桌宠**；**未充值 i2i**（全程零 AI 生图调用）；R148 行走方向 / R153 自主行为 / R162 点击互动 / R165 手臂修复 / R167 办公睡眠成果 / R113 拖拽核心均未改动。
 
@@ -30,9 +30,9 @@
 | 候选实现 | `candidates/candidate_b_c2/` |
 | QA 报告 | `docs/R170_QA_REPORT.md` |
 | 交付索引 | `docs/R170_DELIVERY_INDEX.md`（本文件） |
-| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R170_review.zip`（见归档提交 文件 / 见归档提交 字节） |
-| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R170_review.zip.sha256`（`见归档提交`） |
-| 备份 | `backup/V0.0_backup_*_r170.zip`（见归档提交 文件 / 见归档提交 字节）+ 同名 `.sha256`（`见归档提交`） |
+| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R170_review.zip`（139 文件 / 17,331,010 字节） |
+| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R170_review.zip.sha256`（`d6d6a93db926e1c89948a9a1b311722e126cacf51348e6ed3e9acc90e29dc147`） |
+| 备份 | `backup/V0.0_backup_20261022_182946_r170.zip`（249 文件 / 50,356,658 字节）+ 同名 `.sha256`（`83eb0879ddfba92a156a67f7e1e1f5d86944a336f198c83f75c3372bdc8114b7`） |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`（60 PASS / 0 FAIL / 0 NOT_VERIFIED） |
 | **R170 客观判据** | `candidates/candidate_b_c2/evidence_r170_scene_verify.json`（吃水果 **13/13 PASS** + 办公 3/3） |
 | **触发取证（修复后）** | `candidates/candidate_b_c2/evidence_r170_trigger.json`（240s，**7/7 PASS**） |

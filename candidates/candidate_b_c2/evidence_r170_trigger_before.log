@@ -1,0 +1,345 @@
+[renderer:1] [renderer] PIXI version: 7.4.3 dev_mode= false
+[main] renderer-ready: pixi=7.4.3
+[main] R144 manifest sent, waiting for renderer assets-ready
+[renderer:2] %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged.
+[renderer:1] [renderer] R147 idle-director enabled=true spec={"enabled":true,"base_index":0,"blink_sequence":[5],"blink_frame_ms":[130],"blink_interval_ms":[1600,3400],"excluded_frames":[1,2,3,4],"note":"R153: blink_sequence 由 [4,5] 改为 [5] —— idle_04 并不是眨眼帧, 它是**右手横在胸前**的姿势, 站立时每 1.6~3.4s 抽手到胸前会被读成\"莫名抬手\"; idle_05 是纯闭眼且手臂下垂。idle_04 与胸腔膨胀帧 1/2/3 一并列入永不播放的排除帧"}
+[main] window ready-to-show
+[main] asset-report: idle loaded=6 failed=0
+[renderer:1] [renderer] R100 asset-report idle: loaded=6 failed=0
+[main] asset-report: walk_left loaded=4 failed=0
+[renderer:1] [renderer] R100 asset-report walk_left: loaded=4 failed=0
+[main] asset-report: walk_right loaded=4 failed=0
+[renderer:1] [renderer] R100 asset-report walk_right: loaded=4 failed=0
+[main] asset-report: sleep_enter loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report sleep_enter: loaded=3 failed=0
+[main] asset-report: sleep_loop loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report sleep_loop: loaded=3 failed=0
+[main] asset-report: wake_up loaded=3 failed=0
+[renderer:1] [renderer] R100 asset-report wake_up: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report look_around: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report tilt_head: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report head_nod: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report happy: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report blink_soft: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report stretch: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report sit_rest: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report doze: loaded=1 failed=0
+[renderer:1] [renderer] R153 library-asset-report sleep_breath: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report work: loaded=2 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_wave: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_hands_up: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_clap: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_tilt: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_heart: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-asset-report cheer_jump: loaded=3 failed=0
+[renderer:1] [renderer] R153 library-assets-ready {"ok":true,"actions":16,"loaded":34,"failed":0}
+[renderer:1] [renderer] R156 props-asset-report loaded=10 failed=0
+[renderer:1] [renderer] R144 LAYOUT mode=standard canvas=256x256 scale=0.253579 groundY=252 margin=4 frames=57 missingBBox=0
+[renderer:1] %cPixiJS Deprecation Warning: %c%s color:#614108;background:#fffbe6 font-weight:normal;color:#614108;background:#fffbe6 Setting interactive is deprecated, use eventMode = 'none'/'passive'/'auto'/'static'/'dynamic' instead.
+Deprecated since v7.2.0
+[renderer:2]     at IpcRenderer.<anonymous> (file:///private/tmp/r167_baseline/candidates/candidate_b_c2/src/renderer.js:1281:25)
+[renderer:1] console.groupEnd
+[renderer:1] [renderer] R144 sprite enabled: mode=standard canvas=256x256 scale=0.253579 groundY=252 hitArea={"x":-1.8323107957839966,"y":1.7177914381027222,"width":259.6646167039871,"height":259.66462433338165,"type":1}
+[renderer:1] [renderer] R111 canvas listeners attached (move/up/cancel) to CANVAS#
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R144 assets-ready {"total":23,"loaded":23,"failed":0,"actions":{"idle":{"loaded":6,"failed":0,"total":6},"walk_left":{"loaded":4,"failed":0,"total":4},"walk_right":{"loaded":4,"failed":0,"total":4},"sleep_enter":{"loaded":3,"failed":0,"total":3},"sleep_loop":{"loaded":3,"failed":0,"total":3},"wake_up":{"loaded":3,"failed":0,"total":3}},"ok":true}
+[main] R144 ASSETS_READY loaded=23/23 actions=idle,walk_left,walk_right,sleep_enter,sleep_loop,wake_up
+[main] R144 behavior engine started state=IDLE
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+2752ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+2882ms
+[main] R141 STATE IDLE -> WORK (idle-decision)
+[main] R141 BEHAVIOR action=work state=WORK
+[renderer:1] [renderer] R156 PROPS action=work scene=yes mounted=prop_chair,prop_desk_surface,prop_keyboard,prop_desk,prop_screen_glow
+[renderer:1] [renderer] R147 set-action work applied=true loop=true frame_ms=2800,2800 frames=2 skew=0
+[main] R141 STATE WORK -> IDLE (work-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_chair,prop_desk_surface,prop_keyboard,prop_desk,prop_screen_glow
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+17782ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+17912ms
+[main] R141 STATE IDLE -> WALK_LEFT (idle-decision)
+[main] R141 BEHAVIOR action=walk_left state=WALK_LEFT
+[renderer:1] [renderer] R156 PROPS action=walk_left scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> walk_left (220ms)
+[renderer:1] [renderer] R147 set-action walk_left applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=199 y=200 target=(199,200) actual=(199,200) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=193 y=200 target=(193,200) actual=(193,200) moved=(-1,0) step=(-1,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=186 y=200 target=(186,200) actual=(186,200) moved=(-1,0) step=(-1,0) dx=-1.260 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=178 y=200 target=(178,200) actual=(178,200) moved=(-2,0) step=(-2,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=172 y=200 target=(172,200) actual=(172,200) moved=(-1,0) step=(-1,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=165 y=200 target=(165,200) actual=(165,200) moved=(-1,0) step=(-1,0) dx=-0.990 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=159 y=200 target=(159,200) actual=(159,200) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=152 y=200 target=(152,200) actual=(152,200) moved=(-1,0) step=(-1,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=145 y=200 target=(145,200) actual=(145,200) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=138 y=200 target=(138,200) actual=(138,200) moved=(-2,0) step=(-2,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=131 y=200 target=(131,200) actual=(131,200) moved=(-1,0) step=(-1,0) dx=-1.050 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=125 y=200 target=(125,200) actual=(125,200) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=119 y=200 target=(119,200) actual=(119,200) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=112 y=200 target=(112,200) actual=(112,200) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=104 y=200 target=(104,200) actual=(104,200) moved=(-2,0) step=(-2,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=98 y=200 target=(98,200) actual=(98,200) moved=(-1,0) step=(-1,0) dx=-1.320 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=90 y=200 target=(90,200) actual=(90,200) moved=(-2,0) step=(-2,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=84 y=200 target=(84,200) actual=(84,200) moved=(-1,0) step=(-1,0) dx=-0.990 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=78 y=200 target=(78,200) actual=(78,200) moved=(-1,0) step=(-1,0) dx=-1.260 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=72 y=200 target=(72,200) actual=(72,200) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=65 y=200 target=(65,200) actual=(65,200) moved=(-1,0) step=(-1,0) dx=-1.290 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=57 y=200 target=(57,200) actual=(57,200) moved=(-2,0) step=(-2,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=51 y=200 target=(51,200) actual=(51,200) moved=(-1,0) step=(-1,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=44 y=200 target=(44,200) actual=(44,200) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=38 y=200 target=(38,200) actual=(38,200) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=30 y=200 target=(30,200) actual=(30,200) moved=(-2,0) step=(-2,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=24 y=200 target=(24,200) actual=(24,200) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=17 y=200 target=(17,200) actual=(17,200) moved=(-1,0) step=(-1,0) dx=-1.170 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=11 y=200 target=(11,200) actual=(11,200) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=4 y=200 target=(4,200) actual=(4,200) moved=(-1,0) step=(-1,0) dx=-0.990 blocked=false state=WALK_LEFT
+[main] R141 STATE WALK_LEFT -> WALK_RIGHT (edge-turn)
+[main] R141 BEHAVIOR action=walk_right state=WALK_RIGHT
+[renderer:1] [renderer] R156 PROPS action=walk_right scene=none mounted=none
+[renderer:1] [renderer] R147 set-action walk_right applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=9 y=200 target=(9,200) actual=(9,200) moved=(1,0) step=(1,0) dx=1.260 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=15 y=200 target=(15,200) actual=(15,200) moved=(1,0) step=(1,0) dx=1.110 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=21 y=200 target=(21,200) actual=(21,200) moved=(1,0) step=(1,0) dx=1.140 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=28 y=200 target=(28,200) actual=(28,200) moved=(1,0) step=(1,0) dx=1.230 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=34 y=200 target=(34,200) actual=(34,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=41 y=200 target=(41,200) actual=(41,200) moved=(1,0) step=(1,0) dx=1.290 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=48 y=200 target=(48,200) actual=(48,200) moved=(1,0) step=(1,0) dx=1.140 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=55 y=200 target=(55,200) actual=(55,200) moved=(1,0) step=(1,0) dx=1.320 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=63 y=200 target=(63,200) actual=(63,200) moved=(2,0) step=(2,0) dx=1.290 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=70 y=200 target=(70,200) actual=(70,200) moved=(1,0) step=(1,0) dx=1.140 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=77 y=200 target=(77,200) actual=(77,200) moved=(1,0) step=(1,0) dx=1.140 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=84 y=200 target=(84,200) actual=(84,200) moved=(1,0) step=(1,0) dx=1.020 blocked=false state=WALK_RIGHT
+[main] R141 STATE WALK_RIGHT -> IDLE (walk-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND walk_right -> idle (220ms)
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+32571ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+32701ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+34563ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+34693ms
+[main] R141 STATE IDLE -> DOZE (idle-decision)
+[main] R141 BEHAVIOR action=doze state=DOZE
+[renderer:1] [renderer] R156 PROPS action=doze scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R147 set-action doze applied=true loop=true frame_ms=1600 frames=1 skew=0
+[main] R141 STATE DOZE -> IDLE (doze-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_sofa
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+49891ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+50023ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+53261ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+53392ms
+[main] R141 STATE IDLE -> WORK (idle-decision)
+[main] R141 BEHAVIOR action=work state=WORK
+[renderer:1] [renderer] R156 PROPS action=work scene=yes mounted=prop_chair,prop_desk_surface,prop_keyboard,prop_desk,prop_screen_glow
+[renderer:1] [renderer] R147 set-action work applied=true loop=true frame_ms=2800,2800 frames=2 skew=0
+[main] R141 STATE WORK -> IDLE (work-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_chair,prop_desk_surface,prop_keyboard,prop_desk,prop_screen_glow
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+71451ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+71583ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+74883ms
+[main] R141 STATE IDLE -> SIT (idle-decision)
+[main] R141 BEHAVIOR action=sit_rest state=SIT
+[renderer:1] [renderer] R156 PROPS action=sit_rest scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R147 set-action sit_rest applied=true loop=true frame_ms=1500 frames=1 skew=0
+[main] R141 STATE SIT -> DOZE (idle-decision)
+[main] R141 BEHAVIOR action=doze state=DOZE
+[renderer:1] [renderer] R156 PROPS action=doze scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R153 BLEND sit_rest -> doze (260ms)
+[renderer:1] [renderer] R147 set-action doze applied=true loop=true frame_ms=1600 frames=1 skew=0
+[main] R141 STATE DOZE -> IDLE (doze-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_sofa
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+94693ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+94823ms
+[main] R141 STATE IDLE -> WALK_RIGHT (idle-decision)
+[main] R141 BEHAVIOR action=walk_right state=WALK_RIGHT
+[renderer:1] [renderer] R156 PROPS action=walk_right scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> walk_right (220ms)
+[renderer:1] [renderer] R147 set-action walk_right applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=85 y=200 target=(85,200) actual=(85,200) moved=(1,0) step=(1,0) dx=1.140 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=92 y=200 target=(92,200) actual=(92,200) moved=(1,0) step=(1,0) dx=1.170 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=99 y=200 target=(99,200) actual=(99,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=105 y=200 target=(105,200) actual=(105,200) moved=(1,0) step=(1,0) dx=1.260 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=112 y=200 target=(112,200) actual=(112,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=120 y=200 target=(120,200) actual=(120,200) moved=(2,0) step=(2,0) dx=1.260 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=126 y=200 target=(126,200) actual=(126,200) moved=(1,0) step=(1,0) dx=0.990 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=132 y=200 target=(132,200) actual=(132,200) moved=(1,0) step=(1,0) dx=1.290 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=139 y=200 target=(139,200) actual=(139,200) moved=(1,0) step=(1,0) dx=1.230 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=145 y=200 target=(145,200) actual=(145,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=151 y=200 target=(151,200) actual=(151,200) moved=(1,0) step=(1,0) dx=1.290 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=158 y=200 target=(158,200) actual=(158,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=165 y=200 target=(165,200) actual=(165,200) moved=(1,0) step=(1,0) dx=1.140 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=172 y=200 target=(172,200) actual=(172,200) moved=(1,0) step=(1,0) dx=1.260 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=179 y=200 target=(179,200) actual=(179,200) moved=(1,0) step=(1,0) dx=1.230 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=186 y=200 target=(186,200) actual=(186,200) moved=(1,0) step=(1,0) dx=1.260 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=192 y=200 target=(192,200) actual=(192,200) moved=(1,0) step=(1,0) dx=1.230 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=199 y=200 target=(199,200) actual=(199,200) moved=(1,0) step=(1,0) dx=1.170 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=206 y=200 target=(206,200) actual=(206,200) moved=(2,0) step=(2,0) dx=1.260 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=213 y=200 target=(213,200) actual=(213,200) moved=(2,0) step=(2,0) dx=1.320 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=220 y=200 target=(220,200) actual=(220,200) moved=(2,0) step=(2,0) dx=1.320 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=226 y=200 target=(226,200) actual=(226,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=233 y=200 target=(233,200) actual=(233,200) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=239 y=200 target=(239,200) actual=(239,200) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=246 y=200 target=(246,200) actual=(246,200) moved=(1,0) step=(1,0) dx=1.020 blocked=false state=WALK_RIGHT
+[main] R141 STATE WALK_RIGHT -> IDLE (walk-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND walk_right -> idle (220ms)
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+106793ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+106923ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+108991ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+109123ms
+[main] R141 STATE IDLE -> GESTURE (idle-decision)
+[main] R141 BEHAVIOR action=tilt_head state=GESTURE
+[renderer:1] [renderer] R156 PROPS action=tilt_head scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> tilt_head (220ms)
+[renderer:1] [renderer] R147 set-action tilt_head applied=true loop=true frame_ms=950,950 frames=2 skew=0
+[main] R141 STATE GESTURE -> IDLE (gesture-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND tilt_head -> idle (220ms)
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+116461ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+116593ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+119193ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+119323ms
+[main] R141 STATE IDLE -> WALK_RIGHT (idle-decision)
+[main] R141 BEHAVIOR action=walk_right state=WALK_RIGHT
+[renderer:1] [renderer] R156 PROPS action=walk_right scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> walk_right (220ms)
+[renderer:1] [renderer] R147 set-action walk_right applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=249 y=200 target=(249,200) actual=(249,200) moved=(1,0) step=(1,0) dx=1.230 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=256 y=200 target=(256,200) actual=(256,200) moved=(1,0) step=(1,0) dx=1.170 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=263 y=200 target=(263,200) actual=(263,200) moved=(2,0) step=(2,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=270 y=200 target=(270,200) actual=(270,200) moved=(2,0) step=(2,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=276 y=200 target=(276,200) actual=(276,200) moved=(2,0) step=(2,0) dx=1.260 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=283 y=200 target=(283,200) actual=(283,200) moved=(2,0) step=(2,0) dx=1.290 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=290 y=200 target=(290,200) actual=(290,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=296 y=200 target=(296,200) actual=(296,200) moved=(1,0) step=(1,0) dx=1.260 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=303 y=200 target=(303,200) actual=(303,200) moved=(1,0) step=(1,0) dx=1.110 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=310 y=200 target=(310,200) actual=(310,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=316 y=200 target=(316,200) actual=(316,200) moved=(1,0) step=(1,0) dx=1.200 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=323 y=200 target=(323,200) actual=(323,200) moved=(1,0) step=(1,0) dx=1.080 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=329 y=200 target=(329,200) actual=(329,200) moved=(1,0) step=(1,0) dx=1.050 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=337 y=200 target=(337,200) actual=(337,200) moved=(2,0) step=(2,0) dx=1.320 blocked=false state=WALK_RIGHT
+[main] R144 MOVE x=343 y=200 target=(343,200) actual=(343,200) moved=(1,0) step=(1,0) dx=1.230 blocked=false state=WALK_RIGHT
+[main] R141 STATE WALK_RIGHT -> IDLE (walk-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND walk_right -> idle (220ms)
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+125312ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+125451ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+128080ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+128211ms
+[main] R141 STATE IDLE -> SIT (idle-decision)
+[main] R141 BEHAVIOR action=sit_rest state=SIT
+[renderer:1] [renderer] R156 PROPS action=sit_rest scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R147 set-action sit_rest applied=true loop=true frame_ms=1500 frames=1 skew=0
+[main] R141 STATE SIT -> IDLE (sit-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_sofa
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+143925ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+144056ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+146195ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+146326ms
+[main] R141 STATE IDLE -> GESTURE (idle-decision)
+[main] R141 BEHAVIOR action=head_nod state=GESTURE
+[renderer:1] [renderer] R156 PROPS action=head_nod scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> head_nod (220ms)
+[renderer:1] [renderer] R147 set-action head_nod applied=true loop=false frame_ms=260,380 frames=2 skew=0
+[renderer:1] [renderer] R153 FRAME_BLEND head_nod 0 -> 1 (180ms)
+[renderer:1] [renderer] R144 oneshot last-frame head_nod index=1/1 t=+149135ms
+[renderer:1] [renderer] R144 animation-finished head_nod (one-shot, 末帧保持 260,380ms) t=+149525ms
+[main] R141 animation-finished head_nod handled=false state=GESTURE
+[main] R141 STATE GESTURE -> IDLE (gesture-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND head_nod -> idle (220ms)
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+151895ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+152025ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+154434ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+154564ms
+[main] R141 STATE IDLE -> WALK_LEFT (idle-decision)
+[main] R141 BEHAVIOR action=walk_left state=WALK_LEFT
+[renderer:1] [renderer] R156 PROPS action=walk_left scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> walk_left (220ms)
+[renderer:1] [renderer] R147 set-action walk_left applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=343 y=200 target=(343,200) actual=(343,200) moved=(-1,0) step=(-1,0) dx=-1.290 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=337 y=200 target=(337,200) actual=(337,200) moved=(-2,0) step=(-2,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=330 y=200 target=(330,200) actual=(330,200) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=324 y=200 target=(324,200) actual=(324,200) moved=(-1,0) step=(-1,0) dx=-1.290 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=318 y=200 target=(318,200) actual=(318,200) moved=(-1,0) step=(-1,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=312 y=200 target=(312,200) actual=(312,200) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=305 y=200 target=(305,200) actual=(305,200) moved=(-2,0) step=(-2,0) dx=-1.290 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=299 y=200 target=(299,200) actual=(299,200) moved=(-1,0) step=(-1,0) dx=-1.290 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=293 y=200 target=(293,200) actual=(293,200) moved=(-1,0) step=(-1,0) dx=-1.290 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=287 y=200 target=(287,200) actual=(287,200) moved=(-1,0) step=(-1,0) dx=-1.290 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=280 y=200 target=(280,200) actual=(280,200) moved=(-1,0) step=(-1,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=274 y=200 target=(274,200) actual=(274,200) moved=(-1,0) step=(-1,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=268 y=200 target=(268,200) actual=(268,200) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=261 y=200 target=(261,200) actual=(261,200) moved=(-1,0) step=(-1,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=254 y=200 target=(254,200) actual=(254,200) moved=(-1,0) step=(-1,0) dx=-1.170 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=247 y=200 target=(247,200) actual=(247,200) moved=(-1,0) step=(-1,0) dx=-1.260 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=240 y=200 target=(240,200) actual=(240,200) moved=(-1,0) step=(-1,0) dx=-1.080 blocked=false state=WALK_LEFT
+[main] R141 STATE WALK_LEFT -> IDLE (walk-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND walk_left -> idle (220ms)
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+162474ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+162612ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+165264ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+165394ms
+[main] R141 STATE IDLE -> WALK_LEFT (idle-decision)
+[main] R141 BEHAVIOR action=walk_left state=WALK_LEFT
+[renderer:1] [renderer] R156 PROPS action=walk_left scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND idle -> walk_left (220ms)
+[renderer:1] [renderer] R147 set-action walk_left applied=true loop=true frame_ms=130 frames=4 skew=0
+[main] R144 MOVE x=233 y=200 target=(233,200) actual=(233,200) moved=(-1,0) step=(-1,0) dx=-1.170 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=227 y=200 target=(227,200) actual=(227,200) moved=(-1,0) step=(-1,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=221 y=200 target=(221,200) actual=(221,200) moved=(-1,0) step=(-1,0) dx=-1.170 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=214 y=200 target=(214,200) actual=(214,200) moved=(-1,0) step=(-1,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=207 y=200 target=(207,200) actual=(207,200) moved=(-1,0) step=(-1,0) dx=-1.260 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=200 y=200 target=(200,200) actual=(200,200) moved=(-1,0) step=(-1,0) dx=-1.230 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=193 y=200 target=(193,200) actual=(193,200) moved=(-1,0) step=(-1,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=186 y=200 target=(186,200) actual=(186,200) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=179 y=200 target=(179,200) actual=(179,200) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=172 y=200 target=(172,200) actual=(172,200) moved=(-1,0) step=(-1,0) dx=-1.110 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=166 y=200 target=(166,200) actual=(166,200) moved=(-1,0) step=(-1,0) dx=-1.260 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=160 y=200 target=(160,200) actual=(160,200) moved=(-1,0) step=(-1,0) dx=-1.140 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=152 y=200 target=(152,200) actual=(152,200) moved=(-2,0) step=(-2,0) dx=-1.290 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=145 y=200 target=(145,200) actual=(145,200) moved=(-2,0) step=(-2,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=138 y=200 target=(138,200) actual=(138,200) moved=(-2,0) step=(-2,0) dx=-1.260 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=132 y=200 target=(132,200) actual=(132,200) moved=(-1,0) step=(-1,0) dx=-1.200 blocked=false state=WALK_LEFT
+[main] R144 MOVE x=126 y=200 target=(126,200) actual=(126,200) moved=(-1,0) step=(-1,0) dx=-0.990 blocked=false state=WALK_LEFT
+[main] R141 STATE WALK_LEFT -> IDLE (walk-complete)
+[main] R141 BEHAVIOR action=idle state=IDLE
+[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=none
+[renderer:1] [renderer] R153 BLEND walk_left -> idle (220ms)
+[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+173473ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+173603ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=5 phase=blink t=+176561ms
+[renderer:1] [renderer] R147 IDLE_BLINK frame=0 phase=hold t=+176693ms
+[main] R141 STATE IDLE -> DOZE (idle-decision)
+[main] R141 BEHAVIOR action=doze state=DOZE
+[renderer:1] [renderer] R156 PROPS action=doze scene=yes mounted=prop_sofa
+[renderer:1] [renderer] R147 set-action doze applied=true loop=true frame_ms=1600 frames=1 skew=0
+[main] quit-after elapsed, terminating
+[main] R141 behavior engine stopped (before-quit)
+[main] window closed

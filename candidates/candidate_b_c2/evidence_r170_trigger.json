@@ -1,0 +1,88 @@
+{
+ "round": "R170",
+ "observation_seconds": 240,
+ "exit_code": 0,
+ "log": "/tmp/r170_trigger_run.log",
+ "idle_decisions": 15,
+ "work_sessions": [
+  {
+   "start": 119001,
+   "end": 136812,
+   "duration": 17811,
+   "ended_by": "IDLE",
+   "reason": "work-complete"
+  },
+  {
+   "start": 181450,
+   "end": 206779,
+   "duration": 25329,
+   "ended_by": "IDLE",
+   "reason": "work-complete"
+  }
+ ],
+ "eat_fruit_sessions": [
+  {
+   "start": 29979,
+   "end": 45722,
+   "duration": 15743,
+   "ended_by": "IDLE",
+   "reason": "eat_fruit-complete"
+  }
+ ],
+ "work_gaps_ms": [
+  62449
+ ],
+ "eat_fruit_gaps_ms": [],
+ "avg_work_gap_ms": 62449.0,
+ "transition_count": 30,
+ "checks": {
+  "T1_work_triggered_at_least_once": {
+   "pass": true,
+   "threshold": "≥1 次",
+   "value": 2
+  },
+  "T2_work_average_gap": {
+   "pass": true,
+   "threshold": "≤150s (R167 交付版实测 ≈400s+)",
+   "value_ms": 62449.0,
+   "gaps_ms": [
+    62449
+   ]
+  },
+  "T3_work_session_not_too_short": {
+   "pass": true,
+   "threshold": "每次 ≥12s (配置下限 16s)",
+   "durations_ms": [
+    17811,
+    25329
+   ]
+  },
+  "T4_eat_fruit_triggered_at_least_once": {
+   "pass": true,
+   "threshold": "≥1 次",
+   "value": 1
+  },
+  "T5_eat_fruit_session_not_too_short": {
+   "pass": true,
+   "threshold": "每次 ≥10s (配置下限 14s)",
+   "durations_ms": [
+    15743
+   ]
+  },
+  "T6_no_session_aborted_immediately": {
+   "pass": true,
+   "threshold": "没有\"刚进入就被别的活动顶掉\"的会话",
+   "work_aborted": [],
+   "eat_aborted": []
+  },
+  "T7_work_and_eat_fruit_never_overlap": {
+   "pass": true,
+   "threshold": "两者活动区间不相交",
+   "overlaps": 0
+  }
+ },
+ "summary": {
+  "passed": 7,
+  "total": 7
+ }
+}

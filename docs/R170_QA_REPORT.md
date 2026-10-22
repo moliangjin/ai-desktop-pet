@@ -144,8 +144,8 @@ eat_fruit_probability   → 0.36     eat_fruit_min/max_ms 14000 / 22000  eat_fru
 | 6 | 办公及吃水果的直接验收入口 | `--demo-scene work` / `--demo-scene eat_fruit`；`C2_Mac人工验收.command` | ✅ 已产出（`--demo-scene work` / `--demo-scene eat_fruit` + `C2_Mac人工验收.command`） |
 | 7 | 自动测试和回归测试结果 | 全量 node 单测 + R147 e2e 全量 + R167 场景判据 + R165 手臂判据 + R170 触发取证 | ✅ 已产出（node 单测 167 全绿 + e2e 60 PASS / 0 FAIL / 0 NOT_VERIFIED） |
 | 8 | Git commit | 三提交链（实现 → 交付索引 → 交付归档） | ✅ 已产出（三提交链） |
-| 9 | 轻量源码审查 ZIP 及 SHA256 | `character_animation_R170_review.zip` + 独立 `.sha256` | ✅ 已产出（ZIP + 独立 .sha256） |
-| 10 | 完整备份和最终研发报告 | `backup/V0.0_backup_*_r170.zip` + 本报告 + `docs/R170_DELIVERY_INDEX.md` | ✅ 已产出（备份包 + QA 报告 + 交付索引） |
+| 9 | 轻量源码审查 ZIP 及 SHA256 | `character_animation_R170_review.zip`（139 文件 / 17,331,010 字节）+ 独立 `.sha256`（`d6d6a93d…147`） | ✅ 已产出 |
+| 10 | 完整备份和最终研发报告 | `backup/V0.0_backup_20261022_182946_r170.zip`（249 文件 / 50,356,658 字节，SHA256 `83eb0879…b7`）+ 本报告 + `docs/R170_DELIVERY_INDEX.md` | ✅ 已产出 |
 
 ---
 

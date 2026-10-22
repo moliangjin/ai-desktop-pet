@@ -135,9 +135,17 @@ def compose(scene, canvas_w, canvas_h, m, frame_override=None, out_path=None,
         # 纹理行 tex_y 的屏幕 y:
         #   角色: y = ground_y - (tex_y - anchor_y*1024)*scale  -> 纹理底(1024) 在 ground_y - (1024-921.6)*scale
         #   道具: 令道具的地面行 floor 落在同一地面线上
-        sy = ground_y - (ground_row - anchor_tex_y) * scale
-        # 纹理底行 (1024) 对应的屏幕 y
-        y_bottom = sy + (TEX - ground_row) * scale
+        # 【R172 修正】地面行 (ground_row) 必须落在**地面线** ground_y 上,
+        #   与运行时 sprite_layout.js 的 groundRowY 严格一致:
+        #       sprite.y = groundY - (ground_row - anchor.y*TEX) * scale
+        #       纹理行 r → 屏幕 y = sprite.y + (r - anchor.y*TEX) * scale
+        #                = groundY - (ground_row - r) * scale
+        #   ⇒ r = ground_row 时正好 = groundY。
+        #   旧实现把 y_bottom 算成 sy + (TEX - ground_row)*scale, 等价于把
+        #   "地面行" 当成 "纹理底行 1024", 于是整幅图**上移了
+        #   (ground_row - anchor.y*TEX) * scale** (200×240 下 15.58px),
+        #   预览图与真实 Electron 画面对不齐 (R172 目视复核时发现)。
+        y_bottom = ground_y + (TEX - ground_row) * scale
         x_center = canvas_w / 2
         # 纹理列 512 的屏幕 x = canvas_w/2
         return arr, x_center, y_bottom, scale

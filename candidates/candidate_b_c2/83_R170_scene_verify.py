@@ -259,8 +259,8 @@ def compose_layers(scene, char_rel, w, h):
             arr = np.asarray(Image.fromarray(
                 np.clip(arr, 0, 255).astype(np.uint8), 'RGBA').resize(
                 (max(1, tw), max(1, tw)), Image.LANCZOS)).astype(np.float64)
-            sy = ground_y - (ground_row - anchor_tex_y) * scale
-            y_bottom = sy + (sp.TEX - ground_row) * scale
+            # R172 修正: 与运行时一致 —— 地面行落在 ground_y 上
+            y_bottom = ground_y + (sp.TEX - ground_row) * scale
             x_center = w / 2
             ih, iw = arr.shape[:2]
             left = int(round(x_center - 512 * scale))

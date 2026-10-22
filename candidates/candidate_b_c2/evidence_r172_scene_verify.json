@@ -1,0 +1,271 @@
+{
+ "round": "R172",
+ "scene": "work",
+ "sizes": [
+  "200x240",
+  "256x256"
+ ],
+ "scale": {
+  "200x240": 0.196319,
+  "200x240_before": 0.196319,
+  "256x256": 0.253579,
+  "256x256_before": 0.253579
+ },
+ "checks": [
+  {
+   "id": "A1_legs_visible",
+   "pass": true,
+   "value": 775,
+   "threshold": 150,
+   "rule": "200×240 桌下区域青色长袜像素 ≥ 150 (桌面只遮大腿, 小腿必须完整)"
+  },
+  {
+   "id": "A2_shoes_visible",
+   "pass": true,
+   "value": 1032,
+   "threshold": 120,
+   "rule": "200×240 桌下区域靴子像素 (冷白鞋面 + 深蓝鞋底) ≥ 120"
+  },
+  {
+   "id": "A3_feet_on_ground",
+   "pass": true,
+   "value": 234,
+   "ground_line": 236,
+   "threshold": "≥ 地面线 - 3 px",
+   "rule": "靴底必须落在地面线上 (不能悬空)"
+  },
+  {
+   "id": "A4_screen_content_visible",
+   "pass": true,
+   "value": {
+    "content_px": 728,
+    "detail": 23.564
+   },
+   "threshold": "content ≥ 260 px 且 detail ≥ 12",
+   "rule": "显示器屏幕必须是\"有内容的界面\", 不是一块平涂背板 (背板 detail ≈ 5)"
+  },
+  {
+   "id": "A5_hands_on_keyboard",
+   "pass": true,
+   "value": {
+    "skin_px": 1148,
+    "ratio": 0.664,
+    "min_hand_px": 376
+   },
+   "threshold": "双手皮肤 ≥ 700 px, 单只 ≥ 300 px, 且 ≥0.50 落在键盘投影区",
+   "rule": "双手必须真的压在键盘上 (纹理空间量; 真尺寸下每只手只剩 ~15x16 屏幕 px, 在 200×240 里量\"是不是手\"不可靠)"
+  },
+  {
+   "id": "A6_two_hands_only",
+   "pass": true,
+   "value": 2,
+   "threshold": 2,
+   "components_px": [
+    494,
+    376,
+    103,
+    73
+   ],
+   "rule": "手部肤色连通块必须正好 2 (不多手不少手)"
+  },
+  {
+   "id": "A7_typing_motion_real",
+   "pass": true,
+   "value": 6.96,
+   "threshold": 4.0,
+   "c1": [
+    503.8,
+    682.7
+   ],
+   "c2": [
+    508.4,
+    677.5
+   ],
+   "rule": "work_1 与 work_2 的手部质心位移 ≥ 4 纹理 px (打字动作真实存在)"
+  },
+  {
+   "id": "A8_identity_kept",
+   "pass": true,
+   "value": {
+    "coat_ratio": 0.4203,
+    "hair_ratio": 0.3485,
+    "opaque_px": 254552
+   },
+   "threshold": "coat ≥ 0.30 且 hair ≥ 0.08",
+   "rule": "A1 母版外观未漂移 (白大褂 + 银白发)"
+  },
+  {
+   "id": "A9_props_not_covering_face",
+   "pass": true,
+   "value": 0,
+   "threshold": 0,
+   "rule": "前景道具不透明像素 ∩ 面部皮肤 = 0"
+  },
+  {
+   "id": "B1a_200x240_all_visible",
+   "pass": true,
+   "value": {
+    "legs": 775,
+    "boots": 1032,
+    "hands": 31,
+    "screen": 728,
+    "hand_on_kb": 0.516
+   },
+   "threshold": "腿≥150 鞋≥120 手≥24 屏≥260 手在键盘≥0.40",
+   "rule": "200x240 下 人物/腿脚/双手/电脑屏幕 必须同时可见"
+  },
+  {
+   "id": "B1b_256x256_all_visible",
+   "pass": true,
+   "value": {
+    "legs": 1266,
+    "boots": 1684,
+    "hands": 54,
+    "screen": 1210,
+    "hand_on_kb": 0.685
+   },
+   "threshold": "腿≥150 鞋≥120 手≥38 屏≥260 手在键盘≥0.40",
+   "rule": "256x256 下 人物/腿脚/双手/电脑屏幕 必须同时可见"
+  },
+  {
+   "id": "C1_legs_before_after",
+   "pass": true,
+   "value": {
+    "after": 70580,
+    "before": 0
+   },
+   "threshold": "after ≥ 1500 且 before == 0",
+   "rule": "修复前下半身被剪掉 ⇒ 角色帧桌沿以下的腿脚像素真的是 0; 修复后必须成规模出现 (绝对值, 不是\"相比基线没变差\")"
+  },
+  {
+   "id": "C2_screen_before_after",
+   "pass": true,
+   "value": {
+    "after": 23.564,
+    "before": 5.53
+   },
+   "threshold": "after ≥ 12 且 before ≤ 8",
+   "rule": "修复前是笔记本背板(高频细节≈5), 修复后必须是可见界面(细节≥12)"
+  }
+ ],
+ "summary": {
+  "total": 13,
+  "pass": 13,
+  "fail": 0,
+  "all_pass": true
+ },
+ "after": {
+  "200x240": {
+   "below_desk_box": [
+    61,
+    180,
+    140,
+    236
+   ],
+   "leg_teal_px": 775,
+   "boot_px": 1032,
+   "leg_or_boot_px": 1570,
+   "lowest_leg_row_screen": 234,
+   "ground_line_screen": 236,
+   "screen_box_px": 840,
+   "screen_content_px": 728,
+   "screen_lum_std": 66.36,
+   "screen_detail": 23.564,
+   "keyboard_box_px": 870,
+   "hand_skin_px": 31,
+   "hand_on_keyboard_ratio": 0.516
+  },
+  "256x256": {
+   "below_desk_box": [
+    78,
+    179,
+    180,
+    252
+   ],
+   "leg_teal_px": 1266,
+   "boot_px": 1684,
+   "leg_or_boot_px": 2578,
+   "lowest_leg_row_screen": 249,
+   "ground_line_screen": 252,
+   "screen_box_px": 1360,
+   "screen_content_px": 1210,
+   "screen_lum_std": 64.0,
+   "screen_detail": 23.128,
+   "keyboard_box_px": 1496,
+   "hand_skin_px": 54,
+   "hand_on_keyboard_ratio": 0.685
+  }
+ },
+ "before": {
+  "200x240": {
+   "below_desk_box": [
+    61,
+    178,
+    140,
+    236
+   ],
+   "leg_teal_px": 237,
+   "boot_px": 961,
+   "leg_or_boot_px": 961,
+   "lowest_leg_row_screen": 235,
+   "ground_line_screen": 236,
+   "screen_box_px": 1156,
+   "screen_content_px": 198,
+   "screen_lum_std": 50.47,
+   "screen_detail": 5.53,
+   "keyboard_box_px": 1080,
+   "hand_skin_px": 1288,
+   "hand_on_keyboard_ratio": 0.077
+  },
+  "256x256": {
+   "below_desk_box": [
+    78,
+    177,
+    180,
+    252
+   ],
+   "leg_teal_px": 442,
+   "boot_px": 1527,
+   "leg_or_boot_px": 1593,
+   "lowest_leg_row_screen": 251,
+   "ground_line_screen": 252,
+   "screen_box_px": 1936,
+   "screen_content_px": 309,
+   "screen_lum_std": 46.34,
+   "screen_detail": 5.197,
+   "keyboard_box_px": 1794,
+   "hand_skin_px": 1143,
+   "hand_on_keyboard_ratio": 0.171
+  }
+ },
+ "texture_after": {
+  "hand_skin_px": 1148,
+  "hand_on_keyboard_ratio": 0.664,
+  "hand_components": 2,
+  "hand_component_px": [
+   494,
+   376,
+   103,
+   73
+  ],
+  "lower_body_px": 70580
+ },
+ "texture_before": {
+  "hand_skin_px": 6809,
+  "hand_on_keyboard_ratio": 0.164,
+  "hand_components": 9,
+  "hand_component_px": [
+   3383,
+   1254,
+   654,
+   487
+  ],
+  "lower_body_px": 0
+ },
+ "identity": {
+  "coat_ratio": 0.4203,
+  "hair_ratio": 0.3485,
+  "opaque_px": 254552
+ },
+ "note": "本脚本只提供客观像素证据; 视觉是否\"一眼看出在办公\"仍以目视复核 + 用户真机确认为准 (MAC_REAL_GUI_ACCEPTANCE = PENDING)。预览合成器 45_R165_scene_preview.py 的垂直落点已在本轮修正为与运行时 sprite_layout.js 一致 (旧实现整幅上移 15.58px)。"
+}

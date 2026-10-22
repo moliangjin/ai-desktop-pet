@@ -1,0 +1,42 @@
+{
+ "round": "R172",
+ "base": "assets/character_R138/wake_up/wake_up_01_sit_up.png",
+ "shift_y": 76,
+ "ground_tex_y": 1001,
+ "items": [
+  {
+   "file": "work_1.png",
+   "bbox": [
+    257,
+    109,
+    905,
+    1002
+   ],
+   "head": {
+    "rotate": 13.0,
+    "dy": 7.0,
+    "dx": -3.0
+   },
+   "hand_offset_y": 9
+  },
+  {
+   "file": "work_2.png",
+   "bbox": [
+    257,
+    117,
+    905,
+    1002
+   ],
+   "head": {
+    "rotate": -5.0,
+    "dy": -3.0,
+    "dx": 7.0
+   },
+   "hand_offset_y": 0
+  }
+ ],
+ "props": [
+  "prop_office_chair.png",
+  "prop_office_monitor.png"
+ ]
+}

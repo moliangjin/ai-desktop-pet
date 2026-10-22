@@ -210,18 +210,20 @@ test('B3 权重生效: 高权重动作出现频率更高 (不是等概率)', () 
 });
 
 // ====== C. 场景道具 ======
-test('C1 12 个道具文件齐全 (R156 的 8 个 + R158 爱心 + R167 键盘 + R170 吃水果 2 个), 场景登记的 back/front 道具都在库里', () => {
+test('C1 14 个道具文件齐全 (R156 8 + R158 爱心 + R167 键盘 + R170 吃水果 2 + R172 办公转椅/显示器), 场景登记的 back/front 道具都在库里', () => {
     assert.ok(PROPS.enabled, 'manifest 的 props 段必须启用');
     // R158: 在 R156 的 7 个道具基础上新增 prop_heart (比心爱心特效)
     // R165: 新增 prop_desk_surface (办公桌台面, back 层) ⇒ 道具 8 → 9
     // R167: 新增 prop_keyboard (办公键盘, back 层) ⇒ 道具 9 → 10
     // R170: 新增 prop_stool / prop_fruit_table (吃水果场景) ⇒ 道具 10 → 12
-    assert.strictEqual(Object.keys(PROPS_LIB).length, 12,
-        `应有 12 个道具, 实际 ${Object.keys(PROPS_LIB).length}: ${Object.keys(PROPS_LIB).join(',')}`);
+    // R172: 新增 prop_office_chair / prop_office_monitor (办公构图重做) ⇒ 道具 12 → 14
+    assert.strictEqual(Object.keys(PROPS_LIB).length, 14,
+        `应有 14 个道具, 实际 ${Object.keys(PROPS_LIB).length}: ${Object.keys(PROPS_LIB).join(',')}`);
     for (const need of ['prop_bed', 'prop_quilt', 'prop_moon', 'prop_sofa',
                         'prop_chair', 'prop_desk', 'prop_desk_surface',
                         'prop_keyboard', 'prop_screen_glow', 'prop_heart',
-                        'prop_stool', 'prop_fruit_table']) {
+                        'prop_stool', 'prop_fruit_table',
+                        'prop_office_chair', 'prop_office_monitor']) {
         assert.ok(PROPS_LIB[need], `道具库缺少 ${need}`);
     }
     for (const [name, spec] of Object.entries(PROPS_LIB)) {
@@ -262,7 +264,7 @@ test('C2 front 层道具不得侵入脸部区域 (不挡脸) — 用真实像素
     }
 });
 
-test('C3 睡觉有床 + 月亮, 坐下有沙发, 办公有桌子/笔记本/屏幕微光', () => {
+test('C3 睡觉有床 + 月亮, 坐下有沙发, 办公有转椅 + 可见内容的显示器 (R172 构图重做)', () => {
     const sleep = PROPS_SCENES.sleep_breath;
     assert.ok(sleep, '缺少 sleep_breath 道具场景 (睡觉必须有场景)');
     const sleepAll = (sleep.back || []).concat(sleep.front || []);
@@ -274,9 +276,23 @@ test('C3 睡觉有床 + 月亮, 坐下有沙发, 办公有桌子/笔记本/屏�
     const work = PROPS_SCENES.work;
     assert.ok(work, '缺少 work 道具场景 (办公必须有场景)');
     const workAll = (work.back || []).concat(work.front || []);
-    assert.ok(workAll.includes('prop_desk'), '办公场景必须有小桌子/笔记本');
-    assert.ok(workAll.includes('prop_screen_glow'), '办公场景必须有屏幕微光');
-    assert.ok(workAll.includes('prop_chair'), '办公场景必须有办公椅');
+    // R172: 办公场景换了图层归属 —— 桌面/键盘/手画进角色帧, 场景里只留
+    //       back=办公转椅, front=3/4 显示器 (R167 的"笔记本背板"被淘汰)。
+    assert.ok(workAll.includes('prop_office_chair'), '办公场景必须有办公转椅');
+    assert.ok(workAll.includes('prop_office_monitor'), '办公场景必须有显示器');
+    assert.ok((work.back || []).includes('prop_office_chair'), '办公转椅必须在 back 层 (人坐在椅子上)');
+    assert.ok((work.front || []).includes('prop_office_monitor'), '显示器必须在 front 层 (挡住桌沿才对)');
+    // 显示器必须**真的有屏幕内容** (R172 的核心诉求: 不能再是笔记本背板)
+    const mon = decodePNG(path.join(ASSETS, PROPS_LIB.prop_office_monitor.file));
+    let bright = 0, dark = 0;
+    for (let i = 0; i + 3 < mon.data.length; i += 4) {
+        if (mon.data[i + 3] < 40) continue;
+        const lum = (mon.data[i] + mon.data[i + 1] + mon.data[i + 2]) / 3;
+        if (lum > 150) bright++;
+        if (lum < 90) dark++;
+    }
+    assert.ok(bright >= 2000, `显示器屏幕必须有亮色界面内容 (实际亮像素 ${bright})`);
+    assert.ok(dark >= 500, `显示器必须有深色边框/底座 (实际深色像素 ${dark})`);
 });
 
 test('C4 道具与角色帧在两种画布下都**零裁切** (用生产布局算法核算)', () => {
@@ -541,8 +557,10 @@ test('F2 道具段不改动任何角色帧 (道具是独立 PNG, 不覆盖角色
     const propFiles = Object.values(PROPS_LIB).map(s => s.file);
     for (const f of propFiles) {
         // R158: 道具允许放在 character_R156/ (R156 的 7 个) 或 character_R158/ (R158 的爱心特效)
-        assert.ok(f.startsWith('character_R156/') || f.startsWith('character_R158/'),
-            `道具 ${f} 必须放在 character_R156/ 或 character_R158/ 目录`);
+        // R172: 新增 character_R172/ (办公转椅 + 3/4 显示器)
+        assert.ok(f.startsWith('character_R156/') || f.startsWith('character_R158/')
+            || f.startsWith('character_R172/'),
+            `道具 ${f} 必须放在 character_R156/ / character_R158/ / character_R172/ 目录`);
         assert.ok(fs.existsSync(path.join(ASSETS, f)), `道具缺失 ${f}`);
     }
     for (const action of MANIFEST.animation_order) {

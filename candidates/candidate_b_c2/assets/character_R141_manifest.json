@@ -502,15 +502,15 @@
       ],
       "work": [
         [
-          338,
-          40,
-          773,
+          257,
+          109,
+          905,
           1002
         ],
         [
-          338,
-          37,
-          723,
+          257,
+          117,
+          905,
           1002
         ]
       ],
@@ -894,17 +894,17 @@
       },
       "work": {
         "frames": [
-          "character_R156/work_1.png",
-          "character_R156/work_2.png"
+          "character_R172/work_1.png",
+          "character_R172/work_2.png"
         ],
         "frame_ms": [
-          2800,
-          2800
+          2600,
+          2600
         ],
         "loop": true,
         "anchor": "sit",
-        "desc": "在电脑前办公: 坐姿上半身前倾看屏幕 / 抬头思考 (连续权重场前倾, 下半身固定)",
-        "source": "R156 局部烘焙 (torso_lean)",
+        "desc": "在电脑前办公: work_1 低头看键盘 (手指按下) → work_2 抬头看屏幕 (打字间隙的思考)。双手压在键盘上, 完整坐姿 (双腿 + 靴子踩地) 可见。",
+        "source": "R172 局部烘焙 (换底图 wake_up_01_sit_up + 桌面/键盘/手内嵌 + head_transform)",
         "ground_tex_y": 1001
       },
       "cheer_wave": {
@@ -1139,6 +1139,14 @@
       "prop_fruit_table": {
         "file": "character_R156/prop_fruit_table.png",
         "desc": "小边桌 + 果盘 (back 层, 角色画面左侧): 圆角浅色桌面 + 细腿, 桌上一个浅色果盘, 盘里 2~3 个水果 (她拿的那颗之外的)"
+      },
+      "prop_office_chair": {
+        "file": "character_R172/prop_office_chair.png",
+        "desc": "办公转椅 (R172): 靠背 + 座面, 放在 back 层, 从角色肩/头两侧露出, 读作\"她坐在办公椅上\"。刻意不画中柱与五星脚 —— 角色坐在椅子上时中柱正好落在两腿之间, 会在脚边露出一坨灰色异物。"
+      },
+      "prop_office_monitor": {
+        "file": "character_R172/prop_office_monitor.png",
+        "desc": "3/4 透视的显示器正面 (R172): 屏内画蓝白科技界面 (标题栏 + 侧栏 + 代码行 + 状态块), 放在 front 层。取代 R167 的\"笔记本背板\" —— 那版观众只能看到一块石墨灰, 用户看不到任何屏幕内容。"
       }
     },
     "scenes": {
@@ -1183,15 +1191,12 @@
       "work": {
         "floor_tex_y": 1001,
         "back": [
-          "prop_chair",
-          "prop_desk_surface",
-          "prop_keyboard"
+          "prop_office_chair"
         ],
         "front": [
-          "prop_desk",
-          "prop_screen_glow"
+          "prop_office_monitor"
         ],
-        "desc": "办公待机 (R167): 坐在转椅上, 角色下半身剪掉 ⇒ 台面从腰部露出, 双手真正压在台面的键盘上; 笔记本后移到台面远端 (背板朝观众、屏幕朝角色), 与键盘形成\"屏幕在后、键盘在前\"的正确透视; 屏幕微光落在脸与手上"
+        "desc": "办公 (R172 构图重做): 底图换成 wake_up_01_sit_up —— **双腿下垂、靴子踩地的完整坐姿** (R167 的跪坐底图 + 剪下半身已废弃)。桌面/键盘/双手画进角色帧内部 (PNG 内 z 序: 身体 → 桌面 → 键盘 → 手 → 桌沿桌腿) ⇒ 桌面只遮住大腿, 小腿与靴子在桌下完整可见。电脑不再是笔记本背板, 而是 **3/4 透视的显示器正面** (屏幕朝观众偏左), 屏内画蓝白科技界面/代码。back 层 = 办公转椅, front 层 = 显示器。"
       },
       "cheer_heart": {
         "floor_tex_y": 987,
@@ -1294,5 +1299,24 @@
       "sleep_loop",
       "work"
     ]
+  },
+  "r172_office_scene": {
+    "title": "R172 办公场景构图重做 (恢复完整坐姿 + 3/4 透视电脑 + 可见屏幕内容)",
+    "root_cause": "R167 的设计前提是\"台面在 back 层 ⇒ 正面坐姿的躯干/大腿整片挡住台面 ⇒ 只能剪掉下半身\"。这不是素材不够, 是**图层归属错了**。R172 不再剪身体, 改为把桌面/键盘/双手画进角色帧内部 (PNG 内 z 序可控), 并把底图从跪坐的 sleep_enter_01_sit 换成双腿下垂的 wake_up_01_sit_up。",
+    "changes": [
+      "底图: assets/character_R138/wake_up/wake_up_01_sit_up.png (双腿下垂/靴子踩地), 整帧下移 76px 使脚底对齐地面行 1001",
+      "桌面/键盘/双手/桌沿桌腿 全部内嵌进 character_R172/work_1.png 与 work_2.png",
+      "R167 的 cut_lower_body (WORK_CUT_Y=592) 与 30_R156_props_bake.py 的笔记本背板 (LID_QUAD) 不再被 work 场景引用 (文件保留, 不删历史成果)",
+      "电脑改为 3/4 透视显示器正面 (character_R172/prop_office_monitor.png), 屏内画蓝白科技界面 (标题栏 + 侧栏 + 代码行 + 状态块)",
+      "新增办公转椅 (character_R172/prop_office_chair.png) 作为 back 层道具"
+    ],
+    "honest_limits": [
+      "**双手没有真正向内收到键盘中央** —— 坐姿底图的两只手腕间距实测 280 纹理 px, 手臂总长 (肩→腕 227 px) 不够把手腕挪到角色中线附近, 强行平移会让手与袖口脱节。因此键盘按实际手位画成宽键盘 (344~692), 双手落在键区两端, 手指已旋转成\"向前\"方向。",
+      "袖口在桌面远端被桌面遮住 (桌面远沿 y=620, 袖口 614~646) ⇒ 前臂与桌沿的衔接在 200×240 下只剩 2~3 屏幕 px, 肉眼读作\"手臂伸到桌面上\"。",
+      "显示器是**正面 3/4 的屏幕**, 不是物理正确的背面同侧视角 —— 2D 插画里正面坐姿 + 正对观众的显示器只能这样表达\"看得到屏幕内容\"。",
+      "打字动作是\"手部整体上下 4 纹理 px\"的一帧位移 + 头部抬头/低头, 不是逐键动画 (键盘与桌面是场景道具, 运行时按 action 整组挂载, 不支持逐帧换道具)。",
+      "MAC_REAL_GUI_ACCEPTANCE = PENDING (本轮只有脚本合成与真实 Electron 采集, 未经用户真机肉眼确认)。"
+    ],
+    "verification": "91_R172_manifest_update.py (幂等) / 92_R172_scene_verify.py (客观判据)"
   }
 }

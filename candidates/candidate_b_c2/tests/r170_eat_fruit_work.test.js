@@ -332,15 +332,35 @@ test('F1 六种点击互动动作与 R148 行走方向原样保留', () => {
     }
 });
 
-test('F2 R167 的办公/睡眠场景成果原样保留 (work 场景仍有 5 个道具)', () => {
+test('F2 R172 办公场景按任务书重做, 但 R167 旧素材与吃水果/睡眠场景原样保留', () => {
+    // R172 任务书明确要求: "优先调整整体构图" + "不要继续通过裁掉人物身体解决图层遮挡"
+    // ⇒ work 场景换了底图与图层归属, 这条断言随之改为:
+    //   (a) work 场景已指向 R172 新构图 (转椅 + 3/4 显示器 + 新帧)
+    //   (b) R167 的旧办公道具**文件仍在磁盘上** (历史成果不删)
+    //   (c) 吃水果场景与睡眠场景一字未改
     const w = MANIFEST.props.scenes.work;
     const all = (w.back || []).concat(w.front || []);
-    for (const n of ['prop_chair', 'prop_desk_surface', 'prop_keyboard', 'prop_desk', 'prop_screen_glow']) {
-        assert.ok(all.includes(n), `R167 的办公道具 ${n} 丢了`);
-    }
+    assert.ok(all.includes('prop_office_chair'), 'R172 办公场景必须有办公转椅');
+    assert.ok(all.includes('prop_office_monitor'), 'R172 办公场景必须有显示器');
     const lib = MANIFEST.action_library.actions.work;
     assert.deepStrictEqual(lib.frames,
-        ['character_R156/work_1.png', 'character_R156/work_2.png'], 'R167 的办公帧被改动');
+        ['character_R172/work_1.png', 'character_R172/work_2.png'], 'work 帧未指向 R172 新构图');
+    for (const n of ['prop_chair', 'prop_desk_surface', 'prop_keyboard', 'prop_desk', 'prop_screen_glow']) {
+        assert.ok(fs.existsSync(path.join(ASSETS, MANIFEST.props.library[n].file)),
+            `R167 的旧办公道具文件 ${n} 被删了 (历史成果必须保留)`);
+    }
+    // 吃水果场景必须原样
+    assert.deepStrictEqual(MANIFEST.props.scenes.eat_fruit.back,
+        ['prop_stool', 'prop_fruit_table'], 'R170 吃水果场景的 back 层被改动');
+    assert.deepStrictEqual(MANIFEST.action_library.actions.eat_fruit.frames,
+        ['character_R156/eat_fruit_0.png', 'character_R156/eat_fruit_1.png',
+            'character_R156/eat_fruit_2.png', 'character_R156/eat_fruit_3.png',
+            'character_R156/eat_fruit_4.png'], 'R170 吃水果帧被改动');
+    // 睡眠场景必须原样
+    assert.deepStrictEqual(MANIFEST.props.scenes.sleep_breath.back,
+        ['prop_bed', 'prop_moon'], '睡眠场景的 back 层被改动');
+    assert.deepStrictEqual(MANIFEST.props.scenes.sleep_breath.front,
+        ['prop_quilt'], '睡眠场景的 front 层被改动');
 });
 
 // ====== 汇总 ======

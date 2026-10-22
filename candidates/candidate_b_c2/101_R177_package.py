@@ -61,18 +61,23 @@ REVIEW_FILES += [
     # 运行时验证证据
     ("evidence_r177_runtime/r177_runtime_verify.json",
      "candidate_b_c2/evidence_r177_runtime/r177_runtime_verify.json"),
-    ("evidence_r177_runtime/run_A.log", "evidence_r177_runtime/run_A.log"),
-    ("evidence_r177_runtime/run_B.log", "evidence_r177_runtime/run_B.log"),
-    ("evidence_r177_runtime/run_C.log", "evidence_r177_runtime/run_C.log"),
-    ("evidence_r177_runtime/run_D.log", "evidence_r177_runtime/run_D.log"),
-    ("evidence_r177_runtime/run_E.log", "evidence_r177_runtime/run_E.log"),
+    ("evidence_r177_runtime/run_A.log", "candidate_b_c2/evidence_r177_runtime/run_A.log"),
+    ("evidence_r177_runtime/run_B.log", "candidate_b_c2/evidence_r177_runtime/run_B.log"),
+    ("evidence_r177_runtime/run_C.log", "candidate_b_c2/evidence_r177_runtime/run_C.log"),
+    ("evidence_r177_runtime/run_D.log", "candidate_b_c2/evidence_r177_runtime/run_D.log"),
+    ("evidence_r177_runtime/run_E.log", "candidate_b_c2/evidence_r177_runtime/run_E.log"),
     ("evidence_r177_runtime/ud_A/pet_settings.json",
-     "evidence_r177_runtime/ud_A/pet_settings.json"),
+     "candidate_b_c2/evidence_r177_runtime/ud_A/pet_settings.json"),
     ("evidence_r177_runtime/ud_A/pet_mood_state.json",
-     "evidence_r177_runtime/ud_A/pet_mood_state.json"),
-    # Mac 一键验收入口
-    ("../one_click_test/run_r177_acceptance.sh", "one_click_test/run_r177_acceptance.sh"),
-    ("../one_click_test/R177_验收入口.command", "one_click_test/R177_验收入口.command"),
+     "candidate_b_c2/evidence_r177_runtime/ud_A/pet_mood_state.json"),
+]
+
+# ---- R177 新增: 位于仓库根(不在 candidate 目录下) 的文件 ----
+# 注意: REVIEW_FILES 里的相对路径是相对 CAND 的; 仓库根的文件要单独一份清单,
+# 否则 CAND/../one_click_test 会解析成 candidates/one_click_test (不存在)。
+ROOT_REVIEW_FILES = [
+    ("one_click_test/run_r177_acceptance.sh", "one_click_test/run_r177_acceptance.sh"),
+    ("one_click_test/R177_验收入口.command", "one_click_test/R177_验收入口.command"),
 ]
 
 DOC_FILES += [
@@ -213,6 +218,9 @@ def build_review(commit):
     with zipfile.ZipFile(REVIEW_ZIP, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
         for rel, arc in REVIEW_FILES + PREVIEW_FILES:
             if add(zf, os.path.join(CAND, rel), arc):
+                n += 1
+        for rel, arc in ROOT_REVIEW_FILES:
+            if add(zf, os.path.join(ROOT, rel), arc):
                 n += 1
         for rel, arc in DOC_FILES:
             if add(zf, os.path.join(ROOT, rel), arc):

@@ -78,7 +78,7 @@
   "E6_props_visible_face_intact": {
    "pass": true,
    "threshold": "200×240 里道具实际可见 ≥ 120 屏幕 px; 道具压脸 = 0 px; 面部皮肤保留率 ≥ 98%",
-   "props_visible_screen_px": 830,
+   "props_visible_screen_px": 1193,
    "prop_cover_face_px": 0,
    "face_box_screen": [
     79,
@@ -94,8 +94,8 @@
    "pass": true,
    "threshold": "200×240 与 256×256 合成图里果体像素各 ≥ 8 (显示层用宽松暖色阈值, 因缩放抗锯齿会稀释红色)",
    "apple_px": {
-    "200x240": 467,
-    "256x256": 746
+    "200x240": 513,
+    "256x256": 828
    }
   },
   "E8_satisfied_expression": {
@@ -115,27 +115,20 @@
   "W2_work_scene_registered": {
    "pass": true,
    "threshold": "props.scenes 必须有 work",
-   "scene_back": [
-    "prop_chair",
-    "prop_desk_surface",
-    "prop_keyboard"
-   ],
-   "scene_front": [
-    "prop_desk",
-    "prop_screen_glow"
-   ]
+   "scene_back": [],
+   "scene_front": []
   },
   "W3_work_frames_unchanged": {
-   "pass": true,
+   "pass": false,
    "threshold": "R167 的 work 帧路径不得改动",
    "frames": [
-    "character_R156/work_1.png",
-    "character_R156/work_2.png"
+    "character_R173/work_1.png",
+    "character_R173/work_2.png"
    ]
   }
  },
  "summary": {
-  "passed": 13,
+  "passed": 12,
   "total": 13
  }
 }

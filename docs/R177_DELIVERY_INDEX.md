@@ -49,10 +49,10 @@
 | **Mac 一键验收入口** | `one_click_test/R177_验收入口.command`（Finder 双击）/ `one_click_test/run_r177_acceptance.sh` |
 | 质量报告 | `docs/R177_QA_REPORT.md` |
 | 交付索引（本文件） | `docs/R177_DELIVERY_INDEX.md` |
-| 轻量审查包 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R177_review.zip` |
-| 审查包 SHA256 | `__REVIEW_SHA256__`（同时写在该 zip 旁的 `character_animation_R177_review.zip.sha256`） |
-| 完整备份 | `backup/V0.0_backup_20261023_xxxxxx_r177.zip` |
-| 备份 SHA256 | `__BACKUP_SHA256__` |
+| 轻量审查包 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R177_review.zip`（206 个文件 / 23,664,163 字节） |
+| 审查包 SHA256 | `cc20a80a69fef79f9aabd5a658eb55dba0320d244664fb779398852b4eed59e4`（同时写在该 zip 旁的 `character_animation_R177_review.zip.sha256`） |
+| 完整备份 | `backup/V0.0_backup_20261023_033946_r177.zip`（288 个文件 / 52,166,305 字节） |
+| 备份 SHA256 | `cf0f25c1f8cea7f2c238845223c1f6395375705bd4fb15274e8ac154735466e5` |
 
 ---
 
@@ -91,8 +91,8 @@ one_click_test/R177_验收入口.command
 | # | 提交 | 内容 |
 |---|---|---|
 | 1 | `4e976bd` | 实现提交：心情引擎 / 设置存储 / 菜单模板 / 设置面板 UI / main 接线 / renderer 改造 / 三组单测 / 运行时验证脚本 / e2e 隔离修复 |
-| 2 | `__INDEX_COMMIT__` | 交付索引提交：本文件 + `docs/R177_QA_REPORT.md` |
-| 3 | `__ARCHIVE_COMMIT__` | 交付归档提交：审查包与 SHA256 指向最终值 |
+| 2 | `68d24d6` | 交付索引提交：本文件 + `docs/R177_QA_REPORT.md` |
+| 3 | 本提交（归档） | 交付归档提交：审查包与 SHA256 指向最终值 |
 
 ---
 

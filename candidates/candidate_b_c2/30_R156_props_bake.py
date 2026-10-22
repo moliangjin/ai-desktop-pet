@@ -537,21 +537,40 @@ def make_chair():
 #
 #    坐标约定 (1024 纹理; 角色帧实测见下):
 #      DESK_FAR_EDGE_Y  = 556   台面远沿 (角色身后, 被角色身体遮住)
-#      DESK_NEAR_EDGE_Y = 668   台面近沿 (角色身前)
+#      DESK_NEAR_EDGE_Y = 700   台面近沿 (角色身前)
 #      DESK_TOP_X       = 270..900
 #      LID_QUAD         = x 714..876, y 466..636   盖板背板 (在角色右侧)
 #      LID_BASE_QUAD    = x 704..884, y 636..660   键盘面
 #      双手 (SIT 实测): 左手 x348..425 y567..638 / 右手 x439..535 y571..641
 #        ⇒ 两手完整落在台面带 (556..668) 内 ✔
 # ======================================================================
-DESK_FAR_EDGE_Y = 556
-DESK_NEAR_EDGE_Y = 668
+DESK_FAR_EDGE_Y = 552
+DESK_NEAR_EDGE_Y = 700
 DESK_TOP_X = (300, 830)
 DESK_SURFACE_X = (310, 820)
-LID_QUAD = [(656, 466), (796, 466), (804, 636), (648, 636)]   # 盖板背板 (上窄下宽)
-LID_BASE_QUAD = [(648, 636), (804, 636), (812, 660), (640, 660)]  # 基座/键盘面
+# R167: 笔记本整体**后移并缩小** —— 原来它的底座落在 y636~660 (台面近沿 668),
+# 读作"笔记本摆在桌子最前沿"; 现在底座落到 y596~622 (台面远沿 552 往前一点),
+# 与键盘 (远沿 566) 形成"屏幕在后、键盘在前"的正确透视。
+LID_QUAD = [(650, 428), (798, 428), (808, 596), (642, 596)]   # 盖板背板 (上窄下宽)
+LID_BASE_QUAD = [(642, 596), (808, 596), (816, 624), (636, 624)]  # 基座/键盘面
 DESK_LEG_X = ((318, 382), (744, 808))
-DESK_LIP_Y = (668, 698)
+DESK_LIP_Y = (700, 732)
+
+# ----------------------------------------------------------------------
+# R167: 键盘 (新道具) —— 透视梯形, 远沿窄近沿宽, 4 排键位 + 空格键。
+# 尺度基准: 角色帧是 1024 纹理, 运行时缩到 200x240 (scale≈0.196),
+# 1 纹理 px ≈ 0.2 屏幕 px ⇒ 键位分隔线必须画得**够粗** (4~5 纹理 px)
+# 才在 200x240 上看得见 (≈1 屏幕 px)。
+# ----------------------------------------------------------------------
+KB_FAR_Y = 566
+KB_NEAR_Y = 664
+KB_FAR_X = (338, 574)
+KB_NEAR_X = (306, 606)
+KB_BODY = (214, 220, 230, 255)
+KB_BODY_D = (186, 194, 208, 255)
+KB_EDGE = (92, 102, 120, 255)
+KB_KEY_LINE = (146, 156, 174, 255)
+KB_KEY_LINE2 = (168, 178, 196, 255)
 
 
 def make_desk_surface():
@@ -590,6 +609,72 @@ def make_desk_surface():
     return img
 
 
+def make_keyboard():
+    """R167 新道具: 办公键盘 (back 层, 放在台面上、角色双手之下)。
+
+    透视: 远沿窄 (338..560) / 近沿宽 (306..592) ⇒ 与台面的远窄近宽一致。
+    键位用**粗分隔线**画 (4~5 纹理 px), 因为 200x240 上 1 纹理 px 只有 0.2 屏幕 px,
+    细线会被缩没, 键盘就读成一块灰板。
+    """
+    img = canvas()
+    d = ImageDraw.Draw(img)
+
+    quad = [(KB_FAR_X[0], KB_FAR_Y), (KB_FAR_X[1], KB_FAR_Y),
+            (KB_NEAR_X[1], KB_NEAR_Y), (KB_NEAR_X[0], KB_NEAR_Y)]
+
+    # 机身底色 (近沿略深 = 一点点体积感)
+    d.polygon(quad, fill=KB_BODY)
+    shade = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(shade).polygon(
+        [(KB_NEAR_X[0], KB_NEAR_Y - 26), (KB_NEAR_X[1], KB_NEAR_Y - 26),
+         (KB_NEAR_X[1], KB_NEAR_Y), (KB_NEAR_X[0], KB_NEAR_Y)],
+        fill=KB_BODY_D[:3] + (90,))
+    img.alpha_composite(shade.filter(ImageFilter.GaussianBlur(6)))
+
+    # 键位排布: 分隔线按透视加粗 (近处更宽)
+    row_t = (0.0, 0.17, 0.38, 0.62, 1.0)
+    for i in range(len(row_t) - 1):
+        t0, t1 = row_t[i], row_t[i + 1]
+        y0 = KB_FAR_Y + (KB_NEAR_Y - KB_FAR_Y) * t0
+        y1 = KB_FAR_Y + (KB_NEAR_Y - KB_FAR_Y) * t1
+        xa0 = KB_FAR_X[0] + (KB_NEAR_X[0] - KB_FAR_X[0]) * t0
+        xa1 = KB_FAR_X[1] + (KB_NEAR_X[1] - KB_FAR_X[1]) * t0
+        xb0 = KB_FAR_X[0] + (KB_NEAR_X[0] - KB_FAR_X[0]) * t1
+        xb1 = KB_FAR_X[1] + (KB_NEAR_X[1] - KB_FAR_X[1]) * t1
+        d.line([(xa0, y0), (xa1, y0)], fill=KB_KEY_LINE, width=5)
+        # 每排的竖直键缝 (近沿那排更疏 = 透视)
+        n = 11 if i < 3 else 1
+        if n == 1:
+            # 最靠前的一排 = 空格键
+            d.line([(xb0 + 34, y1 - 7), (xb1 - 34, y1 - 7)], fill=KB_KEY_LINE2, width=4)
+        else:
+            for k in range(1, n):
+                u = k / float(n)
+                d.line([(xa0 + (xb0 - xa0) * u, y0), (xa1 + (xb1 - xa1) * u, y1)],
+                       fill=KB_KEY_LINE2, width=3)
+
+    # 外轮廓 (描边 4px, 与角色线条粗细一致)
+    d.line([quad[0], quad[1]], fill=KB_EDGE, width=4)
+    d.line([quad[3], quad[2]], fill=KB_EDGE, width=5)
+    d.line([quad[0], quad[3]], fill=KB_EDGE, width=4)
+    d.line([quad[1], quad[2]], fill=KB_EDGE, width=4)
+
+    # 远沿一道受光高光 (桌面反光)
+    hl = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    ImageDraw.Draw(hl).line([(KB_FAR_X[0] + 4, KB_FAR_Y + 3), (KB_FAR_X[1] - 4, KB_FAR_Y + 3)],
+                             fill=(255, 255, 255, 150), width=4)
+    img.alpha_composite(hl.filter(ImageFilter.GaussianBlur(2)))
+
+    # 双手压在键上的接触阴影 (角色手画在道具之上 ⇒ 阴影只从手边露出)
+    sh = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(sh)
+    sd.ellipse([332, 566, 432, 622], fill=(70, 78, 92, 120))
+    sd.ellipse([430, 570, 548, 628], fill=(70, 78, 92, 118))
+    img.alpha_composite(sh.filter(ImageFilter.GaussianBlur(10)))
+
+    return img
+
+
 def make_desk():
     """front 层: 桌板前沿厚边 + 两条桌腿 (角色身前)。
 
@@ -621,28 +706,28 @@ def make_desk():
     # 基座上打出"洞", 角色的手/衣服会从基座里透出来。
     keys = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     kd = ImageDraw.Draw(keys)
-    for i, yy in enumerate((645, 652)):
-        x0 = 730 + i * 6
-        x1 = 866 - i * 6
+    for i, yy in enumerate((604, 612)):
+        x0 = 692 + i * 6
+        x1 = 788 - i * 6
         kd.line([(x0, yy), (x1, yy)], fill=(120, 132, 152, 70), width=3)
     keys = keys.filter(ImageFilter.GaussianBlur(1.4))
     img.alpha_composite(keys)
 
     # ---------- 笔记本电脑: 盖板背板 ----------
     lid_m = rounded_quad_mask(LID_QUAD, radius=12)
-    lid = vertical_gradient(LID, LID_D, y0=466, y1=636)
+    lid = vertical_gradient(LID, LID_D, y0=428, y1=596)
     lid.putalpha(lid_m)
     # 板面中间的低调徽记
     mk = Image.new('RGBA', (S, S), (0, 0, 0, 0))
-    ImageDraw.Draw(mk).ellipse([778, 534, 818, 574], fill=LID_LOGO[:3] + (150,))
+    ImageDraw.Draw(mk).ellipse([700, 490, 742, 532], fill=LID_LOGO[:3] + (150,))
     mk = mk.filter(ImageFilter.GaussianBlur(2))
     mk.putalpha(Image.composite(mk.split()[3], Image.new('L', (S, S), 0), lid_m))
     lid.alpha_composite(mk)
     # 下缘散热格栅
     gr = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     gd2 = ImageDraw.Draw(gr)
-    for yy in (598, 606, 614):
-        gd2.line([(742, yy), (852, yy)], fill=(30, 38, 50, 150), width=4)
+    for yy in (556, 564, 572):
+        gd2.line([(692, yy), (786, yy)], fill=(30, 38, 50, 150), width=4)
     gr = gr.filter(ImageFilter.GaussianBlur(2.2))
     gr.putalpha(Image.composite(gr.split()[3], Image.new('L', (S, S), 0), lid_m))
     lid.alpha_composite(gr)
@@ -652,9 +737,9 @@ def make_desk():
     rim = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     rd = ImageDraw.Draw(rim)
     rd.line([(LID_QUAD[0][0] + 3, LID_QUAD[0][1] + 3), (LID_QUAD[1][0] - 3, LID_QUAD[1][1] + 3)],
-            fill=LID_EDGE[:3] + (235,), width=5)
+            fill=LID_EDGE[:3] + (255,), width=7)
     rd.line([(LID_QUAD[3][0] + 3, LID_QUAD[3][1] - 4), (LID_QUAD[0][0] + 3, LID_QUAD[0][1] + 4)],
-            fill=LID_EDGE[:3] + (205,), width=5)
+            fill=LID_EDGE[:3] + (235,), width=7)
     rim = rim.filter(ImageFilter.GaussianBlur(1.6))
     rim.putalpha(Image.composite(rim.split()[3], Image.new('L', (S, S), 0), lid_m))
     img.alpha_composite(rim)
@@ -662,11 +747,12 @@ def make_desk():
     halo = Image.new('RGBA', (S, S), (0, 0, 0, 0))
     hd2 = ImageDraw.Draw(halo)
     hd2.line([(LID_QUAD[0][0] + 3, LID_QUAD[0][1] + 3), (LID_QUAD[1][0] - 3, LID_QUAD[1][1] + 3)],
-             fill=(130, 190, 250, 110), width=12)
+             fill=(130, 190, 250, 165), width=16)
     hd2.line([(LID_QUAD[3][0] + 3, LID_QUAD[3][1] - 4), (LID_QUAD[0][0] + 3, LID_QUAD[0][1] + 4)],
-             fill=(130, 190, 250, 95), width=11)
-    halo = halo.filter(ImageFilter.GaussianBlur(9))
-    halo.putalpha(Image.composite(halo.split()[3], Image.new('L', (S, S), 0), lid_m))
+             fill=(130, 190, 250, 140), width=15)
+    halo = halo.filter(ImageFilter.GaussianBlur(11))
+    # R167: 冷光外溢**不再被盖板 mask 裁掉** —— 原来被裁在里面, 等于只是把
+    # 盖板边缘提亮, 200x240 上根本看不出"屏幕在发光" ⇒ 改成让它溢出到盖板之外。
     img.alpha_composite(halo)
 
     # ---------- 桌板前沿 (近沿的厚边, 横在角色身前) ----------
@@ -713,8 +799,8 @@ def make_screen_glow():
     blob(556, 448, 170, 200, 0.72)   # 胸口 (离屏幕最近)
     blob(566, 376, 126, 112, 0.58)   # 下颌/颈侧 (下移到脸部框下沿 y=305 之下,
                                         #   alpha>24 的可见范围不侵入脸部区域)
-    blob(444, 590, 154, 76, 0.64)    # 桌面上的双手 (SIT 实测 y567..641)
-    blob(700, 470, 120, 150, 0.50)   # 笔记本屏幕漏出的一团冷光
+    blob(452, 596, 162, 80, 0.72)    # 桌面上的双手 (R167: 键盘上的手 y565..645)
+    blob(700, 470, 130, 150, 0.55)   # 笔记本屏幕漏出的一团冷光 (R167: 盖板 y428..596)
     np.clip(a, 0, 255, out=a)
     out = Image.fromarray(a.astype(np.uint8), 'RGBA')
     return out.filter(ImageFilter.GaussianBlur(15))
@@ -738,6 +824,7 @@ def main():
             (make_sofa, 'prop_sofa.png', 1001),
             (make_chair, 'prop_chair.png', 1001),
             (make_desk_surface, 'prop_desk_surface.png', None),
+            (make_keyboard, 'prop_keyboard.png', None),
             (make_desk, 'prop_desk.png', 1001),
             (make_screen_glow, 'prop_screen_glow.png', None)):
         save(fn(), name, floor, rep)
@@ -764,14 +851,20 @@ def main():
         'work': {
             'floor_tex_y': 1001,
             'character_frame': 'character_R156/work_1.png',
-            'layering_note': ('桌子拆成两个道具: prop_desk_surface (back 层, 台面+笔记本) '
-                              '+ prop_desk (front 层, 前沿厚边+桌腿) ⇒ 角色 sprite 的双手'
-                              '完整压在台面上 (而不是悬在桌板上方)'),
+            'layering_note': ('R167 改: 台面在 back 层, 角色下半身在 y=592 被剪掉 '
+                              '(否则她的大腿把台面整片挡住, 键盘没地方出现) '
+                              '⇒ 台面从她腰部露出, 双手正好落在键盘上; '
+                              '笔记本在 front 层 (盖板背板朝观众、屏幕朝角色), '
+                              '后移到台面远端, 与键盘构成"屏幕在后、键盘在前"的透视'),
             'desk_far_edge_y': DESK_FAR_EDGE_Y,
             'desk_near_edge_y': DESK_NEAR_EDGE_Y,
             'desk_top_x': list(DESK_TOP_X),
             'desk_lip_y': list(DESK_LIP_Y),
             'desk_leg_x': [list(x) for x in DESK_LEG_X],
+            'keyboard_far_y': KB_FAR_Y,
+            'keyboard_near_y': KB_NEAR_Y,
+            'keyboard_far_x': list(KB_FAR_X),
+            'keyboard_near_x': list(KB_NEAR_X),
             'laptop_lid_x': [LID_QUAD[3][0], LID_QUAD[1][0]],
             'laptop_lid_y': [LID_QUAD[0][1], LID_QUAD[2][1]],
             'laptop_base_x': [LID_BASE_QUAD[3][0], LID_BASE_QUAD[2][0]],
@@ -783,8 +876,10 @@ def main():
             },
             'hands_target_x': [344, 542],
             'hands_target_y': [567, 641],
-            'note': ('双手完整落在台面带 (556..668) 内 ⇒ 读作"手压在桌面上"; '
-                     '笔记本盖板中心 x=795 在角色身体中心 x=530 的右侧, '
+            'work_cut_y': 592,
+            'work_press_tex_px': {'work_1': 11, 'work_2': 0},
+            'note': ('双手完整落在台面带 (552..700) 内并压在键盘上 (键盘远沿 566 / 近沿 664); '
+                     '笔记本盖板中心 x=725 在角色身体中心 x=530 的右侧, '
                      '角色视线需略向右; 盖板不遮脸 (脸 y38..310)'),
         },
     }

@@ -198,15 +198,15 @@
     "floor_tex_y": 1001,
     "character_frame": "character_R156/work_1.png",
     "layering_note": "桌子拆成两个道具: prop_desk_surface (back 层, 台面+笔记本) + prop_desk (front 层, 前沿厚边+桌腿) ⇒ 角色 sprite 的双手完整压在台面上 (而不是悬在桌板上方)",
-    "desk_far_edge_y": 556,
-    "desk_near_edge_y": 668,
+    "desk_far_edge_y": 552,
+    "desk_near_edge_y": 700,
     "desk_top_x": [
       300,
       830
     ],
     "desk_lip_y": [
-      668,
-      698
+      700,
+      732
     ],
     "desk_leg_x": [
       [
@@ -219,20 +219,20 @@
       ]
     ],
     "laptop_lid_x": [
-      648,
-      796
+      642,
+      798
     ],
     "laptop_lid_y": [
-      466,
-      636
+      428,
+      596
     ],
     "laptop_base_x": [
-      640,
-      812
+      636,
+      816
     ],
     "laptop_base_y": [
-      636,
-      660
+      596,
+      624
     ],
     "hands_measured": {
       "left": [

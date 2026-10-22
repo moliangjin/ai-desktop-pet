@@ -290,7 +290,7 @@
     },
     {
       "file": "work_1.png",
-      "source": "_tmp_work1.png",
+      "source": "_tmp_work1b.png",
       "transform": {
         "dx": -5.0,
         "dy": -6.0,
@@ -298,16 +298,16 @@
         "rotate": 16.0
       },
       "bbox": [
-        338,
+        339,
         63,
         755,
-        1002
+        657
       ],
       "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
     },
     {
       "file": "work_2.png",
-      "source": "_tmp_work2.png",
+      "source": "_tmp_work2b.png",
       "transform": {
         "dx": -6.0,
         "dy": 2.0,
@@ -315,10 +315,10 @@
         "rotate": 13.0
       },
       "bbox": [
-        338,
+        339,
         41,
         727,
-        1002
+        657
       ],
       "note": "头部连续权重场局部弯曲 (无切口/无空洞), 身体与腿部未参与旋转或缩放"
     }

@@ -69,6 +69,127 @@ SIT_HIP_Y = 700       # 坐姿臀部/座面接触线
 SIT_AXIS_X = 530      # 坐姿身体中轴
 HEAD_TOP_Y = 37       # 站姿头顶 (纹理余量只有 37px)
 
+# ----------------------------------------------------------------------
+# R167 办公场景: 角色要真的坐在桌后、手压在键盘上 ⇒ 必须解决 z 序。
+#
+# 【为什么必须剪掉下半身】
+#   渲染顺序是 back 道具 → 角色 → front 道具。台面 (prop_desk_surface) 在
+#   back 层, 而角色的**大腿正好压在台面带上** ⇒ 台面被她的腿整片挡住,
+#   键盘根本没法出现在她手下 (R165 真机看到的就是"手搭在腿上")。
+#   ⇒ 把 CUT_Y 以下的身体剪掉, 台面就能从她腰部开始露出来, 双手正好落在
+#     台面上 ⇒ 读作"她坐在桌后、双手压在键盘上"。
+#   保留区 = 两只手 + 两个腕带 (它们要留在键盘上)。
+# ----------------------------------------------------------------------
+WORK_CUT_Y = 592
+WORK_KEEP = [
+    (368, 528, 448, 602),    # L 腕带
+    (326, 550, 430, 656),    # L 手
+    (490, 528, 568, 608),    # R 腕带
+    (430, 548, 556, 656),    # R 手
+]
+# 双手在键盘上的"按键"位移 (纹理 px): 一帧按下、一帧抬起
+WORK_PRESS = {'work_1': 17, 'work_2': 0}
+
+
+def cut_lower_body(im, cut_y=WORK_CUT_Y, keep=WORK_KEEP):
+    """把 cut_y 以下的身体剪掉, 但保留 keep 矩形里的像素 (双手 + 腕带)。"""
+    a = np.asarray(im).copy()
+    keepm = np.zeros(a.shape[:2], bool)
+    for (x0, y0, x1, y1) in keep:
+        keepm[y0:y1, x0:x1] = True
+    kill = np.zeros(a.shape[:2], bool)
+    kill[cut_y:, :] = True
+    a[kill & ~keepm] = 0
+    return Image.fromarray(a, 'RGBA')
+
+
+def _skin_mask(rgb):
+    """坐姿帧的肤色判定 (与 67_R167_diag_sit_arms.py 同一套口径)。"""
+    r = rgb[:, :, 0].astype(np.int16)
+    g = rgb[:, :, 1].astype(np.int16)
+    b = rgb[:, :, 2].astype(np.int16)
+    return (r > 195) & (g > 140) & (g < 205) & (b > 110) & (b < 185) & (r > b + 35)
+
+
+def _hand_region(reg):
+    """手的**实心**区域: 肤色 + 手指暗线 + 手的外描边 (不含腕带/袖子/裤子)。
+
+    R167 踩坑: 第一版用"肤色 + 2px 暗环"取手 ⇒ 手指的暗线只被抓到一部分,
+    一平移手指就碎成虚线。第二版改成"**排除青色与白色**"的实心掩膜:
+    腕带(青) / 袖子(白) / 裤子(青) 都被排除, 剩下的就是手的皮肤 + 全部暗线,
+    平移时是一个**整体**, 不会出现断线。
+    """
+    rgb = reg[:, :, :3]
+    r = rgb[:, :, 0].astype(np.int16)
+    g = rgb[:, :, 1].astype(np.int16)
+    b = rgb[:, :, 2].astype(np.int16)
+    teal = (b > r + 12) & (g > r + 4)
+    white = (r > 196) & (g > 196) & (b > 196)
+    opaque = reg[:, :, 3] > 40
+    sk = _skin_mask(rgb) & opaque
+    return (~teal) & (~white) & opaque & dilate(sk, 6)
+
+
+def _cuff_color(im, box):
+    """取腕带 (青色饰条) 的代表色 —— 按键位移后用它补被顶长的袖口。"""
+    x0, y0, x1, y1 = box
+    a = np.asarray(im.convert('RGBA'))
+    reg = a[y0:y1, x0:x1]
+    r = reg[:, :, 0].astype(np.int16)
+    g = reg[:, :, 1].astype(np.int16)
+    b = reg[:, :, 2].astype(np.int16)
+    teal = (b > r + 12) & (g > r + 4) & (reg[:, :, 3] > 120)
+    if not teal.any():
+        return (150, 205, 214, 255)
+    px = reg[teal][:, :3]
+    med = np.median(px, axis=0).astype(int)
+    return (int(med[0]), int(med[1]), int(med[2]), 255)
+
+
+def hand_press(im, box, dy, cuff_rgb):
+    """把一只手整体下移 dy 纹理 px (模拟"手指按下")。
+
+    做法:
+      1. 取手的肤色块 + 紧贴的暗描边 → 整块平移;
+      2. 原位置腾出的那一条用**腕带的青色**补上 (腕带本来就紧贴手背) ⇒ 看起来
+         是手压下去、袖口被顶长, 而不是手从袖子里滑出来;
+      3. **手的上边界描边必须跟着一起下移** —— 否则腕口的黑描边留在原地,
+         手上会出现一道"断线 + 青色糊边" (R167 第一版就是这么坏的)。
+         所以先记住上边界那一行的暗像素, 平移后补到新的上边界。
+    """
+    if dy == 0:
+        return im
+    x0, y0, x1, y1 = box
+    a = np.asarray(im).copy()
+    reg = a[y0:y1, x0:x1]
+    m = _hand_region(reg)
+    if not m.any():
+        return im
+    patch = reg.copy()
+    patch[~m] = 0
+    rows = np.nonzero(m.any(axis=1))[0]
+    top = int(rows.min())
+    # 手的上边界那一行 (含黑描边) —— 之后要跟着手下移
+    edge_row = reg[top, :, :].copy()
+    edge_dark = (edge_row[:, :3].mean(axis=1) < 130) & (edge_row[:, 3] > 40)
+    # 腾出的那一条用腕带青色补上 (腕口被顶长)
+    strip = m[top:top + dy, :]
+    band = reg[top:top + dy, :, :]
+    reg[top:top + dy, :, :] = np.where(
+        strip[:, :, None], np.array(cuff_rgb, dtype=reg.dtype), band)
+    # 平移手 (整块, 含手指暗线与外描边)
+    shifted = np.zeros_like(reg)
+    shifted[dy:, :, :] = patch[:-dy, :, :]
+    keep = shifted[:, :, 3] > 0
+    reg[keep] = shifted[keep]
+    # 把上边界描边补到新的位置 (腕口的黑线跟着手走)
+    nrow = top + dy
+    if nrow < reg.shape[0]:
+        row = reg[nrow, :, :]
+        reg[nrow, :, :] = np.where(edge_dark[:, None], edge_row, row)
+    a[y0:y1, x0:x1] = reg
+    return Image.fromarray(a, 'RGBA')
+
 
 # ======================================================================
 # D. 整体垂直平移 + 支点缩放 (跳跃 / 缓冲)
@@ -267,25 +388,41 @@ def main():
     emit(face_swap(tmp('sway_c.png'), CLOSED_SMILE, p('cheer_sway_2.png'), tag='回正笑'))
     os.remove(tmp('sway_c.png'))
 
-    # ================= 7. 办公看屏幕 (R165: 手压在台面上 + 视线看向笔记本) =================
-    # R165 改动 (对应用户 P0-2: "双手没有真正放在桌面/键盘上" / "看起来不像在办公"):
-    #   · 桌子已拆成 back 层台面 (prop_desk_surface), 台面远沿 y=556 / 近沿 y=668
-    #     ⇒ 角色 sprite 里的双手 (SIT 实测 y567..641) **完整压在台面上**;
-    #   · 笔记本在角色**右侧** (盖板中心 x=795, 角色身体中心 x=530)
-    #     ⇒ 上半身微向画面右倾 + 头部转向右 ⇒ 视线落在笔记本上;
+    # ================= 7. 办公看屏幕 (R167: 双手真的按在键盘上) =================
+    # R167 改动 (对应用户 R167 反馈: "角色双手仍没有真正操作键盘" /
+    #             "增加轻微、自然的打字动作" / "在 200×240 下一眼看出在办公"):
+    #   · 剪掉下半身 (cut_lower_body): 台面在 back 层, 原本被角色的大腿整片挡住,
+    #     键盘压根没地方出现 ⇒ 剪掉后台面从腰部露出, 双手正好落在键盘上;
+    #   · 双手"按键盘" (hand_press): work_1 按下 / work_2 抬起 ⇒ 打字的轻微动作;
     #   · work_1 = 低头看键盘 (在打字), work_2 = 抬头看屏幕 (打字间隙的思考)。
-    emit(torso_lean(SIT, tmp('work1.png'),
+    sit_cut = cut_lower_body(Image.open(SIT).convert('RGBA'))
+    sit_cut_path = tmp('sit_cut.png')
+    sit_cut.save(sit_cut_path)
+    cuff_l = _cuff_color(sit_cut, (372, 534, 446, 600))
+    cuff_r = _cuff_color(sit_cut, (494, 534, 566, 604))
+
+    w1 = hand_press(sit_cut, (326, 550, 430, 656), WORK_PRESS['work_1'], cuff_l)
+    w1 = hand_press(w1, (430, 548, 556, 656), WORK_PRESS['work_1'], cuff_r)
+    w1.save(tmp('work1.png'))
+    emit(torso_lean(tmp('work1.png'), tmp('work1b.png'),
                      angle=6.0, pivot=(SIT_AXIS_X, SIT_HIP_Y),
-                     shoulder_y=290, hip_y=700, tag='上身前倾'))
-    emit(head_transform(tmp('work1.png'), p('work_1.png'),
+                     shoulder_y=290, hip_y=700, tag='上身前倾+双手按键盘'))
+    emit(head_transform(tmp('work1b.png'), p('work_1.png'),
                          rotate=16.0, dy=-6.0, dx=-5.0, tag='低头看键盘'))
+    os.remove(tmp('work1b.png'))
     os.remove(tmp('work1.png'))
-    emit(torso_lean(SIT, tmp('work2.png'),
+
+    w2 = hand_press(sit_cut, (326, 550, 430, 656), WORK_PRESS['work_2'], cuff_l)
+    w2 = hand_press(w2, (430, 548, 556, 656), WORK_PRESS['work_2'], cuff_r)
+    w2.save(tmp('work2.png'))
+    emit(torso_lean(tmp('work2.png'), tmp('work2b.png'),
                      angle=2.0, pivot=(SIT_AXIS_X, SIT_HIP_Y),
-                     shoulder_y=290, hip_y=700, tag='坐直'))
-    emit(head_transform(tmp('work2.png'), p('work_2.png'),
+                     shoulder_y=290, hip_y=700, tag='坐直+双手抬起'))
+    emit(head_transform(tmp('work2b.png'), p('work_2.png'),
                          rotate=13.0, dy=2.0, dx=-6.0, tag='抬头看屏幕'))
+    os.remove(tmp('work2b.png'))
     os.remove(tmp('work2.png'))
+    os.remove(sit_cut_path)
 
     # ---------- 唯一性自检: 新帧不得与既有帧字节重复, 也不得彼此重复 ----------
     import hashlib

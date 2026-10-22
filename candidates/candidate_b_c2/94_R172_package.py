@@ -58,7 +58,6 @@ REVIEW_FILES += [
      "candidate_b_c2/evidence_r172_preview/preview_meta.json"),
     ("evidence_r172_scene_verify.json",
      "candidate_b_c2/evidence_r172_scene_verify.json"),
-    ("evidence_r147_e2e.json", "candidate_b_c2/evidence_r147_e2e.json"),
 ]
 for _f in R172_ASSETS:
     REVIEW_FILES.append((f"assets/character_R172/{_f}",

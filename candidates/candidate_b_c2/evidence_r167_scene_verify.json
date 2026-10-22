@@ -1,0 +1,254 @@
+{
+  "round": "R167",
+  "criteria_note": "以 200×240 实际显示效果为口径的绝对值判据, 新旧素材同一套复算 (不是\"相比基线没变差\")",
+  "results": {
+    "R167": {
+      "tag": "R167",
+      "P2-1_hands_inside_desk_band": {
+        "pass": true,
+        "desk_far": 552,
+        "desk_near": 700,
+        "hand_l": [
+          348,
+          567,
+          425,
+          638
+        ],
+        "hand_r": [
+          439,
+          571,
+          535,
+          641
+        ],
+        "left_ok": true,
+        "right_ok": true
+      },
+      "P2-2_screen_direction": {
+        "pass": true,
+        "lid_mean_luminance": 63.1,
+        "lid_cyan_edge_px": 1738,
+        "lid_box": [
+          642,
+          428,
+          808,
+          596
+        ],
+        "note": "盖板均值 < 120 = 看到的是石墨背板(屏幕朝角色); 青蓝边缘光 ≥ 150 = 屏幕亮着"
+      },
+      "P2-3_props_cover_face_skin_px": {
+        "pass": true,
+        "value": 0,
+        "face_skin_px": 4653,
+        "translucent_screen_glow_on_face_px": 0,
+        "note": "遮挡只看**不透明**道具像素(alpha>200); 半透明的屏幕微光落在脸上是刻意效果(屏幕在照亮她), 不算遮挡"
+      },
+      "P2-4_character_white_ratio": {
+        "pass": true,
+        "white": 0.486,
+        "silver": 0.457,
+        "note": "只统计角色自身可见像素 (排除道具); 白大褂 ≥ 0.30, 银白发 ≥ 0.10"
+      },
+      "P2-5_keyboard_under_hands": {
+        "pass": true,
+        "key_area_px": 27130,
+        "overlap_with_hand_zone_px": 13838,
+        "overlap_ratio": 0.51,
+        "note": "键盘不透明像素落在双手区域内的比例 ≥ 0.40 = 键盘确实在手下"
+      },
+      "P2-6_hands_on_key_zone": {
+        "pass": true,
+        "hand_skin_in_key_zone_px": 3149,
+        "hand_skin_total_px": 3149,
+        "ratio": 1.0,
+        "note": "手部皮肤落在键盘键区(远沿..近沿)内的比例 ≥ 0.55 = 手真的按在键上"
+      },
+      "P2-7_typing_motion_px": {
+        "pass": true,
+        "hand_centroid_shift_px": 10.2,
+        "work_1_c": [
+          441.1,
+          621.9
+        ],
+        "work_2_c": [
+          441.6,
+          611.7
+        ],
+        "note": "两帧手部质心位移 ≥ 6 纹理 px (≈1.2 屏幕 px) = 手指真的在动"
+      },
+      "P2-8_keyboard_visible_at_200x240_px": {
+        "pass": true,
+        "value": 494,
+        "note": "200×240 真实合成图里键盘可见的像素数 ≥ 260 (≈52×5 px 一块) = 真机看得见"
+      },
+      "P3-2_quilt_cover_face_skin_px": {
+        "pass": true,
+        "value": 9,
+        "face_skin_px": 6070,
+        "note": "阈值 30 px = 抗锯齿余量 (占面部皮肤 6070 px 的 0.5%)"
+      },
+      "P3-1_quilt_body_coverage_ratio": {
+        "pass": true,
+        "overall_ratio": 0.507,
+        "body_core_ratio": 0.96,
+        "body_core_x_from": 400,
+        "covered_px": 90923,
+        "body_px": 179292,
+        "note": "整体覆盖率 ≥ 0.45 且**身体核心**(x≥400 躯干+臀+腿)覆盖率 ≥ 0.85 = 被子确实盖在身上而不是摆在旁边; 左侧头/手臂按设计露出"
+      },
+      "P3-3_quilt_left_edge_softness": {
+        "pass": true,
+        "outer_2px_median_alpha": 0.0,
+        "note": "被子最外 2px 的 alpha 中位数 < 200 = 边缘是渐隐而不是硬切"
+      },
+      "P3-4_quilt_is_light_blue": {
+        "pass": true,
+        "mean_rgb": [
+          183.5,
+          204.5,
+          225.1
+        ],
+        "mean_luminance": 200.6,
+        "note": "被子平均 B > R + 12 且平均亮度 ≥ 165 = 浅蓝蓬松布被 (R165 旧版是灰蓝硬壳)"
+      },
+      "P3-5_quilt_has_soft_shading": {
+        "pass": true,
+        "luminance_p90_minus_p10": 62.6,
+        "note": "被子亮度 p90-p10 ≥ 34 = 有起伏与褶皱明暗, 不是一块平涂硬壳"
+      },
+      "P3-6_bed_frame_visible_at_200x240_px": {
+        "pass": true,
+        "wood_px": 1436,
+        "wood_in_bottom_band_px": 812,
+        "wood_in_headboard_corner_px": 569,
+        "note": "200×240 里床头立板 ≥ 300 px 且底部床架条 ≥ 400 px (R162 旧床只有 122/238 ⇒ FAIL) = 床架清楚可见"
+      },
+      "P3-7_mattress_visible_at_200x240_px": {
+        "pass": true,
+        "value": 4514,
+        "note": "200×240 里床垫/床品的浅色像素 ≥ 120 = 床垫清楚可见"
+      }
+    },
+    "R162": {
+      "tag": "R162",
+      "P2-1_hands_inside_desk_band": {
+        "pass": false,
+        "desk_far": 640,
+        "desk_near": 716,
+        "hand_l": [
+          348,
+          567,
+          425,
+          638
+        ],
+        "hand_r": [
+          439,
+          571,
+          535,
+          641
+        ],
+        "left_ok": false,
+        "right_ok": false
+      },
+      "P2-2_screen_direction": {
+        "pass": false,
+        "lid_mean_luminance": 120.9,
+        "lid_cyan_edge_px": 6542,
+        "lid_box": [
+          516,
+          520,
+          762,
+          692
+        ],
+        "note": "盖板均值 < 120 = 看到的是石墨背板(屏幕朝角色); 青蓝边缘光 ≥ 150 = 屏幕亮着"
+      },
+      "P2-3_props_cover_face_skin_px": {
+        "pass": true,
+        "value": 0,
+        "face_skin_px": 13762,
+        "translucent_screen_glow_on_face_px": 0,
+        "note": "遮挡只看**不透明**道具像素(alpha>200); 半透明的屏幕微光落在脸上是刻意效果(屏幕在照亮她), 不算遮挡"
+      },
+      "P2-4_character_white_ratio": {
+        "pass": true,
+        "white": 0.447,
+        "silver": 0.348,
+        "note": "只统计角色自身可见像素 (排除道具); 白大褂 ≥ 0.30, 银白发 ≥ 0.10"
+      },
+      "P2-5_keyboard_under_hands": {
+        "pass": false,
+        "value": 0,
+        "note": "旧素材没有键盘道具 ⇒ 判 FAIL (这正是 R165 真机暴露的问题)"
+      },
+      "P2-6_hands_on_key_zone": {
+        "pass": false,
+        "value": 0,
+        "note": "旧素材没有键盘 ⇒ 手无处可按"
+      },
+      "P2-7_typing_motion_px": {
+        "pass": false,
+        "hand_centroid_shift_px": 1.1,
+        "work_1_c": [
+          487.3,
+          632.7
+        ],
+        "work_2_c": [
+          487.5,
+          633.8
+        ],
+        "note": "两帧手部质心位移 ≥ 6 纹理 px (≈1.2 屏幕 px) = 手指真的在动"
+      },
+      "P2-8_keyboard_visible_at_200x240_px": {
+        "pass": false,
+        "value": null,
+        "note": "200×240 真实合成图里键盘可见的像素数 ≥ 260 (≈52×5 px 一块) = 真机看得见"
+      },
+      "P3-2_quilt_cover_face_skin_px": {
+        "pass": true,
+        "value": 9,
+        "face_skin_px": 6070,
+        "note": "阈值 30 px = 抗锯齿余量 (占面部皮肤 6070 px 的 0.5%)"
+      },
+      "P3-1_quilt_body_coverage_ratio": {
+        "pass": false,
+        "overall_ratio": 0.369,
+        "body_core_ratio": 0.699,
+        "body_core_x_from": 400,
+        "covered_px": 66203,
+        "body_px": 179292,
+        "note": "整体覆盖率 ≥ 0.45 且**身体核心**(x≥400 躯干+臀+腿)覆盖率 ≥ 0.85 = 被子确实盖在身上而不是摆在旁边; 左侧头/手臂按设计露出"
+      },
+      "P3-3_quilt_left_edge_softness": {
+        "pass": true,
+        "outer_2px_median_alpha": 0.0,
+        "note": "被子最外 2px 的 alpha 中位数 < 200 = 边缘是渐隐而不是硬切"
+      },
+      "P3-4_quilt_is_light_blue": {
+        "pass": true,
+        "mean_rgb": [
+          194.4,
+          216.7,
+          239.1
+        ],
+        "mean_luminance": 212.6,
+        "note": "被子平均 B > R + 12 且平均亮度 ≥ 165 = 浅蓝蓬松布被 (R165 旧版是灰蓝硬壳)"
+      },
+      "P3-5_quilt_has_soft_shading": {
+        "pass": false,
+        "luminance_p90_minus_p10": 0.0,
+        "note": "被子亮度 p90-p10 ≥ 34 = 有起伏与褶皱明暗, 不是一块平涂硬壳"
+      },
+      "P3-6_bed_frame_visible_at_200x240_px": {
+        "pass": false,
+        "wood_px": 396,
+        "wood_in_bottom_band_px": 238,
+        "wood_in_headboard_corner_px": 122,
+        "note": "200×240 里床头立板 ≥ 300 px 且底部床架条 ≥ 400 px (R162 旧床只有 122/238 ⇒ FAIL) = 床架清楚可见"
+      },
+      "P3-7_mattress_visible_at_200x240_px": {
+        "pass": true,
+        "value": 7070,
+        "note": "200×240 里床垫/床品的浅色像素 ≥ 120 = 床垫清楚可见"
+      }
+    }
+  }
+}

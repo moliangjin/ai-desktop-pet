@@ -1,0 +1,434 @@
+{
+  "round": "R165",
+  "dir": "assets/character_R158",
+  "criteria": {
+    "C0_hand_blobs": [
+      1,
+      2
+    ],
+    "C0_area_min_ratio": 0.4,
+    "C1_max": 0,
+    "C2_max": 60,
+    "C3_max": 0,
+    "C4_max": 60,
+    "C5_max": 0
+  },
+  "base_reference": {
+    "ghost_px_excl_ball": {
+      "L": 986,
+      "R": 1015
+    },
+    "skin_area": 22799,
+    "base_hand_area": 2623,
+    "chest_zone": [
+      420,
+      380,
+      610,
+      520
+    ],
+    "chest_skinfree_area": 26600
+  },
+  "results": [
+    {
+      "file": "cheer_clap_0.png",
+      "action": "cheer_clap",
+      "index": 0,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2345,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_clap_1.png",
+      "action": "cheer_clap",
+      "index": 1,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 1,
+      "C0_hand_area_px": 1189,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_clap_2.png",
+      "action": "cheer_clap",
+      "index": 2,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2339,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_hands_up_0.png",
+      "action": "cheer_hands_up",
+      "index": 0,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2393,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_hands_up_1.png",
+      "action": "cheer_hands_up",
+      "index": 1,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2140,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_hands_up_2.png",
+      "action": "cheer_hands_up",
+      "index": 2,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2354,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_heart_0.png",
+      "action": "cheer_heart",
+      "index": 0,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 1,
+      "C0_hand_area_px": 1187,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_heart_1.png",
+      "action": "cheer_heart",
+      "index": 1,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 1558,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_heart_2.png",
+      "action": "cheer_heart",
+      "index": 2,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 1787,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_jump_0.png",
+      "action": "cheer_jump",
+      "index": 0,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 1907,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_jump_1.png",
+      "action": "cheer_jump",
+      "index": 1,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2299,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 0,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_jump_2.png",
+      "action": "cheer_jump",
+      "index": 2,
+      "side_moved": {
+        "L": true,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 1997,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": 1,
+        "R": 1
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_tilt_0.png",
+      "action": "cheer_tilt",
+      "index": 0,
+      "side_moved": {
+        "L": false,
+        "R": false
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2461,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": -1,
+        "R": -1
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_tilt_1.png",
+      "action": "cheer_tilt",
+      "index": 1,
+      "side_moved": {
+        "L": false,
+        "R": false
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2461,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": -1,
+        "R": -1
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_tilt_2.png",
+      "action": "cheer_tilt",
+      "index": 2,
+      "side_moved": {
+        "L": false,
+        "R": false
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2461,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": -1,
+        "R": -1
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_wave_0.png",
+      "action": "cheer_wave",
+      "index": 0,
+      "side_moved": {
+        "L": false,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2313,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": -1,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_wave_1.png",
+      "action": "cheer_wave",
+      "index": 1,
+      "side_moved": {
+        "L": false,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2237,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": -1,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    },
+    {
+      "file": "cheer_wave_2.png",
+      "action": "cheer_wave",
+      "index": 2,
+      "side_moved": {
+        "L": false,
+        "R": true
+      },
+      "C0_hand_blobs": 2,
+      "C0_hand_area_px": 2234,
+      "C0_hand_area_min_px": 1049,
+      "C1_chest_rootless_skin_px": 0,
+      "C2_unexplained_skin_px": 0,
+      "C3_old_hand_region_skin_px": 0,
+      "C4_ghost_sleeve_outline_px": {
+        "L": -1,
+        "R": 0
+      },
+      "C5_body_residual_outline_px": 0,
+      "verdict": "PASS",
+      "failures": []
+    }
+  ],
+  "summary": {
+    "frames": 18,
+    "pass": 18,
+    "fail": 0
+  }
+}

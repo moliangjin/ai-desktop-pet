@@ -30,9 +30,9 @@
 | 候选实现 | `candidates/candidate_b_c2/` |
 | QA 报告 | `docs/R167_QA_REPORT.md` |
 | 交付索引 | `docs/R167_DELIVERY_INDEX.md`（本文件） |
-| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R167_review.zip`（__REVIEW_FILE_COUNT__ 文件 / __REVIEW_ZIP_SIZE__ 字节） |
-| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R167_review.zip.sha256`（`__REVIEW_SHA256__`） |
-| 备份 | `backup/V0.0_backup_20261022_r167.zip`（__BACKUP_FILE_COUNT__ 文件 / __BACKUP_ZIP_SIZE__ 字节）+ 同名 `.sha256`（`__BACKUP_SHA256__`） |
+| 审查包 ZIP | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R167_review.zip`（139 文件 / 17,423,634 字节） |
+| ZIP SHA256 旁文件 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R167_review.zip.sha256`（`f75cb862c2395968a004a3b37ad9ddd9fc38e9cf4640226346f5849eb802615f`） |
+| 备份 | `backup/V0.0_backup_20261022_104356_r167.zip`（223 文件 / 47,824,543 字节）+ 同名 `.sha256`（`adb571102fb9e0a507b029b44270b932abecaa9b71e535e1e0c7bc0d09a03f25`） |
 | e2e 机器报告 | `candidates/candidate_b_c2/evidence_r147_e2e.json`（59 项，PASS 59 / FAIL 0 / NOT_VERIFIED 0） |
 | R167 场景客观判据 | `candidates/candidate_b_c2/evidence_r167_scene_verify.json`（R167 **15/15 PASS** · R162 旧素材 **6/15 PASS** ⇒ 9 项 FAIL） |
 | R165 手臂客观判据（本轮复跑） | `candidates/candidate_b_c2/evidence_r167_arm_verify.json`（18 帧 C0~C5，**18/18 PASS**） |

@@ -5,7 +5,8 @@
 # 用户在桌面双击「AI桌宠」→ 拉起当前验收通过的桌宠。
 #
 # 本轮硬约束 (逐条兑现):
-#   1) 桌面显示「AI桌宠」图标  → 本 bundle + 桌面软链, 图标用现有角色形象合成
+#   1) 桌面显示「AI桌宠」图标  → 本 bundle + 桌面**真 bundle 拷贝**(委托到本脚本),
+#                                  图标用现有角色形象合成
 #   2) 双击直接启动验收通过的桌宠 → 参数与验收脚本完全一致 (manifest / compact / 600,300)
 #   3) 不弹测试界面 / 不跑验收脚本 / 不起多个进程
 #      · 启动参数里**没有** --acceptance / --preview / --demo-scene / --r177-* /
@@ -29,7 +30,7 @@ set -u
 
 # ---------- ① 定位仓库 ----------
 # 优先按 bundle 自身位置反推 (仓库整体搬家也能跟着走);
-# 反推不到 (从桌面软链启动、路径被系统改写) 就回落到硬编码绝对路径。
+# 反推不到 (从桌面 bundle 拷贝启动、路径被系统改写) 就回落到硬编码绝对路径。
 SELF="$0"
 case "$SELF" in
     /*) ;;
@@ -66,20 +67,25 @@ log() {
     printf '%s [AI桌宠] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$LOG_FILE" 2>/dev/null || true
 }
 
-# ---------- ② 阶段 B 的实际启动体 ----------
-# 被阶段 A 以 "--stage-b" 调用, 或由 osascript 直接调用。
+# ---------- ② 实际启动体 ----------
+# 必须是**后台**启动并立刻返回:
+#   · 阶段 B 走 `osascript do shell script`, 那是**同步**的 —— 如果这里 exec/前台等,
+#     osascript 会一直等桌宠退出, 整条启动链就永久阻塞了。
+#   · 后台起 + 立即返回, 启动器本身不会挂着。
 run_pet() {
     cd "$CAND" || exit 1
-    exec "$ELECTRON" "$MAIN_JS" \
+    "$ELECTRON" "$MAIN_JS" \
         --manifest "$MANIFEST" \
         --mode compact \
         --x 600 --y 300 \
         --user-data-dir="$USER_DATA" \
-        >> "$LOG_FILE" 2>&1
+        >> "$LOG_FILE" 2>&1 &
+    echo $!
 }
 
 if [ "${1:-}" = "--stage-b" ]; then
-    run_pet
+    run_pet >/dev/null
+    exit 0
 fi
 
 # ---------- ③ 启动前自检 ----------
@@ -97,18 +103,19 @@ log "启动 repo=$REPO"
 #   否则"就绪判据"会命中上一轮残留的 R177 LOCAL_STATE, 造成假就绪。
 LOG_SIZE_BEFORE=$(wc -c < "$LOG_FILE" 2>/dev/null || echo 0)
 case "$LOG_SIZE_BEFORE" in ''|*[!0-9]*) LOG_SIZE_BEFORE=0 ;; esac
-new_log() { tail -c "+$((LOG_SIZE_BEFORE + 1))" "$LOG_FILE" 2>/dev/null; }
+new_log() {
+    # 注意: 日志文件在首启时可能还不存在, 此时 tail 会读不到内容 ⇒ 就绪判据永远
+    #   不命中。所以偏移为 0 时改用 cat(文件不存在时 cat 只是空输出, 不报错)。
+    if [ "$LOG_SIZE_BEFORE" -gt 0 ]; then
+        tail -c "+$((LOG_SIZE_BEFORE + 1))" "$LOG_FILE" 2>/dev/null
+    else
+        cat "$LOG_FILE" 2>/dev/null
+    fi
+}
 
 # ---------- ④ 阶段 A: 直接启动 ----------
 log "阶段 A: 直接启动 Electron"
-cd "$CAND" || exit 1
-"$ELECTRON" "$MAIN_JS" \
-    --manifest "$MANIFEST" \
-    --mode compact \
-    --x 600 --y 300 \
-    --user-data-dir="$USER_DATA" \
-    >> "$LOG_FILE" 2>&1 &
-PID_A=$!
+PID_A=$(run_pet)
 
 # 就绪判据: main.js 跑 initLocalState() 时会打印这一行 —— 它证明
 #   Electron 真的 ready 了、窗口建了、本地状态读到了, 而不是"进程活着但没干活"。
@@ -139,5 +146,16 @@ sleep 1
 # ---------- ⑤ 阶段 B: 由 osascript (Cocoa 应用) 作宿主再拉一次 ----------
 log "阶段 B: 经 osascript 通道重启"
 /usr/bin/osascript -e "do shell script \"$SELF --stage-b\"" >> "$LOG_FILE" 2>&1
-log "阶段 B 已下发"
+
+# 阶段 B 起来后同样给一个就绪判据 (它走的是另一个通道, 日志会继续追加)
+READY_B=0
+for _ in $(seq 1 15); do
+    if new_log | grep -q "R177 LOCAL_STATE"; then READY_B=1; break; fi
+    sleep 1
+done
+if [ "$READY_B" = "1" ]; then
+    log "阶段 B 成功, 桌宠已就绪"
+else
+    log "阶段 B 未见就绪判据, 见 $LOG_FILE"
+fi
 exit 0

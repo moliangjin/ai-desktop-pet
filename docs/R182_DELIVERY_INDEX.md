@@ -4,7 +4,7 @@
 > **对应任务书**：R182（承接 R179，基线 commit `8b52aef`）
 > **作者**：MiniMax（Mavis）
 > **上一交付**：R179 `8b52aef`（实现 `4756fd0` / 索引 `ed8ebad` / 归档 `8b52aef`）
-> **本轮实现提交**：``68b55d3``
+> **本轮实现提交**：`68b55d3`
 > **状态**：`R182_DESKTOP_ICON = PASS` / **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** / `V0_0_RELEASE_STATUS = NOT_FROZEN`
 > **范围声明**：本轮**只做一件事** —— 在桌面放一个能启动桌宠的图标；**零联网、零外部 API、零新功能、零新角色素材**；**所有角色素材逐字节未动**；**未移动/未删除任何原始项目文件**；**未进入 V0.1**；**未擅自封版**；办公场景仍待用户视觉确认，未登记为最终产品验收通过。
 
@@ -136,14 +136,14 @@ macOS 的 `screencapture` **抓不到透明 Electron 叠层**（Pixi 画布走 G
 | 运行时日志 | `~/Library/Logs/AI桌宠/launcher.log` |
 | 本地状态目录 | `~/Library/Application Support/AI桌宠/` |
 
-### SHA256（最终值见仓库索引；此处为占位）
+### SHA256（最终值）
 
 ```
-<AppIcon.icns>          = <SHA256_ICNS>
-<AIPet>                 = <SHA256_AIPET>
-<Info.plist>            = <SHA256_PLIST>
-<AppIcon_1024.png>      = <SHA256_PNG>
-<AI桌宠.app 目录清单>   = <SHA256_BUNDLE_MANIFEST>
+<AppIcon.icns>          = 08b6159801237a35b83b3c9f2cb5934633fdfbd7b840bddd8227aa8692879af3
+<AIPet>                 = 06b916a76d36591cb59e06c436ecb14c456a03f8e191ef03637b8193a1c2153d
+<Info.plist>            = d2dce45ddbc8917f5dbecface0c33afa7a41d9094c932411c0acdc10e0483f8c
+<AppIcon_1024.png>      = 8826a6d6a563552806ef035baff5a26090573c897ad5de2bc7a476b96738dbff
+<AI桌宠.app 目录清单>   = 3cf4800201a3065ecced09fa42ce227a8dbb4b9b5888b03ca6f49508e851de20
 ```
 
 ---

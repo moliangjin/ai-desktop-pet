@@ -24,7 +24,7 @@ const { BehaviorEngine, STATES } = require('./behavior_engine');
 const { evaluateAssetReadiness, REQUIRED_ACTIONS } = require('./asset_gate');
 // R177: 本地心情系统 + 本地设置存储 (纯离线 —— 不联网、不调模型、不上传任何数据)
 const { MoodEngine } = require('./mood_engine');
-const { SettingsStore, DEFAULT_SETTINGS, rateEffects, SCALE_MIN, SCALE_MAX, RATES } = require('./settings_store');
+const { SettingsStore, DEFAULT_SETTINGS, rateEffects, SCALE_MIN, SCALE_MAX, RATES, commitSettings } = require('./settings_store');
 // R177: 右键菜单要用 Electron 原生 Menu (模板本身在纯模块里, 可单测)
 const { Menu } = require('electron');
 const { buildMenuTemplate } = require('./menu_template');
@@ -45,6 +45,7 @@ let r177Command_ = null;       // --r177-command <kind>       走**菜单同一�
 let r177ApplySettings_ = null; // --r177-apply-settings <json> 走**设置面板同一条**代码路径改设置
 let r177DumpSettings_ = false; // --r177-dump-settings        启动后打印本地设置与心情状态
 let r177OpenPanel_ = false;    // --r177-panel                启动后打开设置面板
+let r177FaultSettings_ = false;// --r177-fault-settings       故障注入: 让本地存储写入必然失败
 for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a === '--manifest' && args[i+1]) manifestPath = args[++i];
@@ -70,6 +71,7 @@ for (let i = 0; i < args.length; i++) {
     else if (a === '--r177-apply-settings' && args[i+1]) r177ApplySettings_ = args[++i];
     else if (a === '--r177-dump-settings') r177DumpSettings_ = true;
     else if (a === '--r177-panel') r177OpenPanel_ = true;
+    else if (a === '--r177-fault-settings') r177FaultSettings_ = true;
 }
 
 if (!manifestPath) {
@@ -102,6 +104,8 @@ let moodTimer_ = null;
 let moodLoadedRaw_ = null;
 // R177: 上次已生效的视口尺寸 (窗口 + 画布); 用来判断"要不要重建画布"
 let lastViewport_ = null;
+// R179: "开机自动启动"最后一次应用的结果 —— 失败时必须能告诉界面, 不能让开关显示"已开"却没生效
+let loginItemResult_ = { ok: true, reason: null };
 
 // ====== R141: 自主行为引擎接入 ======
 // 行为引擎只负责"决定做什么"; 窗口坐标/边界由 main 侧 adapter 提供.
@@ -187,7 +191,23 @@ function moveWindowBy(dx, dy) {
  */
 function initLocalState() {
     try {
-        settingsStore_ = new SettingsStore({ dir: app.getPath('userData') });
+        const storeDir = app.getPath('userData');
+        if (r177FaultSettings_) {
+            // R179 故障注入: 把存储目录指到一个**普通文件**上 ⇒ 写入必然 ENOTDIR 失败。
+            //   用来客观验证"保存失败时不会谎报已保存"。
+            try {
+                fs.mkdirSync(storeDir, { recursive: true });
+                const faultPath = path.join(storeDir, 'r177_fault_dir');
+                fs.writeFileSync(faultPath, 'R179 fault injection: this is a file, not a directory');
+                settingsStore_ = new SettingsStore({ dir: faultPath });
+                console.log(`[main] R179 FAULT_INJECTION settings-dir=${faultPath} (写入将失败)`);
+            } catch (e) {
+                console.error('[main] R179 FAULT_INJECTION_FAILED', e && e.message);
+                settingsStore_ = new SettingsStore({ dir: storeDir });
+            }
+        } else {
+            settingsStore_ = new SettingsStore({ dir: storeDir });
+        }
         const loaded = settingsStore_.loadAll();
         settings_ = loaded.settings;
         moodLoadedRaw_ = loaded.mood;
@@ -260,16 +280,33 @@ function canLaunchAtLogin() {
     return process.platform === 'darwin' || process.platform === 'win32';
 }
 
-/** 应用"开机自动启动"。失败只记录, 不影响其它功能。 */
+/**
+ * 应用"开机自动启动"。失败只记录, 不影响其它功能。
+ *
+ * R179: 返回**真实结果** —— macOS 上从源码直接跑 (不是打包后的 .app) 时,
+ *   setLoginItemSettings 会报 "Operation not permitted"。这时绝不能让界面显示
+ *   "开机自动启动: 已开启" —— 那是在骗用户。
+ *
+ * @returns {{ok:boolean, reason:?string}}
+ */
 function applyLaunchAtLogin() {
-    if (!settings_ || !canLaunchAtLogin()) return false;
+    if (!settings_ || !canLaunchAtLogin()) {
+        loginItemResult_ = { ok: false, reason: '当前系统不支持开机自启 (仅 macOS / Windows 支持)' };
+        return loginItemResult_;
+    }
+    const want = !!settings_.launch_at_login;
     try {
-        app.setLoginItemSettings({ openAtLogin: !!settings_.launch_at_login, openAsHidden: true });
-        console.log(`[main] R177 LOGIN_ITEM set=${!!settings_.launch_at_login}`);
-        return true;
+        app.setLoginItemSettings({ openAtLogin: want, openAsHidden: true });
+        loginItemResult_ = { ok: true, reason: null };
+        console.log(`[main] R177 LOGIN_ITEM set=${want} applied=true`);
+        return loginItemResult_;
     } catch (e) {
-        console.error('[main] R177 LOGIN_ITEM_FAILED', e && e.message);
-        return false;
+        loginItemResult_ = {
+            ok: false,
+            reason: `系统拒绝设置登录项 (${(e && e.message) || 'unknown'}) —— 通常是因为当前不是打包后的 .app`,
+        };
+        console.error(`[main] R177 LOGIN_ITEM_FAILED ${loginItemResult_.reason}`);
+        return loginItemResult_;
     }
 }
 
@@ -329,27 +366,24 @@ function applySettingsToRuntime() {
         });
         console.log(`[main] R177 RATE activity=${settings_.activity_rate} sleep=${settings_.sleep_rate} fx=${JSON.stringify(fx)}`);
     }
+    // R179: 先应用开机自启, 再把结果一起发出去 (否则界面拿到的是上一次的旧结果)
+    applyLaunchAtLogin();
+    const payload = {
+        settings: settings_,
+        click_feedback: !!settings_.click_feedback,
+        launch_at_login: !!settings_.launch_at_login,
+        login_item: loginItemResult_,
+        rate_effects: fx,
+        mood: moodPayload(),
+    };
     if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
-        mainWindow.webContents.send('settings-changed', {
-            settings: settings_,
-            click_feedback: !!settings_.click_feedback,
-            launch_at_login: !!settings_.launch_at_login,
-            rate_effects: fx,
-            mood: moodPayload(),
-        });
+        mainWindow.webContents.send('settings-changed', payload);
     }
     // R177: 设置面板也跟着刷新 (它开着的时候要显示最新值)
     if (settingsWindow_ && !settingsWindow_.isDestroyed() && settingsWindow_.webContents) {
-        settingsWindow_.webContents.send('settings-changed', {
-            settings: settings_,
-            click_feedback: !!settings_.click_feedback,
-            launch_at_login: !!settings_.launch_at_login,
-            rate_effects: fx,
-            mood: moodPayload(),
-        });
+        settingsWindow_.webContents.send('settings-changed', payload);
     }
     applyPetScale();
-    applyLaunchAtLogin();
 }
 
 /**
@@ -362,14 +396,17 @@ function applySettingsToRuntime() {
  * @returns {{ok:boolean, settings:object, saved:boolean, error?:string}}
  */
 function applySettingsPatch(patch) {
-    if (!settingsStore_) {
-        return { ok: false, error: 'settings store not ready', settings: settings_ };
+    // R179: 落盘失败 ⇒ 返回 ok=false, **并且不应用**到运行时, 也不改内存里的设置。
+    //   否则会出现"界面显示已保存, 重启后却全丢" —— 看起来成功, 实际没保存。
+    const res = commitSettings(settingsStore_, patch || {}, settings_);
+    if (!res.ok) {
+        console.error(`[main] R177 SETTINGS_SAVE_FAILED error=${res.error} (未应用到运行时, 设置保持原值)`);
+        return res;
     }
-    const res = settingsStore_.saveSettings(patch);
     settings_ = res.settings;
     applySettingsToRuntime();
-    console.log(`[main] R177 SETTINGS saved=${res.ok} settings=${JSON.stringify(settings_)}`);
-    return { ok: true, settings: settings_, saved: res.ok, error: res.ok ? undefined : (settingsStore_.lastError || 'write failed') };
+    console.log(`[main] R177 SETTINGS saved=true settings=${JSON.stringify(settings_)}`);
+    return res;
 }
 
 // ====== R177: 验收专用入口 (仅自动化验证用; 正式运行不触发) ======
@@ -404,7 +441,7 @@ function runR177StartupHooks() {
         catch (e) { console.error('[main] R177 APPLY_SETTINGS_BAD_JSON', e && e.message); }
         if (patch && typeof patch === 'object') {
             const r = applySettingsPatch(patch);
-            console.log(`[main] R177 APPLY_SETTINGS ok=${r.ok} saved=${r.saved} settings=${JSON.stringify(r.settings)}`);
+            console.log(`[main] R177 APPLY_SETTINGS ok=${r.ok} saved=${r.saved} error=${r.error || 'none'} settings=${JSON.stringify(r.settings)}`);
         }
     }
     // ② 打印本地状态 (重启恢复取证)
@@ -1092,18 +1129,22 @@ ipcMain.handle('settings-get', async () => {
             scale_max: SCALE_MAX,
             rates: RATES.slice(),
         },
+        // R179: 开机自启上一次是否真的生效 (失败时界面必须如实显示)
+        login_item: loginItemResult_,
     };
 });
 
 // 设置面板写回设置 (与验收入口 applySettingsPatch 同一条路径)
 ipcMain.handle('settings-set', async (_evt, patch) => {
     const r = applySettingsPatch(patch || {});
+    console.log(`[main] R177 SETTINGS_SET ok=${r.ok} saved=${r.saved} error=${r.error || 'none'}`);
     return {
-        ok: r.ok,
-        settings: r.settings,
+        ok: r.ok,            // R179: ok 严格等于"落盘成功"
         saved: r.saved,
+        settings: r.settings,
         error: r.error || null,
         mood: moodPayload(),
+        login_item: loginItemResult_,
     };
 });
 

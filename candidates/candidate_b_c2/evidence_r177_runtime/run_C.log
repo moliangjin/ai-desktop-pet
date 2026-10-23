@@ -1,4 +1,6 @@
-[main] R177 LOCAL_STATE dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_C mood=sleepy settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
+[main] R177 LOCAL_STATE dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_C mood=calm settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
+[main] window show
+[main] window focus
 [renderer:1] [renderer] PIXI version: 7.4.3 dev_mode= false
 [main] renderer-ready: pixi=7.4.3
 [main] R144 manifest sent, waiting for renderer assets-ready
@@ -56,21 +58,17 @@ Deprecated since v7.2.0
 [main] R144 ASSETS_READY loaded=23/23 actions=idle,walk_left,walk_right,sleep_enter,sleep_loop,wake_up
 [main] R144 behavior engine started state=IDLE
 [main] R177 RATE activity=normal sleep=normal fx={"idle_interval":1,"activity_weight":1,"sleep_weight":1}
+[11727:1023/093456.387878:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
+[main] R177 LOGIN_ITEM set=false applied=true
 [main] R177 PET_SCALE scale=1 viewport=200x240 bounds=(600,300,200,240) unchanged(跳过画布重建)
-[53122:1023/032748.354503:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
-[main] R177 LOGIN_ITEM set=false
 [renderer:1] [renderer] R177 SETTINGS_CHANGED click_feedback=true settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
-[main] R141 STATE IDLE -> EAT_FRUIT (idle-decision) t=1464ms
+[main] R141 STATE IDLE -> EAT_FRUIT (idle-decision) t=1891ms
 [main] R141 BEHAVIOR action=eat_fruit state=EAT_FRUIT
 [main] R177 MENU command=eat_fruit ok=true state=EAT_FRUIT error=
 [main] R177 ACCEPTANCE_COMMAND kind=eat_fruit result={"ok":true,"kind":"eat_fruit","state":"EAT_FRUIT"}
 [renderer:1] [renderer] R156 PROPS action=eat_fruit scene=yes mounted=prop_stool,prop_fruit_table
 [renderer:1] [renderer] R147 set-action eat_fruit applied=true loop=true frame_ms=820,760,900,700,1150 frames=5 skew=0
-[main] R141 STATE EAT_FRUIT -> IDLE (eat_fruit-complete) t=15787ms
-[main] R141 BEHAVIOR action=idle state=IDLE
-[renderer:1] [renderer] R156 PROPS action=idle scene=none mounted=prop_stool,prop_fruit_table
-[renderer:1] [renderer] R147 set-action idle applied=true loop=true frame_ms=200 frames=6 skew=0
 [main] quit-after elapsed, terminating
 [main] R141 behavior engine stopped (before-quit)
-[main] R177 MOOD_SAVED mood=sleepy
+[main] R177 MOOD_SAVED mood=happy
 [main] window closed

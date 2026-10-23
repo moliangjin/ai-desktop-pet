@@ -21,7 +21,7 @@ const {
     DEFAULT_SETTINGS, SCALE_MIN, SCALE_MAX, RATES,
     ACTIVITY_RATE_TABLE, SLEEP_RATE_TABLE,
     SETTINGS_FILE, MOOD_FILE,
-    SettingsStore, sanitizeSettings, rateEffects,
+    SettingsStore, sanitizeSettings, rateEffects, commitSettings,
 } = require(STORE_PATH);
 
 const results = [];
@@ -218,6 +218,59 @@ test('S14 loadAll 一次读出设置与心情状态', () => {
     const all = store.loadAll();
     assert.strictEqual(all.settings.pet_scale, 0.8);
     assert.strictEqual(all.mood.mood, 'calm');
+});
+
+// ====== S15: commitSettings 成功路径 ======
+test('S15 commitSettings: 落盘成功 ⇒ ok=true 且返回合并后的设置', () => {
+    const dir = tmpDir('commit_ok');
+    const store = new SettingsStore({ dir });
+    const current = Object.assign({}, DEFAULT_SETTINGS);
+    const r = commitSettings(store, { pet_scale: 1.3 }, current);
+    assert.strictEqual(r.ok, true);
+    assert.strictEqual(r.saved, true);
+    assert.strictEqual(r.error, null);
+    assert.strictEqual(r.settings.pet_scale, 1.3);
+    // 真的落盘了
+    const disk = JSON.parse(fs.readFileSync(path.join(dir, SETTINGS_FILE), 'utf8'));
+    assert.strictEqual(disk.pet_scale, 1.3);
+});
+
+// ====== S16: commitSettings 失败路径 (R179 核心) ======
+test('S16 commitSettings: 落盘失败 ⇒ ok=false, 设置保持原值, 错误原因明确', () => {
+    const dir = tmpDir('commit_fail');
+    // 把存储目录指到一个**普通文件**上 ⇒ 写入必然失败 (ENOTDIR), 模拟磁盘/权限问题
+    const notADir = path.join(dir, 'not_a_dir');
+    fs.writeFileSync(notADir, 'x', 'utf8');
+    const store = new SettingsStore({ dir: notADir });
+
+    const current = Object.assign({}, DEFAULT_SETTINGS);
+    const r = commitSettings(store, { pet_scale: 1.3 }, current);
+    assert.strictEqual(r.ok, false, '落盘失败时 ok 必须是 false (旧实现会误报 true)');
+    assert.strictEqual(r.saved, false);
+    assert.ok(r.error && String(r.error).length > 0, '失败必须带错误原因');
+    // 设置必须**保持原值** (没存上就不能当成改了)
+    assert.strictEqual(r.settings.pet_scale, current.pet_scale);
+    assert.deepStrictEqual(r.settings, current);
+});
+
+// ====== S17: 失败时磁盘上确实没写出文件 ======
+test('S17 落盘失败时磁盘上确实没有写出设置文件', () => {
+    const dir = tmpDir('commit_fail2');
+    const notADir = path.join(dir, 'not_a_dir');
+    fs.writeFileSync(notADir, 'x', 'utf8');
+    const store = new SettingsStore({ dir: notADir });
+    const r = commitSettings(store, { activity_rate: 'high' }, Object.assign({}, DEFAULT_SETTINGS));
+    assert.strictEqual(r.ok, false);
+    assert.strictEqual(fs.existsSync(path.join(notADir, SETTINGS_FILE)), false);
+});
+
+// ====== S18: store 不存在时也不能谎报成功 ======
+test('S18 store 未就绪 ⇒ ok=false 而不是 ok=true', () => {
+    const r = commitSettings(null, { pet_scale: 1.1 }, Object.assign({}, DEFAULT_SETTINGS));
+    assert.strictEqual(r.ok, false);
+    assert.strictEqual(r.saved, false);
+    assert.ok(r.error);
+    assert.strictEqual(r.settings.pet_scale, DEFAULT_SETTINGS.pet_scale);
 });
 
 // ====== 汇总 ======

@@ -240,6 +240,83 @@ test('M16 心情引擎不含任何"说话/聊天/台词"接口 (不冒充 AI 人
     assert.strictEqual(labels.length, 4);
 });
 
+// ====== M17: 精力按**时间增量**扣, 连续刷新不会重复扣 (R179) ======
+test('M17 精力按增量扣: 已清醒 1 小时 + 每 30s 刷新 10 分钟, 精力不会归零', () => {
+    const T0 = new Date('2026-03-15T12:00:00').getTime();
+    // 已清醒 1 小时, 初始精力 1
+    const e = engineAt(T0, { awakeSince: T0 - 3600000, energy: 1 });
+    e.update(T0, HOUR_DAY);
+    assert.ok(Math.abs(e.getEnergy() - 0.95) < 1e-9,
+        `首次结算后精力应约 0.95, 实际 ${e.getEnergy()}`);
+    // 每 30 秒刷新一次, 共 20 次 (10 分钟)
+    let now = T0;
+    for (let i = 0; i < 20; i++) {
+        now += 30000;
+        e.update(now, HOUR_DAY);
+    }
+    // 理论值: 1 - (70 分钟 / 60) × 0.05 = 0.941666...
+    const expect = 1 - (70 / 60) * 0.05;
+    assert.ok(Math.abs(e.getEnergy() - expect) < 1e-9,
+        `10 分钟后精力应约 ${expect.toFixed(6)}, 实际 ${e.getEnergy()}`);
+    assert.ok(e.getEnergy() > 0.9, `精力不该被扣到接近 0, 实际 ${e.getEnergy()}`);
+});
+
+// ====== M18: 重启恢复后继续按增量扣 (R179) ======
+test('M18 重启恢复后精力接着上次继续扣, 不重复扣也不跳变', () => {
+    const T0 = new Date('2026-03-15T12:00:00').getTime();
+    const a = engineAt(T0, { awakeSince: T0 - 3600000, energy: 1 });
+    a.update(T0, HOUR_DAY);
+    let now = T0;
+    for (let i = 0; i < 20; i++) { now += 30000; a.update(now, HOUR_DAY); }
+    const saved = JSON.parse(JSON.stringify(a.toJSON()));
+
+    // 模拟重启: 用持久化状态恢复
+    const b = new MoodEngine({ state: saved, now: () => now });
+    assert.ok(Math.abs(b.getEnergy() - saved.energy) < 1e-12,
+        `恢复后精力应等于保存值 ${saved.energy}, 实际 ${b.getEnergy()}`);
+    // 恢复后再过 30 秒 ⇒ 只扣 30 秒的量
+    b.update(now + 30000, HOUR_DAY);
+    const expect = saved.energy - (0.5 / 60) * 0.05;
+    assert.ok(Math.abs(b.getEnergy() - expect) < 1e-9,
+        `恢复后 30 秒精力应约 ${expect.toFixed(8)}, 实际 ${b.getEnergy()}`);
+    // 重启本身不能额外扣一次 (恢复时 update 不该扣)
+    assert.ok(b.getEnergy() > 0.9, `重启不该让精力跳变, 实际 ${b.getEnergy()}`);
+});
+
+// ====== M19: 睡眠期间不扣精力, 睡醒后从满值接着扣 (R179) ======
+test('M19 睡着的一段时间不计入清醒消耗', () => {
+    const T0 = new Date('2026-03-15T12:00:00').getTime();
+    const e = engineAt(T0, { awakeSince: T0 - 3600000, energy: 1 });
+    e.update(T0, HOUR_DAY);
+    assert.ok(Math.abs(e.getEnergy() - 0.95) < 1e-9);
+    // 睡 2 小时 (期间 refresh 若干次) ⇒ 精力应恢复为 1 且不再被扣
+    e.noteSleep(T0 + 1000);
+    assert.strictEqual(e.getEnergy(), 1);
+    for (let i = 1; i <= 20; i++) {
+        e.update(T0 + 1000 + i * 360000, HOUR_DAY);   // 每次 +6 分钟
+    }
+    assert.strictEqual(e.getEnergy(), 1, `睡着时精力不该被扣, 实际 ${e.getEnergy()}`);
+    // 醒来后再过 30 分钟 ⇒ 只扣 30 分钟
+    const wakeAt = T0 + 1000 + 20 * 360000;
+    e.noteAwake(wakeAt);
+    e.update(wakeAt + 1800000, HOUR_DAY);
+    assert.ok(Math.abs(e.getEnergy() - (1 - 0.5 * 0.05)) < 1e-9,
+        `醒来 30 分钟后精力应约 ${(1 - 0.5 * 0.05)}, 实际 ${e.getEnergy()}`);
+});
+
+// ====== M20: 单次超长间隔有上限 (机器休眠/时钟回拨不会一次扣光) ======
+test('M20 单次超长间隔有扣除上限 (休眠/时钟回拨不会一次归零)', () => {
+    const T0 = new Date('2026-03-15T12:00:00').getTime();
+    const e = engineAt(T0, { awakeSince: T0, energy: 1 });
+    // 直接跳 100 小时
+    e.update(T0 + 100 * 3600000, HOUR_DAY);
+    const capHours = DEFAULT_MOOD_CONFIG.energy_max_delta_ms / 3600000;
+    const expect = 1 - capHours * 0.05;
+    assert.ok(Math.abs(e.getEnergy() - expect) < 1e-9,
+        `100 小时后精力应只扣上限 ${capHours} 小时, 期望 ${expect}, 实际 ${e.getEnergy()}`);
+    assert.ok(e.getEnergy() > 0.6, `不该被一次扣光, 实际 ${e.getEnergy()}`);
+});
+
 // ====== 汇总 ======
 const passed = results.filter(r => r.pass).length;
 const failed = results.filter(r => !r.pass).length;

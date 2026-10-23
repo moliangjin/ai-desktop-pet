@@ -43,6 +43,7 @@ const MOOD_NOTES = {
 
 let current_ = null;      // 主进程返回的权威设置
 let capabilities_ = null;  // 主进程返回的能力边界 (如是否支持开机自启)
+let loginItem_ = null;    // R179: 主进程返回的"开机自启是否真的生效"
 let busy_ = false;
 
 function setStatus(text, isError) {
@@ -55,9 +56,10 @@ function setStatus(text, isError) {
 }
 
 /** 把权威设置渲染到界面上。 */
-function render(settings, mood, capabilities) {
+function render(settings, mood, capabilities, loginItem) {
     current_ = settings;
     if (capabilities) capabilities_ = capabilities;
+    if (loginItem) loginItem_ = loginItem;
 
     // 桌宠大小
     const pct = Math.round((Number(settings.pet_scale) || 1) * 100);
@@ -77,9 +79,16 @@ function render(settings, mood, capabilities) {
     const canLogin = !capabilities_ || capabilities_.launch_at_login !== false;
     el.launchAtLogin.checked = !!settings.launch_at_login;
     el.launchAtLogin.disabled = !canLogin;
-    el.loginDesc.textContent = canLogin
-        ? '开机后自动在桌面出现'
-        : '当前系统不支持开机自启（macOS / Windows 支持）';
+    // R179: 开关打开但系统实际没接受 ⇒ 如实说明, 不能让用户以为已经生效
+    if (!canLogin) {
+        el.loginDesc.textContent = '当前系统不支持开机自启（macOS / Windows 支持）';
+    } else if (settings.launch_at_login && loginItem_ && loginItem_.ok === false) {
+        el.loginDesc.textContent = `⚠️ ${loginItem_.reason || '开机自启未生效'}`;
+        el.loginDesc.style.color = '#e05a5a';
+    } else {
+        el.loginDesc.textContent = '开机后自动在桌面出现';
+        el.loginDesc.style.color = '';
+    }
 
     // 心情
     if (mood) {
@@ -98,10 +107,21 @@ async function patch(partial) {
     try {
         const res = await ipcRenderer.invoke('settings-set', partial);
         if (res && res.ok) {
-            render(res.settings, res.mood, capabilities_);
-            setStatus('已保存');
+            render(res.settings, res.mood, capabilities_, res.login_item);
+            // R179: 设置存上了, 但"开机自启"可能被系统拒绝 ⇒ 必须如实提示
+            if (res.login_item && res.login_item.ok === false && res.settings.launch_at_login) {
+                setStatus(`已保存，但开机自启未生效：${res.login_item.reason}`, true);
+            } else {
+                setStatus('已保存');
+            }
         } else {
-            setStatus(`保存失败：${(res && res.error) || '未知错误'}`, true);
+            // R179: 落盘失败时**不能**显示"已保存"。
+            //   这里把界面按主进程返回的权威值重画一遍 (控件回到真实状态),
+            //   再明确告诉用户"没存上"。
+            const why = (res && res.error) || '未知错误';
+            if (res && res.settings) render(res.settings, res.mood, capabilities_, res.login_item);
+            setStatus(`保存失败（设置未改动）：${why}`, true);
+            console.error('[settings] R177 SAVE_FAILED', why);
         }
     } catch (e) {
         setStatus(`保存失败：${(e && e.message) || e}`, true);
@@ -142,7 +162,7 @@ el.launchAtLogin.addEventListener('change', () => {
 // ====== 主进程推送 (设置/心情变化) → 面板跟着刷新 =====
 ipcRenderer.on('settings-changed', (_evt, payload) => {
     if (!payload) return;
-    render(payload.settings, payload.mood, capabilities_);
+    render(payload.settings, payload.mood, capabilities_, payload.login_item);
 });
 ipcRenderer.on('mood-changed', (_evt, payload) => {
     if (!payload) return;
@@ -154,7 +174,7 @@ ipcRenderer.on('mood-changed', (_evt, payload) => {
     try {
         const res = await ipcRenderer.invoke('settings-get');
         if (res && res.ok) {
-            render(res.settings, res.mood, res.capabilities);
+            render(res.settings, res.mood, res.capabilities, res.login_item);
             console.log(`[settings] R177 PANEL_READY settings=${JSON.stringify(res.settings)} mood=${res.mood && res.mood.mood}`);
         } else {
             setStatus('读取设置失败', true);

@@ -1,9 +1,11 @@
-[main] R177 LOCAL_STATE dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A mood=sleepy settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
-[53082:1023/032730.944074:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
-[main] R177 LOGIN_ITEM set=false
+[main] R177 LOCAL_STATE dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A mood=calm settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
+[11665:1023/093438.263782:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
+[main] R177 LOGIN_ITEM set=false applied=true
 [main] R177 SETTINGS saved=true settings={"pet_scale":1.25,"activity_rate":"high","sleep_rate":"low","click_feedback":false,"launch_at_login":false}
-[main] R177 APPLY_SETTINGS ok=true saved=true settings={"pet_scale":1.25,"activity_rate":"high","sleep_rate":"low","click_feedback":false,"launch_at_login":false}
-[main] R177 DUMP {"tag":"startup","dir":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A","settings":{"pet_scale":1.25,"activity_rate":"high","sleep_rate":"low","click_feedback":false,"launch_at_login":false},"mood":{"mood":"sleepy","label":"困倦","energy":1,"click_weights":{"cheer_wave":0.8,"cheer_hands_up":0.6,"cheer_heart":0.7,"cheer_clap":0.5,"cheer_jump":0.3,"cheer_tilt":0.6},"suppress_click":false},"mood_scores":{"calm":0.6,"happy":0,"sleepy":1.2,"bored":0},"mood_restored_raw":null,"mood_state_now":{"version":1,"mood":"sleepy","energy":1,"interactionCount":0,"interactionWindowStart":0,"lastInteractionAt":0,"lastActivityAt":0,"lastSleepAt":0,"awakeSince":1792697250930,"sleepCount":0,"savedAt":1792697250946},"settings_file":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A/pet_settings.json","mood_file":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A/pet_mood_state.json","platform":"darwin"}
+[main] R177 APPLY_SETTINGS ok=true saved=true error=none settings={"pet_scale":1.25,"activity_rate":"high","sleep_rate":"low","click_feedback":false,"launch_at_login":false}
+[main] R177 DUMP {"tag":"startup","dir":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A","settings":{"pet_scale":1.25,"activity_rate":"high","sleep_rate":"low","click_feedback":false,"launch_at_login":false},"mood":{"mood":"calm","label":"平静","energy":1,"click_weights":{"cheer_wave":1,"cheer_hands_up":1,"cheer_heart":1,"cheer_clap":1,"cheer_jump":1,"cheer_tilt":1},"suppress_click":false},"mood_scores":{"calm":0.6,"happy":0,"sleepy":0,"bored":0},"mood_restored_raw":null,"mood_state_now":{"version":1,"mood":"calm","energy":1,"interactionCount":0,"interactionWindowStart":0,"lastInteractionAt":0,"lastActivityAt":0,"lastSleepAt":0,"awakeSince":1792719278247,"sleepCount":0,"lastEnergyAt":1792719278247,"savedAt":1792719278266},"settings_file":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A/pet_settings.json","mood_file":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A/pet_mood_state.json","platform":"darwin"}
+[main] window show
+[main] window focus
 [renderer:1] [renderer] PIXI version: 7.4.3 dev_mode= false
 [main] renderer-ready: pixi=7.4.3
 [main] R144 manifest sent, waiting for renderer assets-ready
@@ -61,18 +63,18 @@ Deprecated since v7.2.0
 [main] R144 ASSETS_READY loaded=23/23 actions=idle,walk_left,walk_right,sleep_enter,sleep_loop,wake_up
 [main] R144 behavior engine started state=IDLE
 [main] R177 RATE activity=high sleep=low fx={"idle_interval":0.6,"activity_weight":1.4,"sleep_weight":0.35}
+[11665:1023/093440.306178:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
+[main] R177 LOGIN_ITEM set=false applied=true
 [main] R177 PET_SCALE scale=1.25 viewport=250x300 bounds=(600,300,250,300) unchanged(跳过画布重建)
-[53082:1023/032732.045528:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
-[main] R177 LOGIN_ITEM set=false
 [renderer:1] [renderer] R177 SETTINGS_CHANGED click_feedback=false settings={"pet_scale":1.25,"activity_rate":"high","sleep_rate":"low","click_feedback":false,"launch_at_login":false}
-[main] R141 STATE IDLE -> WORK (idle-decision) t=1693ms
+[main] R141 STATE IDLE -> WORK (idle-decision) t=2672ms
 [main] R141 BEHAVIOR action=work state=WORK
 [main] R177 MENU command=work ok=true state=WORK error=
 [main] R177 ACCEPTANCE_COMMAND kind=work result={"ok":true,"kind":"work","state":"WORK"}
-[main] R177 DUMP {"tag":"after-command","dir":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A","settings":{"pet_scale":1.25,"activity_rate":"high","sleep_rate":"low","click_feedback":false,"launch_at_login":false},"mood":{"mood":"sleepy","label":"困倦","energy":0.9999322499999999,"click_weights":{"cheer_wave":0.8,"cheer_hands_up":0.6,"cheer_heart":0.7,"cheer_clap":0.5,"cheer_jump":0.3,"cheer_tilt":0.6},"suppress_click":false},"mood_scores":{"calm":0.6,"happy":0.8,"sleepy":1.2001806666666666,"bored":0},"mood_restored_raw":null,"mood_state_now":{"version":1,"mood":"sleepy","energy":0.9999322499999999,"interactionCount":1,"interactionWindowStart":1792697252556,"lastInteractionAt":1792697252556,"lastActivityAt":1792697252556,"lastSleepAt":0,"awakeSince":1792697250930,"sleepCount":0,"savedAt":1792697252556},"settings_file":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A/pet_settings.json","mood_file":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A/pet_mood_state.json","platform":"darwin"}
+[main] R177 DUMP {"tag":"after-command","dir":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A","settings":{"pet_scale":1.25,"activity_rate":"high","sleep_rate":"low","click_feedback":false,"launch_at_login":false},"mood":{"mood":"happy","label":"开心","energy":0.9999643611111111,"click_weights":{"cheer_wave":1.5,"cheer_hands_up":1.5,"cheer_heart":1.8,"cheer_clap":1.4,"cheer_jump":1.3,"cheer_tilt":1.2},"suppress_click":false},"mood_scores":{"calm":0.6,"happy":0.8,"sleepy":0.00028511111111111114,"bored":0},"mood_restored_raw":null,"mood_state_now":{"version":1,"mood":"happy","energy":0.9999643611111111,"interactionCount":1,"interactionWindowStart":1792719280813,"lastInteractionAt":1792719280813,"lastActivityAt":1792719280812,"lastSleepAt":0,"awakeSince":1792719278247,"sleepCount":0,"lastEnergyAt":1792719280813,"savedAt":1792719280813},"settings_file":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A/pet_settings.json","mood_file":"/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_A/pet_mood_state.json","platform":"darwin"}
 [renderer:1] [renderer] R156 PROPS action=work scene=yes mounted=none
 [renderer:1] [renderer] R147 set-action work applied=true loop=true frame_ms=2600,2600 frames=2 skew=0
 [main] quit-after elapsed, terminating
 [main] R141 behavior engine stopped (before-quit)
-[main] R177 MOOD_SAVED mood=sleepy
+[main] R177 MOOD_SAVED mood=happy
 [main] window closed

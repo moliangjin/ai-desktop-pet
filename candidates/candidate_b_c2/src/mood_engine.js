@@ -50,6 +50,12 @@ const DEFAULT_MOOD_CONFIG = Object.freeze({
     sleepy_night_score: 1.2,
     sleepy_awake_per_hour: 0.4,
     sleepy_max: 2.0,
+    // —— 精力 (按**时间增量**扣, 不是按累计清醒时长扣) ——
+    // R179 修复: 原实现每次 update() 都按"累计清醒小时数"再扣一遍 ⇒
+    //   连续刷新时精力被重复扣除 (已清醒 1 小时 + 每 30s 刷新 ⇒ 18 次后归零)。
+    //   现在改成只按"距上次结算过了多久"扣增量。
+    energy_decay_per_hour: 0.05,
+    energy_max_delta_ms: 6 * 3600000,   // 单次扣除上限 (防休眠/时钟回拨一次扣光)
     // —— 心情对行为的调制 ——
     // idle_interval 越小 = 自主决策越频繁 (越活跃)
     idle_interval: Object.freeze({ happy: 0.7, calm: 1.0, sleepy: 1.5, bored: 0.6 }),
@@ -99,6 +105,8 @@ class MoodEngine {
             lastSleepAt: Number.isFinite(st.lastSleepAt) ? st.lastSleepAt : 0,
             awakeSince: Number.isFinite(st.awakeSince) ? st.awakeSince : 0,
             sleepCount: Number.isFinite(st.sleepCount) ? st.sleepCount : 0,
+            // 上次结算精力的时刻 (精力按增量扣 ⇒ 必须记住上次结算是什么时候)
+            lastEnergyAt: Number.isFinite(st.lastEnergyAt) ? st.lastEnergyAt : 0,
         };
         this._scores = null;
     }
@@ -134,6 +142,8 @@ class MoodEngine {
         this.state.sleepCount += 1;
         this.state.awakeSince = 0;
         this.state.energy = 1;
+        // R179: 睡着的这段时间不算"清醒消耗" ⇒ 把结算基准拨到现在
+        this.state.lastEnergyAt = now;
         return this.update(now);
     }
 
@@ -141,6 +151,10 @@ class MoodEngine {
     noteAwake(at) {
         const now = typeof at === 'number' ? at : this._now();
         if (!this.state.awakeSince) this.state.awakeSince = now;
+        // R179: 睡眠期间的时间不能算进清醒消耗 ⇒ 结算基准不早于醒来时刻
+        if (!this.state.lastEnergyAt || this.state.lastEnergyAt < this.state.awakeSince) {
+            this.state.lastEnergyAt = this.state.awakeSince;
+        }
         return this.update(now);
     }
 
@@ -187,8 +201,22 @@ class MoodEngine {
         const idleMinutes = idleBase > 0 ? Math.max(0, (now - idleBase) / 60000) : 0;
         scores.bored = Math.min(cfg.bored_max, idleMinutes * cfg.bored_idle_per_minute);
 
-        // 精力随清醒时间缓慢下降 (睡眠恢复)
-        st.energy = Math.max(0, Math.min(1, st.energy - awakeHours * 0.05));
+        // 精力按**时间增量**缓慢下降 (睡眠恢复)
+        //   R179 修复: 原来这里用的是"累计清醒小时数", 每刷新一次就重复扣一遍。
+        //   现在只扣"距上次结算(now - lastEnergyAt)经过的那段时间"。
+        const energyBase = st.awakeSince || st.lastSleepAt || 0;
+        const since = st.lastEnergyAt || energyBase || now;
+        let deltaMs = now - since;
+        if (!Number.isFinite(deltaMs) || deltaMs <= 0) deltaMs = 0;
+        const maxDelta = Number.isFinite(cfg.energy_max_delta_ms) ? cfg.energy_max_delta_ms : 6 * 3600000;
+        if (deltaMs > maxDelta) deltaMs = maxDelta;   // 机器休眠/时钟回拨 ⇒ 单次最多扣这么多
+        const decayPerHour = Number.isFinite(cfg.energy_decay_per_hour) ? cfg.energy_decay_per_hour : 0.05;
+        // R179: **只有醒着的时候才扣** —— 睡着的那段时间不算清醒消耗。
+        //   (awakeSince === 0 表示正在睡; 见 noteSleep)
+        if (st.awakeSince > 0) {
+            st.energy = Math.max(0, Math.min(1, st.energy - (deltaMs / 3600000) * decayPerHour));
+        }
+        st.lastEnergyAt = now;   // 结算基准始终推进 (睡着时只是不扣)
 
         // 选最高分; 平分时**平静**优先 (基准最稳)
         let mood = MOODS.CALM;
@@ -251,6 +279,7 @@ class MoodEngine {
             lastSleepAt: this.state.lastSleepAt,
             awakeSince: this.state.awakeSince,
             sleepCount: this.state.sleepCount,
+            lastEnergyAt: this.state.lastEnergyAt,
             savedAt: this._now(),
         };
     }
@@ -261,7 +290,8 @@ class MoodEngine {
         const st = this.state;
         if (MOOD_VALUES.includes(state.mood)) st.mood = state.mood;
         for (const k of ['energy', 'interactionCount', 'interactionWindowStart',
-            'lastInteractionAt', 'lastActivityAt', 'lastSleepAt', 'awakeSince', 'sleepCount']) {
+            'lastInteractionAt', 'lastActivityAt', 'lastSleepAt', 'awakeSince', 'sleepCount',
+            'lastEnergyAt']) {
             if (Number.isFinite(state[k])) st[k] = state[k];
         }
         return true;

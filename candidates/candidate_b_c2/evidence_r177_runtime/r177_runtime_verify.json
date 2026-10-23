@@ -1,6 +1,6 @@
 {
   "round": "R177",
-  "generated_at": "2026-10-23 03:28:49",
+  "generated_at": "2026-10-23 09:36:18",
   "electron": "/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_electronpixir/node_modules/.bin/electron",
   "manifest": "/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/assets/character_R141_manifest.json",
   "patch": {
@@ -21,7 +21,7 @@
       "id": "A2",
       "name": "设置通过 applySettingsPatch 写入成功",
       "pass": true,
-      "detail": "R177 APPLY_SETTINGS ok=true saved=true settings={\"pet_scale\":1.25,\"activity_rate\":\"high\",\"sleep_rate\":\"low\",\"click_feedback\":false,\"launch_at_login\":false}"
+      "detail": "R177 APPLY_SETTINGS ok=true saved=true error=none settings={\"pet_scale\":1.25,\"activity_rate\":\"high\",\"sleep_rate\":\"low\",\"click_feedback\":false,\"launch_at_login\":false}"
     },
     {
       "id": "A3",
@@ -45,7 +45,7 @@
       "id": "A6",
       "name": "状态机留下 IDLE -> WORK 的正式转移记录",
       "pass": true,
-      "detail": "R141 STATE IDLE -> WORK (idle-decision) t=1693ms"
+      "detail": "R141 STATE IDLE -> WORK (idle-decision) t=2672ms"
     },
     {
       "id": "A7",
@@ -138,6 +138,56 @@
       "detail": "{\"pet_scale\":1.25,\"activity_rate\":\"high\",\"sleep_rate\":\"low\",\"click_feedback\":false,\"launch_at_login\":false}"
     },
     {
+      "id": "F1",
+      "name": "验收入口脚本能跑完且退出码为 0",
+      "pass": true,
+      "detail": "rc=0"
+    },
+    {
+      "id": "F2",
+      "name": "验收入口自己给出的启动判据 = 资源就绪 (桌宠真的起来了)",
+      "pass": true,
+      "detail": [
+        "✅ 启动判据: 资源就绪 (R144 ASSETS_READY) —— 桌宠确实启动了"
+      ]
+    },
+    {
+      "id": "F3",
+      "name": "真实运行日志里有 R144 ASSETS_READY (资源真的加载完了)",
+      "pass": true,
+      "detail": "loaded=23/23 actions=idle,walk_left,walk_right,sleep_enter,s"
+    },
+    {
+      "id": "F4",
+      "name": "验收入口不再引用不存在的相对路径 src/main.js",
+      "pass": true,
+      "detail": "已改为绝对路径 $CAND/src/main.js"
+    },
+    {
+      "id": "G1",
+      "name": "落盘失败时主进程明确报错 (SETTINGS_SAVE_FAILED)",
+      "pass": true,
+      "detail": "R177 SETTINGS_SAVE_FAILED error=ENOTDIR: not a directory, open '/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_wor"
+    },
+    {
+      "id": "G2",
+      "name": "失败时返回 ok=false (不是 ok=true)",
+      "pass": true,
+      "detail": "R177 APPLY_SETTINGS ok=false saved=false error=ENOTDIR: not a directory, open '/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspac"
+    },
+    {
+      "id": "G3",
+      "name": "失败时设置保持原值 (没有被当成\"改成功了\")",
+      "pass": true,
+      "detail": "{\"pet_scale\": 1, \"activity_rate\": \"normal\", \"sleep_rate\": \"normal\", \"click_feedback\": true, \"launch_at_login\": false}"
+    },
+    {
+      "id": "G4",
+      "name": "失败时磁盘上确实没有写出设置文件",
+      "pass": true,
+      "detail": "pet_settings.json 不存在"
+    },
+    {
       "id": "B1",
       "name": "重启后设置逐字段恢复 (大小/活动频率/睡眠频率/点击反馈/自启)",
       "pass": true,
@@ -147,13 +197,13 @@
       "id": "B2",
       "name": "重启后心情状态从磁盘恢复 (mood_restored_raw 非空)",
       "pass": true,
-      "detail": "{\"version\": 1, \"mood\": \"sleepy\", \"energy\": 0.9983996388888887, \"interactionCount\": 1, \"interactionWindowStart\": 1792697252556, \"lastInteractionAt\": 1792697252556, \"lastActivityAt\": 1792697309929, \"lastSleepAt\": 0, \"awakeSince\": 1792697250930, \"sleepCount\": 0, \"savedAt\": 1792697316337}"
+      "detail": "{\"version\": 1, \"mood\": \"happy\", \"energy\": 0.9992146944444444, \"interactionCount\": 1, \"interactionWindowStart\": 1792719280813, \"lastInteractionAt\": 1792719280813, \"lastActivityAt\": 1792719334789, \"lastSleepAt\": 0, \"awakeSince\": 1792719278247, \"sleepCount\": 0, \"lastEnergyAt\": 1792719334789, \"savedAt\": 1792719344331}"
     },
     {
       "id": "B3",
       "name": "恢复的心情状态 = 启动时磁盘文件内容 (逐字段一致)",
       "pass": true,
-      "detail": "disk.mood=sleepy restored.mood=sleepy energy 0.9983996388888887 → 0.9983996388888887"
+      "detail": "disk.mood=happy restored.mood=happy energy 0.9992146944444444 → 0.9992146944444444"
     },
     {
       "id": "B4",
@@ -168,7 +218,7 @@
       "detail": "R177 RATE activity=high sleep=low fx={\"idle_interval\":0.6,\"activity_weight\":1.4,\"sleep_weight\":0.35}"
     }
   ],
-  "passed": 26,
+  "passed": 34,
   "failed": 0,
-  "total": 26
+  "total": 34
 }

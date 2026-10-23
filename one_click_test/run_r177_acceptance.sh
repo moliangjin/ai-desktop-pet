@@ -23,11 +23,31 @@ LOG_DIR="$REPO/evidence/build_logs"
 mkdir -p "$LOG_DIR"
 
 ONLY_AUTO=0
+SMOKE=0
+SKIP_AUTO=0
 for a in "$@"; do
   case "$a" in
     --only-auto) ONLY_AUTO=1 ;;
+    # R179: 冒烟模式 —— 桌宠只跑 6 秒, 用于自动验证"确实能启动"
+    --smoke) SMOKE=1 ;;
+    # R179: 跳过自动化阶段, 只做启动验证
+    --skip-auto) SKIP_AUTO=1 ;;
   esac
 done
+
+# R179 修复: 本脚本的工作目录是 one_click_test/, 而 Electron 的主程序在
+#   candidates/candidate_b_c2/src/main.js —— 原来写的是相对路径 "src/main.js",
+#   从这个目录看根本不存在 ⇒ Finder 双击后 Electron 起不来。
+#   现在统一用绝对路径, 并在启动前做存在性自检, 失败就明确报错而不是静默退出。
+MAIN_JS="$CAND/src/main.js"
+if [ ! -f "$MAIN_JS" ]; then
+  echo "FATAL: 主程序不存在: $MAIN_JS" >&2
+  exit 1
+fi
+if [ ! -x "$ELECTRON" ]; then
+  echo "FATAL: Electron 不存在或不可执行: $ELECTRON" >&2
+  exit 1
+fi
 
 echo "=========================================================="
 echo " R177 一键验收  (纯离线: 心情 / 控制菜单 / 设置面板 / 本地保存)"
@@ -38,9 +58,12 @@ echo "=========================================================="
 echo ""
 echo "[1/3] 自动化验收"
 echo "----------------------------------------------------------"
+UNIT_FAIL=0
+if [ "$SKIP_AUTO" = "1" ]; then
+  echo "  · 已按 --skip-auto 跳过"
+else
 
 echo "  · 单元测试 (新增 R177 三组)"
-UNIT_FAIL=0
 for t in r177_mood_engine r177_settings_store r177_menu_settings; do
   if node "$CAND/tests/$t.test.js" > "$LOG_DIR/r177_$t.log" 2>&1; then
     echo "      ✅ $t — $(tail -1 "$LOG_DIR/r177_$t.log")"
@@ -58,6 +81,8 @@ else
   echo "      ❌ 运行时验证未通过 — 见 $LOG_DIR/r177_runtime_verify.log"
   grep -E "^  - " "$LOG_DIR/r177_runtime_verify.log" | head -10 | sed 's/^/      /'
 fi
+
+fi   # end of 自动化阶段 (--skip-auto)
 
 if [ "$UNIT_FAIL" != "0" ]; then
   echo ""
@@ -85,11 +110,42 @@ echo "  提示: 左键拖动仍然可以移动她 (R113 拖拽核心保留)。"
 echo "  看完后按 Ctrl+C 结束, 或用菜单里的\"退出桌宠\"。"
 echo "----------------------------------------------------------"
 
-"$ELECTRON" src/main.js \
+# R179 修复: 用绝对路径启动主程序 (原来写的是相对路径 src/main.js, 从本目录看不存在)
+RUN_LOG="$LOG_DIR/r177_mac_accept.log"
+# 自动化验证时可以用 PET_USER_DATA_DIR 把本地数据隔离开 (用户真跑时不设 ⇒ 用默认目录)
+UD_ARG=""
+if [ -n "${PET_USER_DATA_DIR:-}" ]; then
+  mkdir -p "$PET_USER_DATA_DIR"
+  UD_ARG="--user-data-dir=$PET_USER_DATA_DIR"
+fi
+if [ "$SMOKE" = "1" ]; then
+  QUIT_AFTER=8
+  echo "  (冒烟模式: 桌宠只跑 ${QUIT_AFTER} 秒, 用于自动验证能否启动)"
+else
+  QUIT_AFTER=900
+fi
+"$ELECTRON" "$MAIN_JS" \
   --manifest "$MANIFEST" \
   --mode compact --x 600 --y 300 \
   --perf-out "$LOG_DIR/r177_mac_accept_perf.csv" \
-  --quit-after 900 2>&1 | tee "$LOG_DIR/r177_mac_accept.log"
+  $UD_ARG \
+  --quit-after "$QUIT_AFTER" 2>&1 | tee "$RUN_LOG"
+ELECTRON_RC=${PIPESTATUS[0]}
+
+# 启动判据: 桌宠真的起来了没有 (取自真实运行日志)
+if grep -q "R144 ASSETS_READY" "$RUN_LOG" 2>/dev/null; then
+  echo ""
+  echo "  ✅ 启动判据: 资源就绪 (R144 ASSETS_READY) —— 桌宠确实启动了"
+  LAUNCH_OK=1
+else
+  echo ""
+  echo "  ❌ 启动判据: 日志里没有 R144 ASSETS_READY —— 桌宠**没有**正常启动"
+  echo "     (退出码 $ELECTRON_RC; 完整日志: $RUN_LOG)"
+  LAUNCH_OK=0
+fi
+if [ "$SMOKE" = "1" ]; then
+  exit $([ "$LAUNCH_OK" = "1" ] && echo 0 || echo 1)
+fi
 
 # ---------- [3/3] 人工确认清单 ----------
 echo ""

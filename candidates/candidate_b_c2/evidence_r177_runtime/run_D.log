@@ -1,4 +1,6 @@
-[main] R177 LOCAL_STATE dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_D mood=sleepy settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
+[main] R177 LOCAL_STATE dir=/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0/candidates/candidate_b_c2/evidence_r177_runtime/ud_D mood=calm settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
+[main] window show
+[main] window focus
 [renderer:1] [renderer] PIXI version: 7.4.3 dev_mode= false
 [main] renderer-ready: pixi=7.4.3
 [main] R144 manifest sent, waiting for renderer assets-ready
@@ -56,11 +58,11 @@ Deprecated since v7.2.0
 [main] R144 ASSETS_READY loaded=23/23 actions=idle,walk_left,walk_right,sleep_enter,sleep_loop,wake_up
 [main] R144 behavior engine started state=IDLE
 [main] R177 RATE activity=normal sleep=normal fx={"idle_interval":1,"activity_weight":1,"sleep_weight":1}
+[11798:1023/093513.150882:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
+[main] R177 LOGIN_ITEM set=false applied=true
 [main] R177 PET_SCALE scale=1 viewport=200x240 bounds=(600,300,200,240) unchanged(跳过画布重建)
-[53171:1023/032805.060566:ERROR:platform_util_mac.mm(257)] Unable to set login item: 未能完成该操作。Operation not permitted
-[main] R177 LOGIN_ITEM set=false
 [renderer:1] [renderer] R177 SETTINGS_CHANGED click_feedback=true settings={"pet_scale":1,"activity_rate":"normal","sleep_rate":"normal","click_feedback":true,"launch_at_login":false}
-[main] R141 STATE IDLE -> SLEEP_ENTER (idle-decision) t=1741ms
+[main] R141 STATE IDLE -> SLEEP_ENTER (idle-decision) t=1903ms
 [main] R141 BEHAVIOR action=sleep_enter state=SLEEP_ENTER
 [main] R177 MENU command=sleep ok=true state=SLEEP_ENTER error=
 [main] R177 ACCEPTANCE_COMMAND kind=sleep result={"ok":true,"kind":"sleep","state":"SLEEP_ENTER"}
@@ -69,18 +71,19 @@ Deprecated since v7.2.0
 [renderer:1] [renderer] R147 set-action sleep_enter applied=true loop=false frame_ms=600 frames=3 skew=0
 [renderer:1] [renderer] R153 FRAME_BLEND sleep_enter 0 -> 1 (320ms)
 [renderer:1] [renderer] R153 FRAME_BLEND sleep_enter 1 -> 2 (320ms)
-[renderer:1] [renderer] R144 oneshot last-frame sleep_enter index=2/2 t=+2590ms
-[renderer:1] [renderer] R144 animation-finished sleep_enter (one-shot, 末帧保持 600ms) t=+3190ms
-[main] R141 STATE SLEEP_ENTER -> SLEEP_LOOP (sleep_enter-finished) t=3547ms
+[renderer:1] [renderer] R144 oneshot last-frame sleep_enter index=2/2 t=+2398ms
+[renderer:1] [renderer] R144 animation-finished sleep_enter (one-shot, 末帧保持 600ms) t=+3008ms
+[main] R141 STATE SLEEP_ENTER -> SLEEP_LOOP (sleep_enter-finished) t=3720ms
 [main] R141 BEHAVIOR action=sleep_breath state=SLEEP_LOOP
 [main] R141 animation-finished sleep_enter handled=true state=SLEEP_LOOP
 [renderer:1] [renderer] R156 PROPS action=sleep_breath scene=yes mounted=prop_bed,prop_moon,prop_quilt
 [renderer:1] [renderer] R153 BLEND sleep_enter -> sleep_breath (220ms)
 [renderer:1] [renderer] R147 set-action sleep_breath applied=true loop=true frame_ms=1500,1500 frames=2 skew=0
+[main] window blur
 [main] R141 BEHAVIOR action=sleep_loop state=SLEEP_LOOP
 [renderer:1] [renderer] R156 PROPS action=sleep_loop scene=yes mounted=prop_bed,prop_moon,prop_quilt
 [renderer:1] [renderer] R147 set-action sleep_loop applied=true loop=true frame_ms=700 frames=3 skew=0
 [main] quit-after elapsed, terminating
 [main] R141 behavior engine stopped (before-quit)
-[main] R177 MOOD_SAVED mood=sleepy
+[main] R177 MOOD_SAVED mood=happy
 [main] window closed

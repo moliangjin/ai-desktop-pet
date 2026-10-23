@@ -227,6 +227,67 @@ def main():
               m3.group(1) if m3 else 'PANEL_READY 未出现')
 
     # ================================================================
+    # 运行 F: Mac 一键验收入口 (R179) —— 真的能把桌宠拉起来吗?
+    # ================================================================
+    print('\n[运行 F] Mac 一键验收入口 (Finder 双击等价路径) → 桌宠是否真的启动')
+    f_ud = EVIDENCE / 'ud_F'
+    f_ud.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ)
+    env['PET_USER_DATA_DIR'] = str(f_ud)
+    try:
+        fp = subprocess.run(
+            ['bash', str(REPO / 'one_click_test' / 'run_r177_acceptance.sh'),
+             '--skip-auto', '--smoke'],
+            cwd=str(REPO / 'one_click_test'),      # ← 和 Finder 双击一样的工作目录
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            env=env, timeout=180)
+        f_out = fp.stdout.decode('utf-8', 'replace')
+        (EVIDENCE / 'run_F_acceptance.log').write_text(f_out, encoding='utf-8')
+        f_rc = fp.returncode
+    except subprocess.TimeoutExpired:
+        f_out, f_rc = '(timeout)', 124
+    check('F1', '验收入口脚本能跑完且退出码为 0', f_rc == 0, f'rc={f_rc}')
+    check('F2', '验收入口自己给出的启动判据 = 资源就绪 (桌宠真的起来了)',
+          '启动判据: 资源就绪' in f_out,
+          [l.strip() for l in f_out.splitlines() if '启动判据' in l][:1])
+    f_log = REPO / 'evidence' / 'build_logs' / 'r177_mac_accept.log'
+    f_text = f_log.read_text(encoding='utf-8') if f_log.exists() else ''
+    check('F3', '真实运行日志里有 R144 ASSETS_READY (资源真的加载完了)',
+          'R144 ASSETS_READY' in f_text,
+          (f_text.split('R144 ASSETS_READY')[1].split('\n')[0].strip()[:60]
+           if 'R144 ASSETS_READY' in f_text else '未出现'))
+    check('F4', '验收入口不再引用不存在的相对路径 src/main.js',
+          'src/main.js' not in (REPO / 'one_click_test' / 'run_r177_acceptance.sh').read_text(encoding='utf-8')
+          or '"$CAND/src/main.js"' in (REPO / 'one_click_test' / 'run_r177_acceptance.sh').read_text(encoding='utf-8'),
+          '已改为绝对路径 $CAND/src/main.js')
+
+    # ================================================================
+    # 运行 G: 保存失败时必须如实报错, 不能谎报"已保存" (R179)
+    # ================================================================
+    print('\n[运行 G] 故障注入: 本地存储写入必然失败 → 设置面板必须说"没存上"')
+    g_log, g_ud = run_electron('G', [
+        '--r177-fault-settings',
+        '--r177-apply-settings', json.dumps({'pet_scale': 1.3}, ensure_ascii=False),
+        '--r177-dump-settings',
+    ], seconds=12)
+    check('G1', '落盘失败时主进程明确报错 (SETTINGS_SAVE_FAILED)',
+          find(g_log, 'R177 SETTINGS_SAVE_FAILED'),
+          (re.search(r'R177 SETTINGS_SAVE_FAILED.*', g_log).group(0).strip()[:120]
+           if find(g_log, 'R177 SETTINGS_SAVE_FAILED') else '未出现'))
+    check('G2', '失败时返回 ok=false (不是 ok=true)',
+          find(g_log, 'R177 APPLY_SETTINGS ok=false'),
+          (re.search(r'R177 APPLY_SETTINGS ok=.*', g_log).group(0).strip()[:140]
+           if find(g_log, 'R177 APPLY_SETTINGS') else '未出现'))
+    g_dumps = dumps_of(g_log)
+    g_start = next((d for d in g_dumps if d.get('tag') == 'startup'), None)
+    check('G3', '失败时设置保持原值 (没有被当成"改成功了")',
+          bool(g_start) and abs(float(g_start['settings'].get('pet_scale', 1.0)) - 1.0) < 1e-9,
+          json.dumps(g_start.get('settings'), ensure_ascii=False) if g_start else 'N/A')
+    check('G4', '失败时磁盘上确实没有写出设置文件',
+          not (g_ud / 'pet_settings.json').exists(),
+          'pet_settings.json 不存在' if not (g_ud / 'pet_settings.json').exists() else '文件被写出来了')
+
+    # ================================================================
     # 运行 B: 重启 (同一个 user-data-dir) → 设置与心情状态是否恢复
     # ================================================================
     print('\n[运行 B] 重启程序 (同一个本地目录) → 验证"重启后正确恢复"')

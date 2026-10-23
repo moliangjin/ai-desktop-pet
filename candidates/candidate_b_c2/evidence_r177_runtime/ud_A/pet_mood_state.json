@@ -1,13 +1,14 @@
 {
   "version": 1,
-  "mood": "sleepy",
-  "energy": 0.9964619444444442,
+  "mood": "happy",
+  "energy": 0.9986964305555556,
   "interactionCount": 1,
-  "interactionWindowStart": 1792697252556,
-  "lastInteractionAt": 1792697252556,
-  "lastActivityAt": 1792697324502,
+  "interactionWindowStart": 1792719280813,
+  "lastInteractionAt": 1792719280813,
+  "lastActivityAt": 1792719372104,
   "lastSleepAt": 0,
-  "awakeSince": 1792697250930,
+  "awakeSince": 1792719278247,
   "sleepCount": 0,
-  "savedAt": 1792697328935
+  "lastEnergyAt": 1792719372104,
+  "savedAt": 1792719378160
 }

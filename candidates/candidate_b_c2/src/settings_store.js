@@ -68,6 +68,40 @@ function rateEffects(activityRate, sleepRate) {
     };
 }
 
+/**
+ * R179: 提交一次设置补丁 —— **只有真正落盘成功**才算成功。
+ *
+ * 原来的写法是"落盘失败也返回 ok:true"(只要 store 存在就 ok=true),
+ * 于是界面会显示"已保存", 而用户重启后设置全丢 —— 这是最坏的一种失败:
+ * 看起来成功了, 实际上没保存。
+ *
+ * 现在:
+ *   · 落盘成功 ⇒ { ok: true,  saved: true,  settings: 合并后的设置, error: null }
+ *   · 落盘失败 ⇒ { ok: false, saved: false, settings: **原设置(不变)**, error: 原因 }
+ *     并且调用方**不应该**把这份补丁应用到运行时 (否则内存里改了、重启又没了)。
+ *
+ * @param {SettingsStore} store
+ * @param {object} patch 设置补丁
+ * @param {object} currentSettings 当前生效的设置 (失败时原样返回)
+ * @returns {{ok:boolean, saved:boolean, settings:object, error:?string}}
+ */
+function commitSettings(store, patch, currentSettings) {
+    const fallback = Object.assign({}, currentSettings || {});
+    if (!store) {
+        return { ok: false, saved: false, settings: fallback, error: 'settings store not ready' };
+    }
+    const res = store.saveSettings(patch);
+    if (!res || !res.ok) {
+        return {
+            ok: false,
+            saved: false,
+            settings: fallback,
+            error: (store.lastError && String(store.lastError)) || 'write failed',
+        };
+    }
+    return { ok: true, saved: true, settings: res.settings, error: null };
+}
+
 class SettingsStore {
     /**
      * @param {object} opts
@@ -157,6 +191,7 @@ class SettingsStore {
 
 module.exports = {
     DEFAULT_SETTINGS,
+    commitSettings,
     SCALE_MIN,
     SCALE_MAX,
     RATES,

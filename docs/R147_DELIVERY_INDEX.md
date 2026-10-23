@@ -3,7 +3,7 @@
 > **生成时间**：2026-10-20
 > **对应任务书**：R147 §八
 > **作者**：MiniMax（Mavis）
-> **上一交付**：R144 `3634d83`
+> **上一交付**：R144 `97248e2`
 > **本轮实现提交**：`7ec7a3bcd9c2cde6bdf741cb2abd426ff9c34888`
 > **状态**：ENGINEERING_GATE = PASS / VISUAL_GATE = PASS / MAC_REAL_GUI_ACCEPTANCE = PENDING / V0_0_RELEASE_STATUS = NOT_FROZEN
 
@@ -92,7 +92,7 @@ candidates/candidate_b_c2/
 | R144 e2e（真实 Electron） | PASS=22 FAIL=0 NOT_VERIFIED=4（B9 撞边本轮随机未触发，环境项） |
 | R141 e2e（真实 Electron） | PASS=12 FAIL=0 NOT_VERIFIED=4（T8 撞边同上） |
 | R147 e2e（真实 Electron + 真实采集帧量化） | PASS=18 FAIL=0 NOT_VERIFIED=0 |
-| R113 拖拽核心逐字未改 | 9/9 区块（对比 `6e35231`） |
+| R113 拖拽核心逐字未改 | 9/9 区块（对比 `47a7d87`） |
 | R138 23 帧资产 SHA256 | 47/47 校验一致 |
 | A1 母版 SHA256 | `3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df` 未变 |
 | 200×240 / 256×256 零裁切 | 真实 PixiJS 矩阵下 46 帧 clipped=0 issues=0 |

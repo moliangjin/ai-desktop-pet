@@ -1,7 +1,7 @@
 # R111 真实鼠标拖拽坐标系混用修复
 
 **生成时间**: 2026-10-18
-**基线 commit**: cbfee0a (R108)
+**基线 commit**: 86a03a4 (R108)
 **当前 commit**: 待 commit
 **任务书**: R111 — 用户 Mac 真机测试发现 R108 修复后 BrowserWindow 仍无法真实拖拽
 

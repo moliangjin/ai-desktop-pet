@@ -1,7 +1,7 @@
 # R182 QA 报告 — 桌面「AI桌宠」启动图标
 
 > **对应交付**：`docs/R182_DELIVERY_INDEX.md`
-> **基线**：R179 `8b52aef`
+> **基线**：R179 `109eda2`
 > **日期**：2026-10-23（含同日「桌面上没找到」返工修订）
 > **结论**：`R182_DESKTOP_ICON = PASS` ／ **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** ／ `V0_0_RELEASE_STATUS = NOT_FROZEN`
 

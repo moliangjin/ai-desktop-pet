@@ -1,7 +1,7 @@
 # R108 screen.getDisplayMatching API 参数类型修复
 
 **生成时间**: 2026-10-17
-**基线 commit**: 63eff1b (R107)
+**基线 commit**: da7ada6 (R107)
 **当前 commit**: 待 commit
 **任务书**: R108 — GPT 核对 Electron 文档发现 R107 修复中 API 参数类型错
 

@@ -1,7 +1,7 @@
 # R107 Mac 真机崩溃 — drag IPC 紧急修复
 
 **生成时间**: 2026-10-16
-**基线 commit**: 628aa24 (R104)
+**基线 commit**: 4127e64 (R104)
 **当前 commit**: 待 commit
 **任务书**: R107 — 用户 Mac 真机发现 main.js 主进程 ReferenceError 崩溃
 

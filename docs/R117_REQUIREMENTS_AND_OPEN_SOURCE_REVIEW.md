@@ -2,7 +2,7 @@
 
 **生成时间**: 2026-10-18
 **任务书**: R117 — C2 真机验收前最后一轮交互收尾（仅调研 + 选型，不写新功能）
-**当前 commit**: `c0fb3bd` (R113)，保持不变
+**当前 commit**: `b3e42d5` (R113)，保持不变
 **R113 现状**: `C2_TECHNICAL_VALIDATION = PASS`, `PRODUCT_ACCEPTANCE = FAIL`, `V0_0_RELEASE_STATUS = NOT_FROZEN`
 
 ---
@@ -150,7 +150,7 @@ R113 实际显示的几何测试角色是 `assets/prototype_chibi/`，程序化�
 
 ## §三 R113 现有资产保留与淘汰建议
 
-### 3.1 R113 资产清单（c0fb3bd）
+### 3.1 R113 资产清单（b3e42d5）
 
 | 模块 | 状态 | 价值 |
 |---|---|---|
@@ -402,8 +402,8 @@ ARCHITECTURE_REVIEW = PENDING  (待用户确认方案 A 或 C)
 C2_TECHNICAL_VALIDATION = PASS
 TRUE_PASSTHROUGH = DEFERRED_UNRESOLVED  (R96 标记)
 ORIGINAL_B_PRESERVED = true  (R60 hash 不变)
-R113_PRESERVED = true  (R113 c0fb3bd 不动, 14/14 e2e + 用户真机复测)
-GIT_COMMIT = c0fb3bd (R113)
+R113_PRESERVED = true  (R113 b3e42d5 不动, 14/14 e2e + 用户真机复测)
+GIT_COMMIT = b3e42d5 (R113)
 ```
 
 ---
@@ -411,7 +411,7 @@ GIT_COMMIT = c0fb3bd (R113)
 ## §十 边界遵守
 
 - ✅ **未新增正式功能代码**（仅 docx/调研报告 + 原 R113 资产保留）
-- ✅ **未修改 R113 已验收代码**（R113 commit c0fb3bd 不动）
+- ✅ **未修改 R113 已验收代码**（R113 commit b3e42d5 不动）
 - ✅ **未更换技术框架**（仅对比与推荐方案 A，不擅自迁移）
 - ✅ **未擅自设计并冻结角色**（明确需用户/美术提供，R0 几何测试版是占位）
 - ✅ **未进入 R0.1 R1.0 R1.5 R2.0**（R117 是调研 + 选型，不开发）
@@ -430,7 +430,7 @@ GIT_COMMIT = c0fb3bd (R113)
 | 角色资产规范 | `docs/04_角色资产与动画规范.md` |
 | 架构边界 | `docs/05_架构边界及选型模板.md` |
 | 既往技术决策 | `TECH_DECISION.md` |
-| R113 资产 | `candidates/candidate_b_c2/` (R113 commit c0fb3bd) |
+| R113 资产 | `candidates/candidate_b_c2/` (R113 commit b3e42d5) |
 
 ---
 

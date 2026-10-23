@@ -3,7 +3,7 @@
 > **生成时间**：2026-10-21
 > **对应任务书**：R162（修复点击动作视觉缺陷，承接 R158）
 > **作者**：MiniMax（Mavis）
-> **基线**：R158 `03fe4d9`（实现 `b740070` / 索引 `4b3793f` / 归档 `03fe4d9`）
+> **基线**：R158 `5833b39`（实现 `c9b9e37` / 索引 `bab6294` / 归档 `5833b39`）
 > **仓库**：`/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0`
 > **状态**：`ENGINEERING_GATE = PASS` / `VISUAL_GATE = PASS`（沙箱内真实 Electron 运行 + 像素级客观测量 + 独立可复算的缺陷回归测试）/ **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** / `V0_0_RELEASE_STATUS = NOT_FROZEN`
 > **范围声明**：本轮**未进入 V0.1**；**未改动人物身份与服装**（角色底图 `character_R138` 23 帧 SHA256 逐字节未变）；**未重新开发整个动画系统**（只在 `arm_rig` 的「切层/关节/衣身还原」与「烘焙顺序」两层修）；**未充值 i2i**（全程无 AI 生图调用）；6 个点击动作与三类生活场景原样保留；R148 行走方向与 R113 拖拽核心未动。

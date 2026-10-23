@@ -5,8 +5,8 @@
 > **生成时间**：2026-10-20
 > **对应任务书**：R138 §二 §三 §四 §五 §六 §七 §八
 > **作者**：MiniMax（Mavis）
-> **上一 commit**：R136 `4389a58`
-> **R113 基线**：`c0fb3bd`（未改动）
+> **上一 commit**：R136 `e079958`
+> **R113 基线**：`b3e42d5`（未改动）
 >
 > **核心立场**：R138 承认 R136 的 GATE 3 = FAIL。本轮做了三件实事：**① 换掉动画生产方式（独立整图 i2i → A1 强约束姿态母版 + 客观服装门禁筛选）② 修复 manifest 资源契约（0/24 → 23/23）③ 重写 QA（删除硬编码 consistent=True）**。
 
@@ -279,7 +279,7 @@ ANIMATION_IDENTITY_QA: PASS         # 客观门禁; 视觉项标 NOT_VISUALLY_VE
 ANIMATION_PREVIEW: COMPLETE         # 6 GIF + HTML + 6 个 200x240
 MANIFEST: COMPLETE                  # 23/23 路径实测有效
 
-R113_BASELINE_PRESERVED: true       # c0fb3bd 未动
+R113_BASELINE_PRESERVED: true       # b3e42d5 未动
 GATE_3_USER_APPROVAL: PENDING
 CHARACTER_ASSETS_FROZEN: false      # 未经用户审核不冻结
 V0_0_RELEASE_STATUS: NOT_FROZEN

@@ -1,14 +1,14 @@
 # R96 真实 Mac 前台测试结论 + C2 紧凑窗口方案评估
 
 **生成时间**: 2026-10-16
-**基线 commit**: 33f89d7 (R92)
+**基线 commit**: 83d2465 (R92)
 **状态**: 冻结 C1 未证实结论, 评估 C2 替代方案
 
 ---
 
 ## 一、真实 Mac 前台测试结论 (run_id r67_1792071455002)
 
-用户已在前台 macOS 完成 R67 三窗口 PoC 真实人工验收 (commit aef3d99, R90 + R92 修复后的 orchestrator + 真三窗口 PoC).
+用户已在前台 macOS 完成 R67 三窗口 PoC 真实人工验收 (commit 140e16d, R90 + R92 修复后的 orchestrator + 真三窗口 PoC).
 
 | 项 | 结论 | 依据 |
 |---|------|------|
@@ -124,7 +124,7 @@ C2_INTERACTION_RISK            = LOW            (setIgnoreMouseEvents(false), �
 C2_ACTUAL_PASSTHROUGH          = false          (C2 不是真穿透, 仅是减小遮挡)
 C2_REAL_GUI_TEST               = NOT_TESTED     (PoC 存在, 未在 Mac 前台验证)
 B_STABLE_BASELINE_PRESERVED     = true           (候选 B R60 输入基线零修改)
-GIT_COMMIT                      = 33f89d7 (R92 baseline, 本轮无代码改动)
+GIT_COMMIT                      = 83d2465 (R92 baseline, 本轮无代码改动)
 BACKUP_SHA256                   = 4e333b03ffdd7896b208b09de4665de3f8db434c91bd21161ad11669c7a85c48
 PHASE_PROGRESS                  = C1 冻结 + C2 评估完成
 OVERALL_PROGRESS                = 0%  (V0.0 未正式封版, 需用户最终决策)

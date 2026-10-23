@@ -1,7 +1,7 @@
 # R172 质量报告 —— 办公场景构图重做
 
 **轮次**: R172（承接 R170）
-**基线提交**: `c9ea732`（V0.0 R170 交付归档）
+**基线提交**: `763744b`（V0.0 R170 交付归档）
 **执行**: MiniMax
 **交付状态**: WORK_SCENE = PASS（脚本合成 + 真实 Electron 双证），**MAC_REAL_GUI_ACCEPTANCE = PENDING**
 

@@ -5,8 +5,8 @@
 > **生成时间**：2026-10-19
 > **对应任务书**：R136 §二 §三 §四 §五 §六
 > **作者**：MiniMax（Mavis）
-> **上一 commit**：R133 `2e5a3e1`
-> **R113 基线**：`c0fb3bd`（未改动）
+> **上一 commit**：R133 `7c5c571`
+> **R113 基线**：`b3e42d5`（未改动）
 >
 > **核心立场**：R136 不修改 R113 业务代码、不批量制作 15-30 类动作、不封版 V0.0、不进入 V0.1；本轮是 GATE 3 严格边界内的"动画资产完善与验收"。
 
@@ -253,7 +253,7 @@ ANIMATION_IDENTITY_QA: PASS            # 24/24 v2 自适应签名 + bbox + 制�
 ANIMATION_PREVIEW: COMPLETE            # 6 GIF + HTML
 MANIFEST: COMPLETE                     # R136_manifest.json 6 类动作
 
-R113_BASELINE_PRESERVED: true          # c0fb3bd 未动
+R113_BASELINE_PRESERVED: true          # b3e42d5 未动
 GATE_3_USER_APPROVAL: PENDING          # 等 GPT + 用户审核
 CHARACTER_ASSETS_FROZEN: false         # 角色未冻结
 V0_0_RELEASE_STATUS: NOT_FROZEN        # V0.0 未封版
@@ -278,7 +278,7 @@ OVERALL_ACCEPTED_PROGRESS: 0%          # 等用户最终裁决
 
 按 R136 §七 要求：
 - A1 原始母版保留
-- R113 基线 c0fb3bd 未动
+- R113 基线 b3e42d5 未动
 - A4 不重新制作
 - 不擅自冻结角色
 - 不封版 V0.0

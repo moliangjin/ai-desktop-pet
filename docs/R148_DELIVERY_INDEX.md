@@ -3,7 +3,7 @@
 > **生成时间**：2026-10-20
 > **对应任务书**：R148（walk_right 倒退步态补充验收）
 > **作者**：MiniMax（Mavis）
-> **上一交付**：R147 `7ec7a3b`（归档 `d102d84`，索引修正 `02cc4ee`）
+> **上一交付**：R147 `5e7438a`（归档 `2e4c558`，索引修正 `e8d47f7`）
 > **本轮实现提交**：`3928e7c406ff00e3e66d144a1de8c2345494cec5`
 > **状态**：ENGINEERING_GATE = PASS / VISUAL_GATE = PASS / MAC_REAL_GUI_ACCEPTANCE = PENDING / V0_0_RELEASE_STATUS = NOT_FROZEN
 
@@ -85,7 +85,7 @@ candidates/candidate_b_c2/
 | R147 e2e（真实 Electron + 真实采集帧量化） | PASS=18 FAIL=0 NOT_VERIFIED=0 |
 | R144 e2e（真实 Electron） | PASS=23 FAIL=0 NOT_VERIFIED=3（3 项为"需真实物理鼠标"，与基线一致） |
 | R141 e2e（真实 Electron） | PASS=13 FAIL=0 NOT_VERIFIED=3（同上） |
-| R113 拖拽核心逐字未改 | 9/9 区块（对比 `6e35231`） |
+| R113 拖拽核心逐字未改 | 9/9 区块（对比 `47a7d87`） |
 | R138 23 帧资产 SHA256 | 47/47 校验一致（逐字节未变） |
 | A1 母版 SHA256 | `3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df` 未变 |
 | 200×240 / 256×256 零裁切 | 真实 PixiJS 矩阵下 46 帧 clipped=0 issues=0 |

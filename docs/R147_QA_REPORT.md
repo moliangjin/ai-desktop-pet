@@ -3,7 +3,7 @@
 > **生成时间**：2026-10-20
 > **对应任务书**：R147（`ACTIVE_TASK = MAC_GUI_FEEDBACK_FIX`）
 > **执行**：MiniMax（Mavis）
-> **上一交付**：R144 `3634d83`
+> **上一交付**：R144 `97248e2`
 > **基线**：R144（工程门禁 PASS / Mac 真机验收 FAILED_PARTIAL）
 
 ---
@@ -235,7 +235,7 @@ REVIEW_ZIP_SHA256 = 见 ZIP 同目录的 character_animation_R147_review.zip.sha
 4. **真实物理鼠标操作未验证**
    点击/拖拽判定走的是**真实 pointer 事件路径**（PixiJS 命中测试 → `finishPress` → CLICK/DRAG），e2e 里已实证 `kind=CLICK` 与"点击不触发 `window-drag-start`"，但**真实鼠标的手感**（点击阈值 3px / 400ms 是否贴合用户习惯）仍需用户真机确认。
 
-5. **R113 拖拽核心逐字未改** —— `tools/r144_drag_core_diff.py` 对比 `6e35231`：9/9 区块逐字未改。
+5. **R113 拖拽核心逐字未改** —— `tools/r144_drag_core_diff.py` 对比 `47a7d87`：9/9 区块逐字未改。
 
 ---
 

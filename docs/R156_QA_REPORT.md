@@ -3,7 +3,7 @@
 > **生成时间**：2026-10-21
 > **对应任务书**：R156（点击互动扩展 + 场景道具 + 办公待机场景）
 > **作者**：MiniMax（Mavis）
-> **基线**：R153 `664abac` / 归档 `a51ba84`
+> **基线**：R153 `d93819b` / 归档 `0a91a29`
 > **仓库**：`/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0`
 > **状态**：`ENGINEERING_GATE = PASS` / `VISUAL_GATE = PASS`（沙箱内真实 Electron 运行 + 像素级客观测量）/ **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** / `V0_0_RELEASE_STATUS = NOT_FROZEN`
 > **范围声明**：本轮**未进入 V0.1**，未重做角色，未新增语音/记忆/AI 聊天，未做系统鼠标注入，未充值 i2i。

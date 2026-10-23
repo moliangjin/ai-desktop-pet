@@ -3,7 +3,7 @@
 > **生成时间**：2026-10-20
 > **对应任务书**：R148（`ACTIVE_TASK = MAC_GUI_FEEDBACK_FIX` 的遗留项 / walk_right 倒退步态补充验收）
 > **执行**：MiniMax（Mavis）
-> **上一交付**：R147 `7ec7a3b`（归档 `d102d84`，索引修正 `02cc4ee`）
+> **上一交付**：R147 `5e7438a`（归档 `2e4c558`，索引修正 `e8d47f7`）
 > **基线**：R147（工程门禁 PASS / **Mac 真机验收 walk_right = FAIL**）
 
 ---
@@ -170,7 +170,7 @@ notes[] → 追加派生帧说明
 | **R147 e2e** | **PASS=18 FAIL=0 NV=0** | TTA1 manifest 23 帧路径真实有效（23 个不同文件）；TTA2 **R138 23 帧逐字节未变 47/47**；TTA3 A1 母版 SHA256 未变；TTA4 R113 拖拽核心 9/9；TTD1 运行时反向倾斜 `walk_left 0.085 / walk_right −0.11`；TTE1 真实撞边 `WALK_LEFT -> WALK_RIGHT (edge-turn)`；**TTG3 真实行走帧上半身倾斜 左 −13.02px（32/32 帧为负）/ 右 +16.29px（0/32 帧为负）** |
 | **R144 e2e** | **PASS=23 FAIL=0 NV=3** | 6 组 23 帧加载、23 帧×2 尺寸零裁切、46/46 帧地面线零误差、到边缘自动转向、一次性动画末帧保持 609~610ms |
 | **R141 e2e** | **PASS=13 FAIL=0 NV=3** | 自动行走更新窗口坐标（x 跨度 39px）、到边缘转向 3 次、程序退出无残留、原候选 B 冻结基线未变 |
-| 拖拽核心 diff | ✅ | R113 拖拽核心 **9/9 区块逐字未改**（对比 `6e35231`） |
+| 拖拽核心 diff | ✅ | R113 拖拽核心 **9/9 区块逐字未改**（对比 `47a7d87`） |
 
 （3 项 NV 均为"需真实物理鼠标"，与 R147 基线一致，不冒充通过）
 
@@ -296,7 +296,7 @@ candidates/candidate_b_c2/
 
 - `assets/character_R138/` 23 帧 PNG —— SHA256 47/47 未变
 - A1 母版 —— SHA256 `3344d5fe8d47058475ea7265909478bae4886bb1ee6165412f406a83422013df`
-- R113 拖拽核心 —— 9/9 区块逐字未改（对比 `6e35231`）
+- R113 拖拽核心 —— 9/9 区块逐字未改（对比 `47a7d87`）
 - `src/behavior_engine.js` / `src/renderer.js` / `src/sprite_layout.js` —— 一行未改
 - `src/click_policy.js` / `src/idle_director.js` —— 一行未改
 

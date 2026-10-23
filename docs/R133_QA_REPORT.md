@@ -5,8 +5,8 @@
 > **生成时间**：2026-10-19
 > **对应任务书**：R133 §二（P0 残影） + §三（GATE 3 idle/walk/sleep）
 > **作者**：MiniMax（Mavis）
-> **上一 commit**：R130 `f89fa39`
-> **R113 基线**：`c0fb3bd`（未改动）
+> **上一 commit**：R130 `a975685`
+> **R113 基线**：`b3e42d5`（未改动）
 >
 > **核心立场**：R133 不修改 R113 业务代码、不封版 V0.0、不进入 V0.1；本轮是 GATE 3 严格边界内的"三类动画样片生产能力验证"。
 
@@ -219,7 +219,7 @@ GPT 对 R127 与 R130 两份独立审查包做逐像素核验，已确认：
 
 ## 七、R113 业务代码保护
 
-- R113 commit hash：`c0fb3bd`
+- R113 commit hash：`b3e42d5`
 - 本轮未修改 R113 / main.js / 任何 PixiJS 7.4.3 / 任何 Electron 代码
 - 本轮只新增 R133 工作目录下的交付物
 
@@ -247,7 +247,7 @@ A1_APPEARANCE_PRESERVED: true          # SHA256 3344d5fe... 不变
 A4_TRUE_THREE_QUARTER: DEFERRED        # R130 已标记 BLOCKED, 本轮不动
 SIX_EXPRESSIONS: CONCEPT_ACCEPTED      # R122 继承
 
-R113_TECH_BASELINE_PRESERVED: true     # c0fb3bd 未动
+R113_TECH_BASELINE_PRESERVED: true     # b3e42d5 未动
 FORMAL_FEATURE_CODE_CHANGED: false     # 本轮零代码改动
 
 GATE_3_USER_APPROVAL: PENDING          # 等 GPT + 用户审核

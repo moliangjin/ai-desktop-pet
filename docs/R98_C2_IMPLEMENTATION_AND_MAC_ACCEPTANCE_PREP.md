@@ -1,7 +1,7 @@
 # R98 C2 紧凑窗口正式研发 + 候选 B 隔离适配 + Mac 真机验收准备
 
 **生成时间**: 2026-10-16
-**基线 commit**: 853c012 (R96)
+**基线 commit**: 4c00174 (R96)
 **当前 commit**: 待 commit
 **任务书**: R98 — V0.0 C2 紧凑窗口作为真透明穿透的临时替代
 
@@ -30,11 +30,11 @@
 
 ### 候选 B 原始基线 (R60)
 
-- commit: `786837b` (R60: 恢复 R51 click/drag 输入基线 + 独立透明穿透 PoC)
+- commit: `2896da2` (R60: 恢复 R51 click/drag 输入基线 + 独立透明穿透 PoC)
 - 文件 hash (R96 工作区):
   - `candidates/candidate_b_electronpixir/src/main.js`: `28ad0ab2109128793c1075e957eec467752b8bdf782a9de3bfb126bf60621a58`
   - `candidates/candidate_b_electronpixir/src/renderer.js`: `e37185ccbecece3559ba805caea6834850e68d9758c1d09f33e71f0a36f00b17`
-- 与 git HEAD 一致 ✓ (R96 commit `853c012` 时这两个文件 hash 与 git tree 一致, 零修改)
+- 与 git HEAD 一致 ✓ (R96 commit `4c00174` 时这两个文件 hash 与 git tree 一致, 零修改)
 - 候选 A 未修改 (PAUSED 状态)
 - C1 历史技术研究记录保留 (R67 PoC main.js / R86 路径 1 PoC / R64 COMPACT_WINDOW_FALLBACK 注释)
 

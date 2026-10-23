@@ -3,7 +3,7 @@
 > **生成时间**：2026-10-20
 > **对应任务书**：R144 §八
 > **作者**：MiniMax（Mavis）
-> **上一交付**：R141 `6e35231`
+> **上一交付**：R141 `47a7d87`
 > **状态**：ENGINEERING_GATE = PASS / MAC_REAL_GUI_ACCEPTANCE = PENDING / V0_0_RELEASE_STATUS = NOT_FROZEN
 
 ---

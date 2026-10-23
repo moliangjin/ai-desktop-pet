@@ -1,10 +1,10 @@
 # R167 交付索引 — R165 审查 PARTIAL 后的最后两项视觉整改（办公打字 / 睡眠被子）
 
 > **生成时间**：2026-10-22
-> **对应任务书**：R167（承接 R165，基线 commit `35a8822`）
+> **对应任务书**：R167（承接 R165，基线 commit `c689e7b`）
 > **作者**：MiniMax（Mavis）
-> **上一交付**：R165 `35a8822`（实现 `969ee86` / 索引 `9f3b608` / 归档 `35a8822`）
-> **本轮实现提交**：`8f693e6`
+> **上一交付**：R165 `c689e7b`（实现 `10dd0f0` / 索引 `af8a660` / 归档 `c689e7b`）
+> **本轮实现提交**：`e4ff766`
 > **状态**：`ENGINEERING_GATE = PASS` / `VISUAL_GATE = PASS`（真实 Electron 运行 + 像素级客观测量 + 可复算回归判据）/ **`MAC_REAL_GUI_ACCEPTANCE = PENDING`** / `V0_0_RELEASE_STATUS = NOT_FROZEN`
 > **范围声明**：本轮**只修任务书点名的 2 项问题**，未扩展功能；**未进入 V0.1**；**未改动人物身份与服装**（R138 原始 23 帧 SHA256 逐字节未变）；**未改动任何点击动作素材**（`assets/character_R158/` 18 张帧与 HEAD 逐字节一致）；**未重新开发整个动画系统**（只在场景道具生成器 + 办公帧烘焙段内改）；**未充值 i2i**（全程零 AI 生图调用）；R148 行走方向与 R113 拖拽核心未动。
 
@@ -107,7 +107,7 @@ candidates/candidate_b_c2/
 | e2e TI4 / TI5 | 期望道具数 9、work 挂载未含新道具 | `loaded=10`；work 挂载加 `prop_keyboard` | 59/59 |
 | `r156_click_props_work.test.js` | 道具数 9 / PNG 28 | 10 / 29，必需道具加 `prop_keyboard` | 21/21 |
 
-> **`cheer_jump` 的 −15.19% 是 HEAD 自带的存量问题，不是 R167 回归**：在 HEAD 的独立 worktree（`35a8822`）上跑同一个脚本得到**完全相同的数字**；且 `assets/character_R158/` 与 HEAD 逐字节一致。
+> **`cheer_jump` 的 −15.19% 是 HEAD 自带的存量问题，不是 R167 回归**：在 HEAD 的独立 worktree（`c689e7b`）上跑同一个脚本得到**完全相同的数字**；且 `assets/character_R158/` 与 HEAD 逐字节一致。
 > 另发现 R165 归档里的 `evidence_r165_measure.json` 是**陈旧快照**（记录 212244/203477/183127，实测 211501/208630/182192）—— 本轮不改动历史归档，改用新生成的 `evidence_r167_measure.json`，差异已如实登记在 QA 报告 §二。
 
 ---

@@ -1,6 +1,6 @@
 # R153 质量报告 — 动作自然度与自主生活丰富度升级
 
-- 轮次：R153（承接 R148，基线 commit `3984bd2`）
+- 轮次：R153（承接 R148，基线 commit `142af15`）
 - 范围：`AI-Desktop-Companion-V0.0` / `candidates/candidate_b_c2`
 - 交付形式：源码 + 单元测试 + e2e + 真实运行采集帧 + 预览 GIF + 客观测量 JSON + 审查包 ZIP
 - **Mac 真机验收状态：`MAC_REAL_GUI_ACCEPTANCE = PENDING`**（本轮所有结论来自沙箱内的真实 Electron 运行与像素级客观测量，真机观感仍需用户确认）

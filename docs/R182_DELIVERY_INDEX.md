@@ -210,9 +210,13 @@ macOS 的 `screencapture` **抓不到透明 Electron 叠层**（Pixi 画布走 G
 
 ### 三、提交链
 
-| # | 类型 | 内容 |
-|---|---|---|
-| 1 | 实现 | `68b55d3` — 桌面图标 + 启动器 + 图标脚本 + A/B 取证脚本 + bundle + evidence + `main.js` 单实例锁 |
-| 2 | 交付索引 | `025f470` — `docs/R182_DELIVERY_INDEX.md` + `docs/R182_QA_REPORT.md` |
-| 3 | 交付归档 | `aca2c2e` — SHA256 回填 |
-| 4 | **实现（返工）** | 本次 — 启动器 3 个 bug 修复 + `113/114` 脚本 + 桌面项改真 bundle + 坐标定位 + 文档修订 |
+| # | 类型 | commit | 内容 |
+|---|---|---|---|
+| 1 | 实现 | `68b55d3` | 桌面图标 + 启动器 + 图标脚本 + A/B 取证脚本 + bundle + evidence + `main.js` 单实例锁 |
+| 2 | 交付索引 | `025f470` | `docs/R182_DELIVERY_INDEX.md` + `docs/R182_QA_REPORT.md` |
+| 3 | 交付归档 | `aca2c2e` | SHA256 回填 |
+| 4 | **实现（返工）** | `49d0abd` | 启动器 3 个 bug 修复 + `113/114` 脚本 + 桌面项改真 bundle + 坐标定位 + 落盘校验 |
+| 5 | **交付索引（返工）** | `308eb7d` | `docs/R182_DELIVERY_INDEX.md` + `docs/R182_QA_REPORT.md` 修订 |
+| 6 | **交付归档（返工）** | 本次 | 提交链回填 + SHA256 复核 |
+
+> 本轮返工前的 HEAD 为 `aca2c2e`（R182 首版）；返工后 HEAD 见上表第 6 行。

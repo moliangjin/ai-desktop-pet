@@ -1,0 +1,143 @@
+#!/bin/bash
+# ==============================================================
+# AI桌宠 —— 桌面启动器 (R182)
+#
+# 用户在桌面双击「AI桌宠」→ 拉起当前验收通过的桌宠。
+#
+# 本轮硬约束 (逐条兑现):
+#   1) 桌面显示「AI桌宠」图标  → 本 bundle + 桌面软链, 图标用现有角色形象合成
+#   2) 双击直接启动验收通过的桌宠 → 参数与验收脚本完全一致 (manifest / compact / 600,300)
+#   3) 不弹测试界面 / 不跑验收脚本 / 不起多个进程
+#      · 启动参数里**没有** --acceptance / --preview / --demo-scene / --r177-* /
+#        --quit-after 任何一个验收开关
+#      · 多进程由 main.js 的 Electron requestSingleInstanceLock 兜底 (第二个实例
+#        会把已有窗口叫到前面, 而不是再开一只桌宠)
+#      · Info.plist 里 LSUIElement=true ⇒ 不弹终端窗口, 不占 Dock 位
+#   4) 图标用现有角色形象      → AppIcon.icns 由 assets/character_R138/idle 裁切合成
+#   5) 不移动/不删除原始项目文件 → 只读仓库文件; 所有写操作落在 ~/Library 下
+#   6) 重启 Mac 后仍可启动      → 全用绝对路径; user-data-dir 落在
+#                                 ~/Library/Application Support (不是临时目录)
+#
+# 两段式启动 (实测结论):
+#   阶段 A —— 直接 exec Electron。最干净, 不弹任何额外窗口。
+#   阶段 B —— 阶段 A 在 20 秒内没有真正就绪 (日志里没出现 R177 LOCAL_STATE) 时,
+#             改由 osascript (Cocoa 应用) 作宿主再拉一次。macOS 上"由已接入图形
+#             会话的进程派生"比"由 launchd 后台作业派生"更可靠, 阶段 B 走这条通道。
+#             阶段 B 仍不弹终端窗口。
+# ==============================================================
+set -u
+
+# ---------- ① 定位仓库 ----------
+# 优先按 bundle 自身位置反推 (仓库整体搬家也能跟着走);
+# 反推不到 (从桌面软链启动、路径被系统改写) 就回落到硬编码绝对路径。
+SELF="$0"
+case "$SELF" in
+    /*) ;;
+    *) SELF="$(cd "$(dirname "$SELF")" 2>/dev/null && pwd)/$(basename "$SELF")" ;;
+esac
+SELF_DIR="$(cd "$(dirname "$SELF")" 2>/dev/null && pwd || true)"
+
+REPO=""
+if [ -n "$SELF_DIR" ]; then
+    # .../_app_bundle/AI桌宠.app/Contents/MacOS  →  上 4 级 = 仓库根
+    GUESS="$(cd "$SELF_DIR/../../../.." 2>/dev/null && pwd || true)"
+    if [ -n "$GUESS" ] && [ -f "$GUESS/candidates/candidate_b_c2/src/main.js" ]; then
+        REPO="$GUESS"
+    fi
+fi
+if [ -z "$REPO" ]; then
+    REPO="/Users/musk123/Downloads/minimax工作文件夹/软件开发/AI桌宠_v0.0_workspace/AI-Desktop-Companion-V0.0"
+fi
+
+CAND="$REPO/candidates/candidate_b_c2"
+ELECTRON="$REPO/candidates/candidate_b_electronpixir/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron"
+MAIN_JS="$CAND/src/main.js"
+MANIFEST="$CAND/assets/character_R141_manifest.json"
+
+# 本地状态目录: 固定落在 ~/Library/Application Support, 重启后仍在
+#   (不能放临时目录, 否则每次启动都像"第一次", 心情/设置就丢了)
+USER_DATA="$HOME/Library/Application Support/AI桌宠"
+LOG_DIR="$HOME/Library/Logs/AI桌宠"
+LOG_FILE="$LOG_DIR/launcher.log"
+
+mkdir -p "$LOG_DIR" "$USER_DATA" 2>/dev/null || true
+
+log() {
+    printf '%s [AI桌宠] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$*" >> "$LOG_FILE" 2>/dev/null || true
+}
+
+# ---------- ② 阶段 B 的实际启动体 ----------
+# 被阶段 A 以 "--stage-b" 调用, 或由 osascript 直接调用。
+run_pet() {
+    cd "$CAND" || exit 1
+    exec "$ELECTRON" "$MAIN_JS" \
+        --manifest "$MANIFEST" \
+        --mode compact \
+        --x 600 --y 300 \
+        --user-data-dir="$USER_DATA" \
+        >> "$LOG_FILE" 2>&1
+}
+
+if [ "${1:-}" = "--stage-b" ]; then
+    run_pet
+fi
+
+# ---------- ③ 启动前自检 ----------
+# 缺任何一项都**直接退出**, 绝不"看起来启动了"实则没启动。
+for f in "$ELECTRON" "$MAIN_JS" "$MANIFEST"; do
+    if [ ! -f "$f" ]; then
+        log "启动失败: 缺少 $f"
+        exit 1
+    fi
+done
+
+log "启动 repo=$REPO"
+
+# 只看**本轮新增**的日志内容 (用启动前的日志长度做偏移) ——
+#   否则"就绪判据"会命中上一轮残留的 R177 LOCAL_STATE, 造成假就绪。
+LOG_SIZE_BEFORE=$(wc -c < "$LOG_FILE" 2>/dev/null || echo 0)
+case "$LOG_SIZE_BEFORE" in ''|*[!0-9]*) LOG_SIZE_BEFORE=0 ;; esac
+new_log() { tail -c "+$((LOG_SIZE_BEFORE + 1))" "$LOG_FILE" 2>/dev/null; }
+
+# ---------- ④ 阶段 A: 直接启动 ----------
+log "阶段 A: 直接启动 Electron"
+cd "$CAND" || exit 1
+"$ELECTRON" "$MAIN_JS" \
+    --manifest "$MANIFEST" \
+    --mode compact \
+    --x 600 --y 300 \
+    --user-data-dir="$USER_DATA" \
+    >> "$LOG_FILE" 2>&1 &
+PID_A=$!
+
+# 就绪判据: main.js 跑 initLocalState() 时会打印这一行 —— 它证明
+#   Electron 真的 ready 了、窗口建了、本地状态读到了, 而不是"进程活着但没干活"。
+# 另有一种"就绪": 已有实例在跑 ⇒ 本次实例被单实例锁挡下并退出 (code 0) ——
+#   这也算成功, 而且**不能**因此去跑阶段 B (否则会再多起一个进程)。
+READY=0
+ALREADY=0
+for _ in $(seq 1 20); do
+    if new_log | grep -q "R177 LOCAL_STATE"; then READY=1; break; fi
+    if new_log | grep -q "R182 SINGLE_INSTANCE"; then ALREADY=1; break; fi
+    if ! kill -0 "$PID_A" 2>/dev/null; then break; fi
+    sleep 1
+done
+
+if [ "$READY" = "1" ]; then
+    log "阶段 A 成功 (pid=$PID_A), 桌宠已就绪"
+    exit 0
+fi
+if [ "$ALREADY" = "1" ]; then
+    log "已有实例在运行, 本次实例已退出 (单实例锁生效, 未新增进程)"
+    exit 0
+fi
+
+log "阶段 A 未在 20 秒内就绪 (pid=$PID_A), 切换到阶段 B (osascript 通道)"
+kill "$PID_A" 2>/dev/null
+sleep 1
+
+# ---------- ⑤ 阶段 B: 由 osascript (Cocoa 应用) 作宿主再拉一次 ----------
+log "阶段 B: 经 osascript 通道重启"
+/usr/bin/osascript -e "do shell script \"$SELF --stage-b\"" >> "$LOG_FILE" 2>&1
+log "阶段 B 已下发"
+exit 0

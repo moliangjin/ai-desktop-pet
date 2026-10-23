@@ -74,6 +74,36 @@ for (let i = 0; i < args.length; i++) {
     else if (a === '--r177-fault-settings') r177FaultSettings_ = true;
 }
 
+// ====== R182: 单实例锁 ======
+// 桌面图标被连着双击 / 用户重复启动时, 第二个实例必须**复用已有实例**,
+// 绝不能拉起第二个桌宠进程 (两个透明窗口叠在一起, 行为引擎也会跑双份)。
+//   · 必须在 app.whenReady() 之前申请
+//   · 拿不到锁就安静退出 (退出码 0), 不再往下做任何初始化 (连 manifest 都不查)
+//   · 第二个实例触发 second-instance ⇒ 把已有窗口叫到前面来
+const singleInstanceLock_ = app.requestSingleInstanceLock();
+if (!singleInstanceLock_) {
+    console.log('[main] R182 SINGLE_INSTANCE 已有实例在运行, 本实例退出 (code 0)');
+    app.exit(0);
+} else {
+    app.on('second-instance', (_event, _argv, _workingDirectory) => {
+        console.log('[main] R182 SECOND_INSTANCE 已有实例在运行, 聚焦已有窗口');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            if (mainWindow.isMinimized()) mainWindow.restore();
+            mainWindow.show();
+            mainWindow.focus();
+        }
+    });
+}
+
+if (!manifestPath) {
+    // R182: 桌面 .app 由 LaunchServices 双击启动时**没有命令行参数** ⇒ 用项目内的默认 manifest。
+    //   仍然优先用 --manifest 传入的路径 (验收脚本 / 命令行启动都走这一条, 行为不变)。
+    const defaultManifest = path.join(__dirname, '..', 'assets', 'character_R141_manifest.json');
+    if (fs.existsSync(defaultManifest)) {
+        manifestPath = defaultManifest;
+        console.log(`[main] R182 MANIFEST_DEFAULT ${manifestPath}`);
+    }
+}
 if (!manifestPath) {
     console.error('[main] FATAL: --manifest required');
     app.exit(2);
@@ -706,6 +736,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+    // R182: 没拿到单实例锁 ⇒ 绝不创建窗口 (双保险: app.exit(0) 之外的第二道闸)
+    if (!singleInstanceLock_) return;
     // R177: 先读本地设置与心情状态 (窗口尺寸要按"桌宠大小"来开, 所以必须早于 createWindow)
     initLocalState();
     runR177StartupHooks();

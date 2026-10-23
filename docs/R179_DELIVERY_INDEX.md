@@ -55,10 +55,10 @@
 | 运行时验证脚本 | `candidates/candidate_b_c2/100_R177_runtime_verify.py`（本轮扩到 34 项） |
 | 运行时验证证据 | `candidates/candidate_b_c2/evidence_r177_runtime/`（A~G 共 7 份真实日志 + 判据 JSON） |
 | 打包器 | `candidates/candidate_b_c2/102_R179_package.py` |
-| 轻量审查包 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R179_review.zip` |
-| 审查包 SHA256 | `__REVIEW_SHA256__`（同时写在该 zip 旁的 `.sha256` 文件） |
-| 完整备份 | `backup/V0.0_backup_20261023_xxxxxx_r179.zip` |
-| 备份 SHA256 | `__BACKUP_SHA256__` |
+| 轻量审查包 | `/Users/musk123/Downloads/minimax工作文件夹/character_animation_R179_review.zip`（211 个文件 / 23,692,311 字节） |
+| 审查包 SHA256 | `0119af0e1a72644b66a30537ce06a82b637a68b390a5a3a8e800d8f887fd2f79`（同时写在该 zip 旁的 `.sha256` 文件） |
+| 完整备份 | `backup/V0.0_backup_20261023_094622_r179.zip`（291 个文件 / 52,188,132 字节） |
+| 备份 SHA256 | `433e6f94387ead203f2e42f3678d55b04f8287fb259b59b79dc486756aa3de24` |
 
 ---
 
@@ -89,7 +89,7 @@ bash ../one_click_test/run_r177_acceptance.sh --skip-auto --smoke
 | # | 提交 | 内容 |
 |---|---|---|
 | 1 | `4756fd0` | 实现提交：验收入口绝对路径 + 启动判据 / 精力增量结算 / `commitSettings` + 保存失败如实反馈 / 开机自启真实结果回传 / 新增 `M17~M20`、`S15~S18` 与 F、G 两组运行时判据 |
-| 2 | `__INDEX_COMMIT__` | 交付索引提交：本文件 + `docs/R179_QA_REPORT.md` |
+| 2 | `ed8ebad` | 交付索引提交：本文件 + `docs/R179_QA_REPORT.md` |
 | 3 | 本提交（归档） | 交付归档提交：审查包与 SHA256 指向最终值 |
 
 ---
